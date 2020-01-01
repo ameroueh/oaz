@@ -53,6 +53,9 @@ add_executable(mcts_test test/mcts_test.cpp test/mcts_test.cpp)
 target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(mcts_test PRIVATE ${Boost_INCLUDE_DIRS})
 
+add_executable(mutex_test test/mutex_test.cpp test/mutex_test.cpp)
+target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+
 
 ##############################
 add_dependencies(connect_four_test gtest)
@@ -62,6 +65,10 @@ target_link_libraries(connect_four_test gtest_main gmock_main)
 add_dependencies(mcts_test gtest)
 add_dependencies(mcts_test gmock)
 target_link_libraries(mcts_test gtest_main gmock_main)
+
+add_dependencies(mutex_test gtest)
+add_dependencies(mutex_test gmock)
+target_link_libraries(mutex_test gtest_main gmock_main)
 
 #############################
 # Make test runnable with
@@ -75,6 +82,11 @@ add_test(
 add_test(
 	NAME mcts_test
 	COMMAND mcts_test
+)
+
+add_test (
+	NAME mutex_test
+	COMMAND mutex_test
 )
 
 ############################
