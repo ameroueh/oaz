@@ -4,15 +4,18 @@ project (oaz)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+
 ###############################
 # Add GoogleTest
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/googletest" "extern/googletest")
 
+# Add tensorflow-cmake
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
+
 # configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
 # execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
 #   RESULT_VARIABLE result
-#   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
-# if(result)
+#   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download ) if(result)
 #   message(FATAL_ERROR "CMake step for googletest failed: ${result}")
 # endif()
 # execute_process(COMMAND ${CMAKE_COMMAND} --build .
@@ -39,9 +42,27 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/extern/googletest" "extern/googletest")
 #   include_directories("${gtest_SOURCE_DIR}/include")
 # endif()
 
+set(TensorFlow_BUILD_DIR ${PROJECT_SOURCE_DIR}/extern/tensorflow/bazel-bin/tensorflow)
+set(TensorFlow_SOURCE_DIR ${PROJECT_SOURCE_DIR}/extern/tensorflow)
+set(TensorFlow_BAZEL_GENFILES ${PROJECT_SOURCE_DIR}/extern/tensorflow/bazel-genfiles)
+
+
 ##############################
 # Define libraries
 find_package(Boost 1.67.0 REQUIRED COMPONENTS system)
+
+find_package(TensorFlow REQUIRED)
+
+##############################
+# Flags
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=${TensorFlow_ABI}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=${TensorFlow_ABI}")
+
+TensorFlow_REQUIRE_C_LIBRARY()
+TensorFlow_REQUIRE_SOURCE()
 
 ##############################
 # Define tests
@@ -56,6 +77,8 @@ target_include_directories(mcts_test PRIVATE ${Boost_INCLUDE_DIRS})
 add_executable(mutex_test test/mutex_test.cpp test/mutex_test.cpp)
 target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
+add_executable(tensorflow_test test/tensorflow_test.cpp test/tensorflow_test.cpp)
+target_include_directories(tensorflow_test PRIVATE TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
 
 ##############################
 add_dependencies(connect_four_test gtest)
@@ -69,6 +92,10 @@ target_link_libraries(mcts_test gtest_main gmock_main)
 add_dependencies(mutex_test gtest)
 add_dependencies(mutex_test gmock)
 target_link_libraries(mutex_test gtest_main gmock_main)
+
+add_dependencies(tensorflow_test gtest)
+add_dependencies(tensorflow_test gmock)
+target_link_libraries(tensorflow_test gtest_main gmock_main TensorFlow_DEP)
 
 #############################
 # Make test runnable with
@@ -87,6 +114,11 @@ add_test(
 add_test (
 	NAME mutex_test
 	COMMAND mutex_test
+)
+
+add_test (
+	NAME tensorflow_test
+	COMMAND tensorflow_test
 )
 
 ############################
