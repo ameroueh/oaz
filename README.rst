@@ -66,9 +66,10 @@ Run
 
 .. code-block:: bash
 
+ $ cd oaz
  $ cmake . -B build
 
-To build the project.
+to build the project.
 
 Tests
 +++++
@@ -77,13 +78,13 @@ Run
 
 .. code-block:: bash
  
+ $ cd oaz/test
  $ make test
 
-from the ``build`` directory created in the Build section.
-Then, run
+and then
 
 .. code-block:: bash
 
- $ ./*test
+ $ run-parts . --regex='.*test'
 
-To run all the tests.
+to build and run all the tests.
