@@ -42,6 +42,25 @@
 #   - kernels/<op-name>_op.h
 #   - ops/<op-name>.cc
 
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	message("GNU GCC compiler and linker detected")
+	set(LINKER_ALLOW_MULDEFS -Wl,--allow-multiple-definition)
+	set(LINKER_WHOLE_ARCHIVE -Wl,--whole-archive)
+	set(LINKER_NO_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+	message("Apple Clang compiler and linker")
+	set(LINKER_ALLOW_MULDEFS "")
+	set(LINKER_WHOLE_ARCHIVE "")
+	set(LINKER_NO_WHOLE_ARCHIVE "")
+else ()
+	message(WARNING "Untested compiler and linker")
+	set(LINKER_ALLOW_MULDEFS "")
+	set(LINKER_WHOLE_ARCHIVE "")
+	set(LINKER_NO_WHOLE_ARCHIVE "")
+endif()
+
 if(APPLE)
   message(WARNING "This FindTensorflow.cmake is not tested on APPLE\n"
                   "Please report if this works\n"
@@ -340,8 +359,8 @@ endmacro()
 add_library(TensorFlow_DEP INTERFACE)
 target_include_directories(TensorFlow_DEP SYSTEM INTERFACE ${TensorFlow_SOURCE_DIR})
 target_include_directories(TensorFlow_DEP SYSTEM INTERFACE ${TensorFlow_INCLUDE_DIR})
-target_link_libraries(TensorFlow_DEP INTERFACE -Wl,--allow-multiple-definition -Wl,--whole-archive ${TensorFlow_C_LIBRARY} -Wl,--no-whole-archive)
-target_link_libraries(TensorFlow_DEP INTERFACE -Wl,--allow-multiple-definition -Wl,--whole-archive ${TensorFlow_LIBRARY} -Wl,--no-whole-archive)
+target_link_libraries(TensorFlow_DEP INTERFACE ${LINKER_ALLOW_MULDEFS} ${LINKER_WHOLE_ARCHIVE} ${TensorFlow_C_LIBRARY} ${LINKER_NO_WHOLE_ARCHIVE})
+target_link_libraries(TensorFlow_DEP INTERFACE ${LINKER_ALLOW_MULDEFS} ${LINKER_WHOLE_ARCHIVE} ${TensorFlow_LIBRARY} ${LINKER_NO_WHOLE_ARCHIVE})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
