@@ -66,18 +66,18 @@ TensorFlow_REQUIRE_SOURCE()
 
 ##############################
 # Define tests
-add_executable(connect_four_test test/connect_four_test.cpp src/oaz/games/connect_four.cpp)
+add_executable(connect_four_test test/connect_four/connect_four_test.cpp src/oaz/games/connect_four.cpp)
 target_include_directories(connect_four_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(connect_four_test PRIVATE ${Boost_INCLUDE_DIRS})
 
-add_executable(mcts_test test/mcts_test.cpp test/mcts_test.cpp)
+add_executable(mcts_test test/mcts/mcts_test.cpp)
 target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(mcts_test PRIVATE ${Boost_INCLUDE_DIRS})
 
-add_executable(mutex_test test/mutex_test.cpp test/mutex_test.cpp)
+add_executable(mutex_test test/mutex/mutex_test.cpp)
 target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
-add_executable(tensorflow_test test/tensorflow_test.cpp test/tensorflow_test.cpp)
+add_executable(tensorflow_test test/tensorflow/tensorflow_test.cpp)
 target_include_directories(tensorflow_test PRIVATE TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
 
 ##############################
