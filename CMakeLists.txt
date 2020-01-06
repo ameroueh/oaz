@@ -2,9 +2,7 @@ cmake_minimum_required (VERSION 3.13)
 project (oaz)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 ###############################
 # Add GoogleTest
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/googletest" "extern/googletest")
@@ -80,6 +78,9 @@ target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 add_executable(tensorflow_test test/tensorflow/tensorflow_test.cpp)
 target_include_directories(tensorflow_test PRIVATE TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
 
+add_executable(neural_network_test test/neural_network/neural_network_test.cpp src/oaz/neural_network/neural_network.cpp)
+target_include_directories(neural_network_test PRIVATE ${PROJECT_SOURCE_DIR}/include TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
+
 ##############################
 add_dependencies(connect_four_test gtest)
 add_dependencies(connect_four_test gmock)
@@ -96,6 +97,10 @@ target_link_libraries(mutex_test gtest_main gmock_main)
 add_dependencies(tensorflow_test gtest)
 add_dependencies(tensorflow_test gmock)
 target_link_libraries(tensorflow_test gtest_main gmock_main TensorFlow_DEP)
+
+add_dependencies(neural_network_test gtest)
+add_dependencies(neural_network_test gmock)
+target_link_libraries(neural_network_test gtest_main gmock_main TensorFlow_DEP)
 
 #############################
 # Make test runnable with
