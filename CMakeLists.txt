@@ -69,18 +69,21 @@ TensorFlow_REQUIRE_SOURCE()
 add_executable(connect_four_test test/connect_four/connect_four_test.cpp src/oaz/games/connect_four.cpp)
 target_include_directories(connect_four_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(connect_four_test PRIVATE ${Boost_INCLUDE_DIRS})
+set_target_properties(connect_four_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/connect_four")
 
 add_executable(mcts_test test/mcts/mcts_test.cpp)
 target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(mcts_test PRIVATE ${Boost_INCLUDE_DIRS})
+set_target_properties(mcts_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts")
 
 add_executable(mutex_test test/mutex/mutex_test.cpp)
 target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+set_target_properties(mutex_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mutex")
 
 add_executable(tensorflow_test test/tensorflow/tensorflow_test.cpp)
 target_include_directories(tensorflow_test PRIVATE TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
+set_target_properties(tensorflow_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/tensorflow")
 
-##############################
 add_dependencies(connect_four_test gtest)
 add_dependencies(connect_four_test gmock)
 target_link_libraries(connect_four_test gtest_main gmock_main)
