@@ -84,6 +84,7 @@ add_executable(tensorflow_test test/tensorflow/tensorflow_test.cpp)
 target_include_directories(tensorflow_test PRIVATE TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
 set_target_properties(tensorflow_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/tensorflow")
 
+##############################
 add_dependencies(connect_four_test gtest)
 add_dependencies(connect_four_test gmock)
 target_link_libraries(connect_four_test gtest_main gmock_main)
@@ -99,7 +100,6 @@ target_link_libraries(mutex_test gtest_main gmock_main)
 add_dependencies(tensorflow_test gtest)
 add_dependencies(tensorflow_test gmock)
 target_link_libraries(tensorflow_test gtest_main gmock_main TensorFlow_DEP)
-
 #############################
 # Make test runnable with
 # $ make test
