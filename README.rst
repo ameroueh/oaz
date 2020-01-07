@@ -79,12 +79,12 @@ Run
 .. code-block:: bash
  
  $ cd oaz/test
- $ make test
+ $ make 
 
 and then
 
 .. code-block:: bash
 
- $ run-parts . --regex='.*test'
+ $ make test
 
 to build and run all the tests.
