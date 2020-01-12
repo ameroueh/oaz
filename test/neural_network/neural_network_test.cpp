@@ -1,4 +1,5 @@
-/* #include "tensorflow/cc/client/client_session.h" */
+#include <fstream>
+
 #include "tensorflow/core/public/session.h"
 
 #include "gtest/gtest.h"
@@ -6,17 +7,9 @@
 
 #include "nlohmann/json.hpp"
 
-#include <fstream>
-#include <string>
-#include <utility>
-
-#include "oaz/neural_network/neural_network.h"
 
 using namespace tensorflow;
-using namespace oaz::nn;
 using json = nlohmann::json;
-
-typedef std::vector<std::pair<std::string, tensorflow::Tensor>> TensorDict;
 
 TEST (LoadModel, LoadGraphAndRun) {
 
