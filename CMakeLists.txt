@@ -122,7 +122,7 @@ target_link_libraries(json_test PRIVATE gtest_main gmock_main nlohmann_json::nlo
 
 add_dependencies(neural_network_test gtest)
 add_dependencies(neural_network_test gmock)
-target_link_libraries(neural_network_test gtest_main gmock_main TensorFlow_DEP)
+target_link_libraries(neural_network_test gtest_main gmock_main TensorFlow_DEP nlohmann_json::nlohmann_json)
 
 #############################
 # Make test runnable with
