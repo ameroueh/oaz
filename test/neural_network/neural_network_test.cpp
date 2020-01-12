@@ -10,10 +10,17 @@
 using namespace tensorflow;
 using namespace oaz::nn;
 
-TEST (LoadModel, Default) {
+TEST (LoadModel, Dummy) {
 
 	Scope root = Scope::NewRootScope();
 	ClientSession session(root);
-	loadModel(&session, "", "");
+	loadModel(&session, "graph.pb", "");
 
+}
+
+TEST (LoadModel, GraphOnly) {
+
+	Scope root = Scope::NewRootScope();
+	ClientSession session(root);
+	loadModel(&session, "graph.pb");
 }

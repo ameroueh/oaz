@@ -8,5 +8,6 @@
 namespace oaz::nn {
 	
 	void loadModel(tensorflow::ClientSession*, std::string, std::string);
+	void loadModel(tensorflow::ClientSession*, std::string);
 }
 #endif // __NEURAL_NETWORK_H__

@@ -91,6 +91,13 @@ set_target_properties(json_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_B
 add_executable(neural_network_test test/neural_network/neural_network_test.cpp src/oaz/neural_network/neural_network.cpp)
 target_include_directories(neural_network_test PRIVATE ${PROJECT_SOURCE_DIR}/include TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
 set_target_properties(neural_network_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/neural_network")
+add_dependencies(neural_network_test generate_neural_network_test_data)
+
+add_custom_target(
+	generate_neural_network_test_data 
+	COMMAND 
+	python3 ${PROJECT_SOURCE_DIR}/test/neural_network/generate_data.py ${PROJECT_BINARY_DIR}/test/neural_network
+)
 
 ##############################
 add_dependencies(connect_four_test gtest)
