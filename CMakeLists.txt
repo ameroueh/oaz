@@ -6,6 +6,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ###############################
 # Add GoogleTest
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/googletest" "extern/googletest")
+
+set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/json" "extern/json")
 
 # Add tensorflow-cmake
@@ -88,7 +90,7 @@ target_include_directories(json_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 set_target_properties(json_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/json")
 
 
-add_executable(neural_network_test test/neural_network/neural_network_test.cpp src/oaz/neural_network/neural_network.cpp)
+add_executable(neural_network_test test/neural_network/neural_network_test.cpp)
 target_include_directories(neural_network_test PRIVATE ${PROJECT_SOURCE_DIR}/include TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
 set_target_properties(neural_network_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/neural_network")
 add_dependencies(neural_network_test generate_neural_network_test_data)
@@ -146,6 +148,12 @@ add_test (
 add_test (
 	NAME tensorflow_test
 	COMMAND tensorflow_test
+)
+
+add_test (
+	NAME neural_network_test
+	COMMAND neural_network_test
+	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/neural_network
 )
 
 ############################
