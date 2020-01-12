@@ -1,4 +1,6 @@
-import sys 
+import json
+import os
+import sys
 
 import numpy as np
 import tensorflow as tf
@@ -23,3 +25,6 @@ tf.io.write_graph(graph, logdir=save_dir, name="graph.pb", as_text=False)
 
 with tf.Session(graph=graph) as session:
     output_data = session.run(output, feed_dict={input: input_data})
+
+with open(os.path.join(save_dir, "data.json"), "w") as f:
+    f.write(json.dumps({"input": input_data.tolist(), "output": output_data.tolist()}))
