@@ -98,8 +98,19 @@ add_dependencies(neural_network_test generate_neural_network_test_data)
 add_custom_target(
 	generate_neural_network_test_data 
 	COMMAND 
-	python3 ${PROJECT_SOURCE_DIR}/test/neural_network/generate_data.py ${PROJECT_BINARY_DIR}/test/neural_network
+	python3 ${PROJECT_SOURCE_DIR}/test/neural_network/generate_neural_network_data.py ${PROJECT_BINARY_DIR}/test/neural_network
 )
+
+add_custom_target(
+	generate_evaluator_test_data 
+	COMMAND 
+	python3 ${PROJECT_SOURCE_DIR}/test/neural_network/generate_evaluator_test_data.py ${PROJECT_BINARY_DIR}/test/neural_network/evaluator
+)
+
+add_executable(nn_evaluator_test test/neural_network/nn_evaluator_test.cpp src/oaz/neural_network/nn_evaluator.cpp src/oaz/neural_network/nn_testing.cpp)
+target_include_directories(nn_evaluator_test PRIVATE ${PROJECT_SOURCE_DIR}/include TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
+set_target_properties(nn_evaluator_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/neural_network/evaluator")
+add_dependencies(nn_evaluator_test generate_evaluator_test_data)
 
 ##############################
 add_dependencies(connect_four_test gtest)
@@ -126,6 +137,10 @@ add_dependencies(neural_network_test gtest)
 add_dependencies(neural_network_test gmock)
 target_link_libraries(neural_network_test gtest_main gmock_main TensorFlow_DEP nlohmann_json::nlohmann_json)
 
+add_dependencies(nn_evaluator_test gtest)
+add_dependencies(nn_evaluator_test gmock)
+target_link_libraries(nn_evaluator_test gtest_main gmock_main TensorFlow_DEP nlohmann_json::nlohmann_json)
+target_link_libraries(neural_network_test gtest_main gmock_main TensorFlow_DEP nlohmann_json::nlohmann_json)
 #############################
 # Make test runnable with
 # $ make test
@@ -153,6 +168,12 @@ add_test (
 add_test (
 	NAME neural_network_test
 	COMMAND neural_network_test
+	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/neural_network
+)
+
+add_test (
+	NAME nn_evaluator_test
+	COMMAND nn_evaluator_test
 	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/neural_network
 )
 
