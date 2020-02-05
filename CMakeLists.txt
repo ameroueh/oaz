@@ -13,36 +13,6 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/extern/json" "extern/json")
 # Add tensorflow-cmake
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
-# configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
-# execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-#   RESULT_VARIABLE result
-#   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download ) if(result)
-#   message(FATAL_ERROR "CMake step for googletest failed: ${result}")
-# endif()
-# execute_process(COMMAND ${CMAKE_COMMAND} --build .
-#   RESULT_VARIABLE result
-#   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
-# if(result)
-#   message(FATAL_ERROR "Build step for googletest failed: ${result}")
-# endif()
-
-# # Prevent overriding the parent project's compiler/linker
-# # settings on Windows
-# set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-# # Add googletest directly to our build. This defines
-# # the gtest and gtest_main targets.
-# add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
-#                  ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
-#                  EXCLUDE_FROM_ALL)
-
-# The gtest/gtest_main targets carry header search path
-# dependencies automatically when using CMake 2.8.11 or
-# later. Otherwise we have to add them here ourselves.
-# if (CMAKE_VERSION VERSION_LESS 2.8.11)
-#   include_directories("${gtest_SOURCE_DIR}/include")
-# endif()
-
 set(TensorFlow_BUILD_DIR ${PROJECT_SOURCE_DIR}/extern/tensorflow/bazel-bin/tensorflow)
 set(TensorFlow_SOURCE_DIR ${PROJECT_SOURCE_DIR}/extern/tensorflow)
 set(TensorFlow_BAZEL_GENFILES ${PROJECT_SOURCE_DIR}/extern/tensorflow/bazel-genfiles)
@@ -67,7 +37,7 @@ TensorFlow_REQUIRE_SOURCE()
 
 ##############################
 # Define tests
-add_executable(connect_four_test test/connect_four/connect_four_test.cpp src/oaz/games/connect_four.cpp)
+add_executable(connect_four_test test/connect_four/connect_four_test.cpp)
 target_include_directories(connect_four_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(connect_four_test PRIVATE ${Boost_INCLUDE_DIRS})
 set_target_properties(connect_four_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/connect_four")
@@ -81,6 +51,10 @@ add_executable(mutex_test test/mutex/mutex_test.cpp)
 target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 set_target_properties(mutex_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mutex")
 
+add_executable(queue_test test/queue/queue_test.cpp)
+target_include_directories(queue_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+set_target_properties(queue_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/queue")
+
 add_executable(tensorflow_test test/tensorflow/tensorflow_test.cpp)
 target_include_directories(tensorflow_test PRIVATE TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
 set_target_properties(tensorflow_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/tensorflow")
@@ -88,6 +62,19 @@ set_target_properties(tensorflow_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PRO
 add_executable(json_test test/json/json_test.cpp)
 target_include_directories(json_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 set_target_properties(json_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/json")
+
+add_executable(connect_four_tensorflow_test test/connect_four/connect_four_tensorflow_test.cpp)
+target_include_directories(
+	connect_four_tensorflow_test 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR}/include 
+	${Boost_INCLUDE_DIRS} 
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+set_target_properties(connect_four_tensorflow_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/connect_four")
+
 
 add_custom_target(
 	generate_evaluator_test_data 
@@ -105,6 +92,10 @@ add_dependencies(connect_four_test gtest)
 add_dependencies(connect_four_test gmock)
 target_link_libraries(connect_four_test gtest_main gmock_main)
 
+add_dependencies(connect_four_tensorflow_test gtest)
+add_dependencies(connect_four_tensorflow_test gmock)
+target_link_libraries(connect_four_tensorflow_test gtest_main gmock_main TensorFlow_DEP)
+
 add_dependencies(mcts_test gtest)
 add_dependencies(mcts_test gmock)
 target_link_libraries(mcts_test gtest_main gmock_main)
@@ -112,6 +103,10 @@ target_link_libraries(mcts_test gtest_main gmock_main)
 add_dependencies(mutex_test gtest)
 add_dependencies(mutex_test gmock)
 target_link_libraries(mutex_test gtest_main gmock_main)
+
+add_dependencies(queue_test gtest)
+add_dependencies(queue_test gmock)
+target_link_libraries(queue_test gtest_main gmock_main)
 
 add_dependencies(tensorflow_test gtest)
 add_dependencies(tensorflow_test gmock)
@@ -134,6 +129,11 @@ add_test(
 )
 
 add_test(
+	NAME connect_four_tensorflow_test
+	COMMAND connect_four_tensorflow_test
+)
+
+add_test(
 	NAME mcts_test
 	COMMAND mcts_test
 )
@@ -141,6 +141,11 @@ add_test(
 add_test (
 	NAME mutex_test
 	COMMAND mutex_test
+)
+
+add_test (
+	NAME queue_test
+	COMMAND queue_test
 )
 
 add_test (

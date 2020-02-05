@@ -9,20 +9,25 @@
 
 namespace oaz {
 	namespace games {
+		template <class Board>
 		class ConnectFour {
 			public:
-				typedef int64_t gsize_t;
-				typedef uint16_t tile_t;
-				typedef uint16_t move_t;
-				typedef boost::multi_array<tile_t, 3> board_t;
-				typedef boost::multi_array<gsize_t, 1> tregistry_t;
+				using gsize_t = int32_t;
+				using move_t = uint32_t;
+				using tile_t = float;
+
+				using boardptr_t = Board*;
+
+				using tregistry_t = typename boost::multi_array<gsize_t, 1>;
 
 				static const gsize_t width = 7;
 				static const gsize_t height = 6;
 				static const gsize_t n_moves = 7;
 				static const gsize_t n_players = 2;
 
-				ConnectFour();
+				static constexpr tile_t EMPTY_TOKEN = 0.;
+				static constexpr tile_t BASE_TOKEN = 1.;
+				ConnectFour(boardptr_t);
 				
 				void reset();
 
@@ -30,33 +35,36 @@ namespace oaz {
 				void undoMove(move_t);
 				bool Finished() const;
 				std::vector<move_t>* availableMoves();
-				gsize_t score() const;
+				float score() const;
 
-				tile_t currentPlayer() const;
+				gsize_t currentPlayer() const;
 
 				bool operator==(const ConnectFour&);
 					
 			private:
 				void initialise();
+				void resetBoard();
 				void placeToken(move_t);
 				void removeToken(move_t);
 				void swapPlayers();
 				void refreshAvailableMoves();
 				void maybeDeclareVictory(move_t);
 
-				bool checkVerticalVictory(gsize_t, gsize_t, tile_t);
-				bool checkHorizontalVictory(gsize_t, gsize_t, tile_t);
-				bool checkFirstDiagonalVictory(gsize_t, gsize_t, tile_t);
-				bool checkSecondDiagonalVictory(gsize_t, gsize_t, tile_t);
+				bool checkVerticalVictory(gsize_t, gsize_t, gsize_t);
+				bool checkHorizontalVictory(gsize_t, gsize_t, gsize_t);
+				bool checkFirstDiagonalVictory(gsize_t, gsize_t, gsize_t);
+				bool checkSecondDiagonalVictory(gsize_t, gsize_t, gsize_t);
 
-				tile_t m_current_player;
+				gsize_t m_current_player;
 				float m_score;
 				bool m_game_won;
 				std::vector<move_t> m_available_moves;
-				board_t m_board;
+				boardptr_t m_board;
 				tregistry_t m_tokens_in_column;
 		};
 	}
 }
+
+#include "oaz/games/connect_four_impl.cpp"
 #endif
 
