@@ -12,6 +12,8 @@
 #include "tensorflow/core/framework/tensor.h"
 #include "tensorflow/core/public/session.h"
 
+#include "oaz/utils/utils.hpp"
+
 #include <string>
 
 using namespace tensorflow;
@@ -35,15 +37,13 @@ TEST (Inference, CheckResults) {
 	std::ifstream ifs("data.json");
 	json data = json::parse(ifs);
 	
-	auto batch_element = evaluator.getBatchElement(0);
-
-	
-	batch_element.loadFromJson(data[0]["input"]);
+	auto board = evaluator.getBoard(0);
+	loadBoardFromJson<BoardType>(data[0]["input"], board);
 	
 	evaluator.evaluate();
 
-	ASSERT_EQ(batch_element.getValue(), data[0]["value"]);
-	ASSERT_EQ(batch_element.getPolicy(), data[0]["policy"]);
+	ASSERT_EQ(evaluator.getValue(0), data[0]["value"]);
+	ASSERT_EQ(evaluator.getPolicy(0), data[0]["policy"]);
 }
 
 TEST (Inference, Loop) {
@@ -53,10 +53,9 @@ TEST (Inference, Loop) {
 	std::ifstream ifs("data.json");
 	json data = json::parse(ifs);
 	
-	auto batch_element = evaluator.getBatchElement(0);
+	auto board = evaluator.getBoard(0);
+	loadBoardFromJson<BoardType>(data[0]["input"], board);
 	
-	batch_element.loadFromJson(data[0]["input"]);
-
 	for(int i=0; i!=100; ++i) {
 		evaluator.evaluate();
 	}
