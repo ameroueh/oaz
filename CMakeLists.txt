@@ -3,6 +3,9 @@ project (oaz)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
+
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto")
+
 ###############################
 # Add GoogleTest
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/googletest" "extern/googletest")
@@ -37,6 +40,15 @@ TensorFlow_REQUIRE_SOURCE()
 
 ##############################
 # Define tests
+add_executable(connect_four_example examples/connect_four_example.cpp)
+target_include_directories(
+	connect_four_example 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR}/include 
+	${Boost_INCLUDE_DIRS}
+)
+set_target_properties(connect_four_example PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/examples")
+
 add_executable(connect_four_test test/connect_four/connect_four_test.cpp)
 target_include_directories(connect_four_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(connect_four_test PRIVATE ${Boost_INCLUDE_DIRS})
@@ -44,8 +56,43 @@ set_target_properties(connect_four_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${P
 
 add_executable(mcts_test test/mcts/mcts_test.cpp)
 target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
-target_include_directories(mcts_test PRIVATE ${Boost_INCLUDE_DIRS})
 set_target_properties(mcts_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts")
+
+add_executable(mcts_search_test test/mcts/mcts_search_test.cpp)
+target_include_directories(
+	mcts_search_test 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIRS}
+)
+set_target_properties(
+	mcts_search_test 
+	PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts"
+)
+
+add_executable(mcts_connect_four_test test/mcts/mcts_connect_four_test.cpp)
+target_include_directories(
+	mcts_connect_four_test 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIRS}
+)
+set_target_properties(
+	mcts_connect_four_test 
+	PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts"
+)
+
+add_executable(random_evaluator_test test/random/random_evaluator_test.cpp)
+target_include_directories(
+	random_evaluator_test 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIRS}
+)
+set_target_properties(
+	random_evaluator_test 
+	PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/random"
+)
 
 add_executable(mutex_test test/mutex/mutex_test.cpp)
 target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
@@ -88,6 +135,8 @@ set_target_properties(nn_evaluator_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${P
 add_dependencies(nn_evaluator_test generate_evaluator_test_data)
 
 ##############################
+target_link_libraries(connect_four_example nlohmann_json::nlohmann_json)
+
 add_dependencies(connect_four_test gtest)
 add_dependencies(connect_four_test gmock)
 target_link_libraries(connect_four_test gtest_main gmock_main)
@@ -99,6 +148,18 @@ target_link_libraries(connect_four_tensorflow_test gtest_main gmock_main TensorF
 add_dependencies(mcts_test gtest)
 add_dependencies(mcts_test gmock)
 target_link_libraries(mcts_test gtest_main gmock_main)
+
+add_dependencies(random_evaluator_test gtest)
+add_dependencies(random_evaluator_test gmock)
+target_link_libraries(random_evaluator_test gtest_main gmock_main)
+
+add_dependencies(mcts_search_test gtest)
+add_dependencies(mcts_search_test gmock)
+target_link_libraries(mcts_search_test gtest_main gmock_main nlohmann_json::nlohmann_json)
+
+add_dependencies(mcts_connect_four_test gtest)
+add_dependencies(mcts_connect_four_test gmock)
+target_link_libraries(mcts_connect_four_test gtest_main gmock_main nlohmann_json::nlohmann_json)
 
 add_dependencies(mutex_test gtest)
 add_dependencies(mutex_test gmock)
@@ -136,6 +197,21 @@ add_test(
 add_test(
 	NAME mcts_test
 	COMMAND mcts_test
+)
+
+add_test(
+	NAME random_evaluator_test
+	COMMAND random_evaluator_test
+)
+
+add_test(
+	NAME mcts_search_test
+	COMMAND mcts_search_test
+)
+
+add_test(
+	NAME mcts_connect_four_test
+	COMMAND mcts_connect_four_test
 )
 
 add_test (
