@@ -18,13 +18,24 @@ print(f"Using tensorflow version {tf.__version__}")
 graph = tf.Graph()
 
 input_data = np.zeros(shape=(7, 7, 6, 2), dtype=np.float32)
+test_policy_labels = np.zeros(shape=(7, 7), dtype=np.float32)
+test_value_labels = np.zeros(shape=(7))
+
+n_training_epochs = 3
 
 for i in range(7):
     input_data[i, i, 0, 0] = 1.0
 
 with graph.as_default():
+
     input = tf.placeholder(
         dtype=tf.float32, shape=[None, 7, 6, 2], name="input"
+    )
+    policy_labels = tf.placeholder(
+        dtype=tf.float32, shape=[None, 7], name="policy_labels"
+    )
+    value_labels = tf.placeholder(
+        dtype=tf.float32, shape=[None], name="value_labels"
     )
     conv0_filters = tf.Variable(
         [
@@ -36,13 +47,10 @@ with graph.as_default():
         name="conv0_filters",
         dtype=tf.float32,
     )
-    print(conv0_filters.shape)
     conv0 = tf.nn.conv2d(input, conv0_filters, 1, "SAME")
-    print(conv0.shape)
     max_pool0 = tf.nn.max_pool2d(
         conv0, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME"
     )
-    print(max_pool0.shape)
     flat = tf.reshape(max_pool0, [-1, 12], name="flat")
 
     dense_value = tf.Variable([[1.0] for _ in range(12)], dtype=tf.float32)
@@ -51,17 +59,31 @@ with graph.as_default():
     )
     value = tf.matmul(flat, dense_value)
     value = tf.reshape(value, shape=[-1], name="value")
-    policy = tf.matmul(flat, dense_policy, name="policy")
-
-with tf.Session(graph=graph) as session:
-    session.run(tf.global_variables_initializer())
-    output_data = session.run([value, policy], feed_dict={input: input_data})
-    tf.saved_model.simple_save(
-        session,
-        os.path.join(save_dir, "model"),
-        inputs={"input": input},
-        outputs={"value": value, "policy": policy},
+    policy_logits = tf.matmul(flat, dense_policy, name="policy_logits")
+    policy = tf.nn.softmax(policy_logits, name="policy")
+    loss = tf.reduce_mean(
+        tf.nn.softmax_cross_entropy_with_logits(
+            logits=policy_logits, labels=policy_labels
+        )
+        + tf.nn.l2_loss(value - value_labels),
+        name="loss",
     )
+    optimizer = tf.train.GradientDescentOptimizer(0.1)
+    train = optimizer.minimize(loss, name="train")
+
+    saver = tf.compat.v1.train.Saver()
+
+    with tf.Session(graph=graph) as session:
+        session.run(tf.global_variables_initializer())
+
+        print("Generating inference data")
+        output_data = session.run(
+            [value, policy], feed_dict={input: input_data}
+        )
+
+        print("Saving model")
+        saver.export_meta_graph(filename=os.path.join(model_dir, "graph.pb"))
+        saver.save(session, save_path=os.path.join(model_dir, "model"))
 
 with open(os.path.join(save_dir, "data.json"), "w") as f:
     f.write(

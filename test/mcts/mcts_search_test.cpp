@@ -3,41 +3,42 @@
 
 #define TEST_FRIENDS \
 	friend class SelectNode_Default_Test; \
+	friend class ExpandAndBackpropagateNode_Default_Test; \
 	friend class SelectNodes_Default_Test; \
 	friend class EvaluateNodes_Default_Test; \
 	friend class ExpandAndBackpropagateNodes_Default_Test; \
 	friend class Search_Default_Test; \
-	friend class Search_CheckSearchTree_Test;
+	friend class MultithreadedSearch_CheckSearchTree_Test; \
+	friend class Search_CheckSearchTree_Test; \
+	friend class WaitingForEvaluation_Default_Test;
 
 
-#include "oaz/games/board.hpp"
 #include "oaz/games/connect_four.hpp"
 #include "oaz/random/random_evaluator.hpp"
-#include "oaz/mcts/search.hpp"
+#include "oaz/mcts/mcts_search.hpp"
 #include "oaz/mcts/search_node.hpp" 
 #include "oaz/mcts/selection.hpp"
 #include "oaz/mcts/search_node_serialisation.hpp"
 
 #include <iostream>
 #include <queue>
+#include <thread>
 #include <vector>
 
 using namespace std;
 using namespace oaz::mcts;
 using namespace oaz::games;
 
-using Board = ArrayBoard3D<float, 7, 6, 2>;
-using Game = ConnectFour<Board>;
-using Move = typename ConnectFour<Board>::move_t;
-using Node = SearchNode<Game::move_t>;
-using GamesContainer = vector<Game>;
-using Evaluator = RandomEvaluator<Game, GamesContainer>;
-using GameSearch = Search<Game, Evaluator>;
+using Game = ConnectFour;
+using Move = typename ConnectFour::Move;
+using Node = SearchNode<Game::Move>;
 
+using Evaluator = RandomEvaluator<Game, SafeQueueNotifier>;
+using GameSearch = MCTSSearch<Game, Evaluator>;
 template <class Node>
 bool checkSearchTree(Node* node) {
 	size_t n_visits = node->getNVisits();
-	bool correct = true;
+	bool overall_correct = true;
 	
 	if(!node->isLeaf()) {
 		bool correct_children = true;
@@ -50,131 +51,83 @@ bool checkSearchTree(Node* node) {
 
 		}
 		
-		correct = (n_visits == (n_children_visits + 1)) && correct_children;
+		if(!correct_children)
+			std::cout << "Incorrect children at " << node << std::endl;
+		bool correct = (n_visits == (n_children_visits + 1));
+		if(!correct)
+			std::cout << "Incorrect node at " << node << "; n_children_visits " << n_children_visits << "; n_visits " << n_visits << std::endl;
+
+		overall_correct = correct && correct_children;
 	}
 
-	return correct; 
+	return overall_correct; 
+}
+
+void search_until_done(GameSearch* search) {
+	while(!search->done()) 
+		search->work();
 }
 
 namespace oaz::mcts {
 	TEST (Instantiation, Default) {
-		Board board;
-		GamesContainer games(1, Game(board));
-		Evaluator evaluator(&games);
-
-		Board board2;
-		Game game(board2);
-
-		GameSearch(1, game, &evaluator);
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator());
+		Game game;
+		GameSearch(game, shared_evaluator_ptr, 1, 1);
 	}
 
 
 	TEST (SelectNode, Default) {
-		Board board;
-		GamesContainer games(1, Game(board));
-		Evaluator evaluator(&games);
-		
-		Board board2;
-		Game game(board2);
-		
-		GameSearch search (1, game, &evaluator); 
-
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator());
+		Game game;
+		GameSearch search(game, shared_evaluator_ptr, 1, 1);
 		search.selectNode(0);
 	}
-	
-	TEST (SelectNodes, Default) {
-		Board board;
-		GamesContainer games(1, Game(board));
-		Evaluator evaluator(&games);
-		
-		Board board2;
-		Game game(board2);
-		
-		GameSearch search (1, game, &evaluator); 
 
-		search.selectNodes();
-
-		ASSERT_TRUE(search.m_selection_q.empty());
-
-		ASSERT_EQ(search.m_evaluation_q.front(), 0);
-	}
-	TEST (EvaluateNodes, Default) {
-		Board board;
-		GamesContainer games(1, Game(board));
-		Evaluator evaluator(&games);
+	TEST (ExpandAndBackpropagateNode, Default) {
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator());
+		Game game;
+		GameSearch search(game, shared_evaluator_ptr, 1, 1);
 		
-		Board board2;
-		Game game(board2);
-		
-		GameSearch search (1, game, &evaluator); 
-
 		search.selectNode(0);
-		search.evaluateNodes();
+		search.expandAndBackpropagateNode(0);
 	}
 	
-	TEST (ExpandAndBackpropagateNodes, Default) {
-		Board board;
-		GamesContainer games(1, Game(board));
-		Evaluator evaluator(&games);
-		
-		Board board2;
-		Game game(board2);
-		
-		GameSearch search (1, game, &evaluator); 
-
+	TEST (WaitingForEvaluation, Default) {
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator());
+		Game game;
+		GameSearch search(game, shared_evaluator_ptr, 1, 1);
+		ASSERT_FALSE(search.waitingForEvaluation());
 		search.selectNode(0);
-		search.evaluateNodes();
-		search.expandAndBackpropagateNodes();
-
-		ASSERT_EQ(search.m_root.getNChildren(), 7);
-		ASSERT_EQ(search.m_root.getNVisits(), 1);
-	}
-	
-	TEST (Search, Default) {
-		Board board;
-		GamesContainer games(1, Game(board));
-		Evaluator evaluator(&games);
-		
-		Board board2;
-		Game game(board2);
-		
-		GameSearch search (1, game, &evaluator); 
-		
-		for(int i=0; i!=100; ++i) {
-			search.search(1);
-			ASSERT_TRUE(search.m_game_evaluator->getGame(0) == game);
-		}
+		ASSERT_TRUE(search.waitingForEvaluation());
 	}
 	
 	TEST (Search, CheckSearchTree) {
-		Board board;
-		GamesContainer games(1, Game(board));
-		Evaluator evaluator(&games);
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator());
+		Game game;
+		GameSearch search (game, shared_evaluator_ptr, 1, 100); 
+	
+		while(!search.done())
+			search.work();
 		
-		Board board2;
-		Game game(board2);
-		
-		GameSearch search (1, game, &evaluator); 
-		
-		search.search(100);
-
+		ASSERT_EQ(search.getTreeRoot()->getNVisits(), 100);
 		ASSERT_TRUE(checkSearchTree(&search.m_root));
 	}
 	
-	TEST (Search, GetTreeRoot) {
-		Board board;
-		GamesContainer games(1, Game(board));
-		Evaluator evaluator(&games);
-		
-		Board board2;
-		Game game(board2);
-		
-		GameSearch search (1, game, &evaluator); 
+	TEST (MultithreadedSearch, CheckSearchTree) {
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator());
+		Game game;
+		GameSearch search (game, shared_evaluator_ptr, 2, 1000); 
 
-		search.search(1000);
-		
-		Node* root = search.getTreeRoot();		
+		std::vector<std::thread> threads;
+		for(size_t i=0; i!=2; ++i) 
+			threads.push_back(std::thread(&search_until_done, &search));
 
-		std::cout << serialiseTreeToJson<Move>(root) << std::endl;
+		for(size_t i=0; i!=2; ++i)
+			threads[i].join();
+		
+		Node* root = search.getTreeRoot();
+
+		ASSERT_EQ(root->getNVisits(), 1000);
+		ASSERT_TRUE(checkSearchTree(root));
 	}
 }

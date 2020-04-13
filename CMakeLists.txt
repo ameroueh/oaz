@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -fsanitize=address")
 
 ###############################
 # Add GoogleTest
@@ -24,8 +25,8 @@ set(TensorFlow_BAZEL_GENFILES ${PROJECT_SOURCE_DIR}/extern/tensorflow/bazel-genf
 ##############################
 # Define libraries
 find_package(Boost 1.67.0 REQUIRED COMPONENTS system)
-
 find_package(TensorFlow REQUIRED)
+find_package(Threads REQUIRED)
 
 ##############################
 # Flags
@@ -40,29 +41,75 @@ TensorFlow_REQUIRE_SOURCE()
 
 ##############################
 # Define tests
+add_custom_target(
+	generate_example_model
+	COMMAND 
+	python3 ${PROJECT_SOURCE_DIR}/data/generate_connect_four_model.py ${PROJECT_BINARY_DIR}/examples
+)
+
+add_custom_target(
+	generate_az_search_model
+	COMMAND 
+	python3 ${PROJECT_SOURCE_DIR}/data/generate_connect_four_model.py ${PROJECT_BINARY_DIR}/test/az/
+)
+
 add_executable(connect_four_example examples/connect_four_example.cpp)
 target_include_directories(
 	connect_four_example 
 	PRIVATE 
-	${PROJECT_SOURCE_DIR}/include 
+	${PROJECT_SOURCE_DIR}
 	${Boost_INCLUDE_DIRS}
 )
+
 set_target_properties(connect_four_example PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/examples")
 
+add_executable(connect_four_nn_example examples/connect_four_nn_example.cpp)
+target_include_directories(
+	connect_four_nn_example 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR}
+	${Boost_INCLUDE_DIRS}
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+set_target_properties(connect_four_nn_example PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/examples")
+
+add_dependencies(connect_four_nn_example generate_example_model)
+
+add_executable(connect_four_self_play_example examples/connect_four_self_play_example.cpp)
+target_include_directories(
+	connect_four_self_play_example 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR}
+	${Boost_INCLUDE_DIRS}
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+set_target_properties(connect_four_self_play_example PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/examples")
+
+add_dependencies(connect_four_self_play_example generate_example_model)
+
+add_executable(board_test test/board/board_test.cpp)
+target_include_directories(board_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(board_test PRIVATE ${Boost_INCLUDE_DIRS})
+set_target_properties(board_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/board")
+
 add_executable(connect_four_test test/connect_four/connect_four_test.cpp)
-target_include_directories(connect_four_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(connect_four_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_include_directories(connect_four_test PRIVATE ${Boost_INCLUDE_DIRS})
 set_target_properties(connect_four_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/connect_four")
 
 add_executable(mcts_test test/mcts/mcts_test.cpp)
-target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(mcts_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts")
 
 add_executable(mcts_search_test test/mcts/mcts_search_test.cpp)
 target_include_directories(
 	mcts_search_test 
 	PRIVATE 
-	${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIRS}
+	${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS}
 )
 set_target_properties(
 	mcts_search_test 
@@ -70,11 +117,70 @@ set_target_properties(
 	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts"
 )
 
+add_executable(az_search_test test/az/az_search_test.cpp)
+target_include_directories(
+	az_search_test 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+
+set_target_properties(
+	az_search_test 
+	PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/az"
+)
+
+add_dependencies(az_search_test generate_az_search_model)
+
+add_executable(az_search_pool_test test/az/az_search_pool_test.cpp)
+target_include_directories(
+	az_search_pool_test 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+
+set_target_properties(
+	az_search_pool_test 
+	PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/az"
+)
+
+add_dependencies(az_search_pool_test generate_az_search_model)
+
+add_executable(self_play_test test/az/self_play_test.cpp)
+target_include_directories(
+	self_play_test 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+
+set_target_properties(
+	self_play_test 
+	PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/az"
+)
+
+add_dependencies(self_play_test generate_az_search_model)
+
+
 add_executable(mcts_connect_four_test test/mcts/mcts_connect_four_test.cpp)
+
 target_include_directories(
 	mcts_connect_four_test 
 	PRIVATE 
-	${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIRS}
+	${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS}
 )
 set_target_properties(
 	mcts_connect_four_test 
@@ -86,7 +192,7 @@ add_executable(random_evaluator_test test/random/random_evaluator_test.cpp)
 target_include_directories(
 	random_evaluator_test 
 	PRIVATE 
-	${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIRS}
+	${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS}
 )
 set_target_properties(
 	random_evaluator_test 
@@ -95,11 +201,11 @@ set_target_properties(
 )
 
 add_executable(mutex_test test/mutex/mutex_test.cpp)
-target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(mutex_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mutex")
 
 add_executable(queue_test test/queue/queue_test.cpp)
-target_include_directories(queue_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(queue_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(queue_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/queue")
 
 add_executable(tensorflow_test test/tensorflow/tensorflow_test.cpp)
@@ -107,14 +213,14 @@ target_include_directories(tensorflow_test PRIVATE TensorFlow_DEP ${TensorFlow_S
 set_target_properties(tensorflow_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/tensorflow")
 
 add_executable(json_test test/json/json_test.cpp)
-target_include_directories(json_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(json_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(json_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/json")
 
 add_executable(connect_four_tensorflow_test test/connect_four/connect_four_tensorflow_test.cpp)
 target_include_directories(
 	connect_four_tensorflow_test 
 	PRIVATE 
-	${PROJECT_SOURCE_DIR}/include 
+	${PROJECT_SOURCE_DIR}
 	${Boost_INCLUDE_DIRS} 
 	TensorFlow_DEP 
 	${TensorFlow_SOURCE_DIR} 
@@ -124,18 +230,53 @@ set_target_properties(connect_four_tensorflow_test PROPERTIES RUNTIME_OUTPUT_DIR
 
 
 add_custom_target(
-	generate_evaluator_test_data 
+	generate_evaluator_test_data
 	COMMAND 
-	python3 ${PROJECT_SOURCE_DIR}/test/neural_network/generate_evaluator_test_data.py ${PROJECT_BINARY_DIR}/test/neural_network/evaluator
+	python3 ${PROJECT_SOURCE_DIR}/data/generate_connect_four_model.py ${PROJECT_BINARY_DIR}/test/neural_network
 )
 
-add_executable(nn_evaluator_test test/neural_network/nn_evaluator_test.cpp src/oaz/neural_network/nn_evaluator.cpp src/oaz/neural_network/nn_testing.cpp)
-target_include_directories(nn_evaluator_test PRIVATE ${PROJECT_SOURCE_DIR}/include TensorFlow_DEP ${TensorFlow_SOURCE_DIR} ${TensorFlow_BAZEL_GENFILES})
-set_target_properties(nn_evaluator_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/neural_network/evaluator")
+add_custom_target(
+	generate_trainer_test_data
+	COMMAND 
+	python3 ${PROJECT_SOURCE_DIR}/data/generate_connect_four_model_for_trainer.py ${PROJECT_BINARY_DIR}/test/neural_network
+)
+
+add_executable(nn_evaluator_test test/neural_network/nn_evaluator_test.cpp)
+target_include_directories(
+	nn_evaluator_test 
+	PRIVATE 
+	${Boost_INCLUDE_DIRS}
+	${PROJECT_SOURCE_DIR} 
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+set_target_properties(nn_evaluator_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/neural_network")
 add_dependencies(nn_evaluator_test generate_evaluator_test_data)
 
+add_executable(nn_trainer_test test/neural_network/nn_trainer_test.cpp)
+target_include_directories(
+	nn_trainer_test 
+	PRIVATE 
+	${Boost_INCLUDE_DIRS}
+	${PROJECT_SOURCE_DIR} 
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+set_target_properties(nn_trainer_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/neural_network")
+add_dependencies(nn_trainer_test generate_trainer_test_data)
+
 ##############################
-target_link_libraries(connect_four_example nlohmann_json::nlohmann_json)
+target_link_libraries(connect_four_example nlohmann_json::nlohmann_json Threads::Threads)
+
+target_link_libraries(connect_four_nn_example nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
+
+target_link_libraries(connect_four_self_play_example nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
+
+add_dependencies(board_test gtest)
+add_dependencies(board_test gmock)
+target_link_libraries(board_test gtest_main gmock_main)
 
 add_dependencies(connect_four_test gtest)
 add_dependencies(connect_four_test gmock)
@@ -151,11 +292,24 @@ target_link_libraries(mcts_test gtest_main gmock_main)
 
 add_dependencies(random_evaluator_test gtest)
 add_dependencies(random_evaluator_test gmock)
-target_link_libraries(random_evaluator_test gtest_main gmock_main)
+target_link_libraries(random_evaluator_test gtest_main gmock_main Threads::Threads)
 
 add_dependencies(mcts_search_test gtest)
 add_dependencies(mcts_search_test gmock)
-target_link_libraries(mcts_search_test gtest_main gmock_main nlohmann_json::nlohmann_json)
+target_link_libraries(mcts_search_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads)
+
+add_dependencies(az_search_test gtest)
+add_dependencies(az_search_test gmock)
+target_link_libraries(az_search_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
+
+add_dependencies(az_search_pool_test gtest)
+add_dependencies(az_search_pool_test gmock)
+target_link_libraries(az_search_pool_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
+
+add_dependencies(self_play_test gtest)
+add_dependencies(self_play_test gmock)
+target_link_libraries(self_play_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
+
 
 add_dependencies(mcts_connect_four_test gtest)
 add_dependencies(mcts_connect_four_test gmock)
@@ -179,11 +333,21 @@ target_link_libraries(json_test PRIVATE gtest_main gmock_main nlohmann_json::nlo
 
 add_dependencies(nn_evaluator_test gtest)
 add_dependencies(nn_evaluator_test gmock)
-target_link_libraries(nn_evaluator_test gtest_main gmock_main TensorFlow_DEP nlohmann_json::nlohmann_json)
+target_link_libraries(nn_evaluator_test gtest_main gmock_main TensorFlow_DEP nlohmann_json::nlohmann_json Threads::Threads)
+
+add_dependencies(nn_trainer_test gtest)
+add_dependencies(nn_trainer_test gmock)
+target_link_libraries(nn_trainer_test gtest_main gmock_main TensorFlow_DEP nlohmann_json::nlohmann_json Threads::Threads)
 #############################
 # Make test runnable with
 # $ make test
 enable_testing()
+
+add_test(
+	NAME board_test
+	COMMAND board_test
+)
+
 add_test(
 	NAME connect_four_test
 	COMMAND connect_four_test
@@ -210,6 +374,21 @@ add_test(
 )
 
 add_test(
+	NAME az_search_test
+	COMMAND az_search_test
+)
+
+add_test(
+	NAME az_search_pool_test
+	COMMAND az_search_pool_test
+)
+
+add_test(
+	NAME self_play_test
+	COMMAND self_play_test
+)
+
+add_test(
 	NAME mcts_connect_four_test
 	COMMAND mcts_connect_four_test
 )
@@ -232,7 +411,13 @@ add_test (
 add_test (
 	NAME nn_evaluator_test
 	COMMAND nn_evaluator_test
-	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/neural_network/evaluator
+	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/neural_network
+)
+
+add_test (
+	NAME nn_trainer_test
+	COMMAND nn_trainer_test
+	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/neural_network
 )
 
 ############################
