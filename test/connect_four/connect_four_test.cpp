@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <string>
 
-#include "oaz/games/board.hpp"
 #include "oaz/games/connect_four.hpp"
 
 #include "gtest/gtest.h"
@@ -11,37 +10,30 @@
 using namespace oaz::games;
 using namespace testing;
 
-using Board = ArrayBoard3D<float, 7, 6, 2>;
-
-void playFromString(ConnectFour<Board>* game, std::string sMoves) {
+void playFromString(ConnectFour* game, std::string sMoves) {
 	for(char& c : sMoves)
 		game->playMove(c - '0');
 }
 
 TEST (InstantiationTest, Default) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 }
 
 TEST (InstantiationTest, AvailableMoves) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_THAT(*(game.availableMoves()), ElementsAre(0, 1, 2, 3, 4, 5, 6));
 }
 
 
 TEST (ResetTest, Default) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	game.reset();
 }
 
 
 TEST (PlayTest, DoUndo) {
-	Board board;
-	Board board2;
-	ConnectFour<Board> game(board);
-	ConnectFour<Board> game2(board2);
+	ConnectFour game;
+	ConnectFour game2;
 
 	auto available_moves = *(game.availableMoves());
 	
@@ -54,8 +46,7 @@ TEST (PlayTest, DoUndo) {
 }
 
 TEST (PlayTest, VerticalVictory) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(&game, "0103040");
 	ASSERT_TRUE(game.Finished());
@@ -63,8 +54,7 @@ TEST (PlayTest, VerticalVictory) {
 }
 
 TEST (PlayTest, VerticalVictoryPlayer2) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(&game, "60103040");
 	ASSERT_TRUE(game.Finished());
@@ -72,8 +62,7 @@ TEST (PlayTest, VerticalVictoryPlayer2) {
 }
 
 TEST (PlayTest, HorizontalVictory) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(&game, "051625364");
 	ASSERT_TRUE(game.Finished());
@@ -81,8 +70,7 @@ TEST (PlayTest, HorizontalVictory) {
 }
 
 TEST (PlayTest, HorizontalVictoryPlayer2) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(&game, "6051625364");
 	ASSERT_TRUE(game.Finished());
@@ -91,8 +79,7 @@ TEST (PlayTest, HorizontalVictoryPlayer2) {
 
 
 TEST (PlayTest, FirstDiagonalVictory) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(&game, "12234334544");
 	ASSERT_TRUE(game.Finished());
@@ -100,8 +87,7 @@ TEST (PlayTest, FirstDiagonalVictory) {
 }
 
 TEST (PlayTest, FirstDiagonalVictoryPlayer2) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(&game, "612234334544");
 	ASSERT_TRUE(game.Finished());
@@ -110,8 +96,7 @@ TEST (PlayTest, FirstDiagonalVictoryPlayer2) {
 
 
 TEST (PlayTest, SecondDiagonalVictory) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(&game, "54432332122");
 	ASSERT_TRUE(game.Finished());
@@ -119,8 +104,7 @@ TEST (PlayTest, SecondDiagonalVictory) {
 }
 
 TEST (PlayTest, SecondDiagonalVictoryPlayer2) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(&game, "654432332122");
 	ASSERT_TRUE(game.Finished());
@@ -128,8 +112,7 @@ TEST (PlayTest, SecondDiagonalVictoryPlayer2) {
 }
 
 TEST (PlayTest, TieTest) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(
 		&game, 
@@ -141,32 +124,27 @@ TEST (PlayTest, TieTest) {
 }
 
 TEST (CopyTest, Default) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	playFromString(
 		&game, 
 		"021302130213465640514455662233001144552636"
 	);
-	Board board2;
-	ConnectFour<Board> game2(game, board2);
+	ConnectFour game2(game);
 	ASSERT_TRUE(game == game2);
 }
 
 TEST (GetCurrentPlayer, Default) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	ASSERT_EQ(game.getCurrentPlayer(), 0);
 	game.playMove(0);
 	ASSERT_EQ(game.getCurrentPlayer(), 1);
 }
 
 TEST (Set, Default) {
-	Board board;
-	ConnectFour<Board> game(board);
+	ConnectFour game;
 	playFromString(&game, "0123");
 	
-	Board board2;
-	ConnectFour<Board> game2(board2);
+	ConnectFour game2;
 	game2.set(game);
 
 	ASSERT_TRUE(game == game2);	

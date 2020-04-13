@@ -1,3 +1,5 @@
+#include <random>
+
 #include "oaz/games/board.hpp"
 #include "oaz/games/connect_four.hpp"
 
@@ -93,16 +95,19 @@ TEST (AddValue, Default) {
 }
 
 TEST (Selection, Default) {
+
+	 std::mt19937 generator;
+
 	 Node node;
 	 node.incrementNVisits();
 	 node.addChild(0, 1.);
 	 node.getChild(0)->incrementNVisits();
 	 node.addChild(1, 1.);
 	 node.getChild(1)->incrementNVisits();
-	 ASSERT_EQ(0, getBestChildIndex<Node>(&node));
+	 ASSERT_EQ(0, getBestChildIndex<Node>(&node, generator));
 
 	 node.getChild(1)->addValue(1.);
-	 ASSERT_EQ(1, getBestChildIndex<Node>(&node));
+	 ASSERT_EQ(1, getBestChildIndex<Node>(&node, generator));
 }
 
 TEST (GetParent, Default) {
