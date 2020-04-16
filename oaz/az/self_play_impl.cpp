@@ -1,28 +1,50 @@
 #include "oaz/az/self_play.hpp"
 #include <iostream>
+#include <stack>
 
 
-template <class Game, class Evaluator, class SearchPool>
-oaz::az::SelfPlay<Game, Evaluator, SearchPool>::SelfPlay(
+template <class Game, class Evaluator, class SearchPool, class Trainer>
+oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::SelfPlay(
 	SharedEvaluatorPointer evaluator,
 	SharedSearchPoolPointer search_pool): 
 	m_search_pool(search_pool),
-	m_evaluator(evaluator) {
+	m_evaluator(evaluator),
+	m_trainer(nullptr) {
 		initialise();
 }
 
-template <class Game, class Evaluator, class SearchPool>
-void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::initialise() {}
+template <class Game, class Evaluator, class SearchPool, class Trainer>
+oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::SelfPlay(
+	SharedEvaluatorPointer evaluator,
+	SharedSearchPoolPointer search_pool,
+	SharedTrainerPointer trainer): 
+	m_search_pool(search_pool),
+	m_evaluator(evaluator),
+	m_trainer(trainer) {
+		initialise();
+}
 
-template <class Game, class Evaluator, class SearchPool>
-void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::playGame(
+template <class Game, class Evaluator, class SearchPool, class Trainer>
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::initialise() {}
+
+template <class Game, class Evaluator, class SearchPool, class Trainer>
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGame(
 	size_t n_simulations_per_move,
 	size_t search_batch_size
 ) {
 
 	Game game;
-	
+
+	std::vector<typename Game::Board> boards;
+	std::vector<typename Game::Policy> policies;
+	std::vector<typename Game::Value> values;
+
+
+	size_t n_moves = 0;
 	while(!game.Finished()) {
+
+		boards.push_back(game.getBoard());
+
 		AZSearch<Game, Evaluator> search(
 			game, 
 			m_evaluator,
@@ -31,15 +53,55 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::playGame(
 		);
 
 		m_search_pool->performSearch(&search);
+		
+		typename Game::Policy policy;
+		search.getVisitCounts(policy);
+		normaliseVisitCounts(policy);
+		typename Game::Move move = sampleMove(policy);
 
-		typename Game::Move best_move = search.getBestMove();
+		policies.push_back(policy);
 
-		game.playMove(best_move);
+		game.playMove(move);
+		++n_moves;
+	}
+
+	float score = game.score(); // 1 if first player won, -1 if second player won, 0 for a draw
+
+	for(size_t i=0; i!=n_moves; ++i)
+		values.push_back(score);
+
+	if (m_trainer) {
+		for(size_t i=0; i!=n_moves; ++i) {
+			m_trainer->addTrainingExample(
+				&boards[i],
+				&values[i],
+				&policies[i]
+			);
+		}
+
 	}
 }
 
-template <class Game, class Evaluator, class SearchPool>
-void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::playGames(
+template <class Game, class Evaluator, class SearchPool, class Trainer>
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::normaliseVisitCounts(typename Game::Policy& visit_counts) {
+	float total = 0.;
+	for(size_t i=0; i!=visit_counts.size(); ++i)
+		total += visit_counts[i];
+	
+	for(size_t i=0; i!=visit_counts.size(); ++i)
+		total /= total;
+}
+
+template <class Game, class Evaluator, class SearchPool, class Trainer>
+typename Game::Move oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::sampleMove(typename Game::Policy& visit_counts) {
+	std::discrete_distribution<typename Game::Move> distribution(visit_counts.begin(), visit_counts.end());
+	typename Game::Move move = distribution(m_generator);
+	return move;
+}
+
+
+template <class Game, class Evaluator, class SearchPool, class Trainer>
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGames(
 	size_t n_games,
 	size_t n_simulations_per_move,
 	size_t search_batch_size

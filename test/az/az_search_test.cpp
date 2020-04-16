@@ -121,4 +121,23 @@ namespace oaz::mcts {
 		ASSERT_EQ(search.getTreeRoot()->getNVisits(), 10000);
 		ASSERT_TRUE(checkSearchTree(search.getTreeRoot()));
 	}
+	
+	TEST (MultithreadedSearch, WithNoiseCheckSearchTree) {
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(16));
+		shared_evaluator_ptr->load_model("model");
+		Game game;
+		
+		GameSearch search(game, shared_evaluator_ptr, 16, 10000, 0.25, 0.3);
+
+		vector<std::thread> threads;
+		for(size_t i=0; i!=2; ++i) {
+			threads.push_back(std::thread(&search_until_done, &search, shared_evaluator_ptr.get()));
+		}
+		for(size_t i=0; i!=2; ++i) {
+			threads[i].join();
+		}
+
+		ASSERT_EQ(search.getTreeRoot()->getNVisits(), 10000);
+		ASSERT_TRUE(checkSearchTree(search.getTreeRoot()));
+	}
 }
