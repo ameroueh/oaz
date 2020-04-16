@@ -101,7 +101,7 @@ void NNTrainer<Game>::trainFromBatch(Batch* batch) {
 		{"train"},
 		&outputs
 	));
-	std::cout << "Training batch loss: " << *(outputs[0].flat<float>().data()) << std::endl;
+	/* std::cout << "Training batch loss: " << *(outputs[0].flat<float>().data()) << std::endl; */
 }
 
 template <class Game>

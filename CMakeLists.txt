@@ -174,6 +174,25 @@ set_target_properties(
 
 add_dependencies(self_play_test generate_az_search_model)
 
+add_executable(az_training_test test/az/az_training_test.cpp)
+target_include_directories(
+	az_training_test 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+
+set_target_properties(
+	az_training_test 
+	PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/az"
+)
+
+add_dependencies(az_training_test generate_az_search_model)
+
 
 add_executable(mcts_connect_four_test test/mcts/mcts_connect_four_test.cpp)
 
@@ -310,6 +329,9 @@ add_dependencies(self_play_test gtest)
 add_dependencies(self_play_test gmock)
 target_link_libraries(self_play_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
 
+add_dependencies(az_training_test gtest)
+add_dependencies(az_training_test gmock)
+target_link_libraries(az_training_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
 
 add_dependencies(mcts_connect_four_test gtest)
 add_dependencies(mcts_connect_four_test gmock)
@@ -386,6 +408,11 @@ add_test(
 add_test(
 	NAME self_play_test
 	COMMAND self_play_test
+)
+
+add_test(
+	NAME az_training_test
+	COMMAND az_training_test
 )
 
 add_test(

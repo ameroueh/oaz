@@ -44,6 +44,7 @@ namespace oaz::mcts {
 			using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
 
 			Search(const Game&, SharedEvaluatorPointer, size_t, size_t);
+			Search(const Game&, SharedEvaluatorPointer, size_t, size_t, float, float);
 			
 			bool done() const;
 			bool work();
@@ -111,6 +112,11 @@ namespace oaz::mcts {
 			size_t getNCompletions() const;
 
 			size_t getEvaluatorIndex(size_t) const;
+
+			void addDirichletNoise(Policy&);
+
+			float m_noise_epsilon;
+			float m_noise_alpha;
 	};
 
 }

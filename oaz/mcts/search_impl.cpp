@@ -106,9 +106,28 @@ void Search<Game, Evaluator, Selector>::pause(size_t index) {
 	m_paused_nodes_lock.unlock();
 }
 
+template <class Game, class Evaluator, class Selector>
+void Search<Game, Evaluator, Selector>::addDirichletNoise(Policy& policy) {
+	if(m_noise_epsilon > 0.001) {
+		Policy noise;
+		float total_noise = 0.;
+		for(size_t i=0; i!=noise.size(); ++i) {
+			std::gamma_distribution<float> distribution(m_noise_alpha, 1.);
+			noise[i] = distribution(m_generator);
+			total_noise += noise[i];
+		}
+		for(size_t i=0; i!=policy.size(); ++i) {
+			policy[i] = (1 - m_noise_epsilon) * policy[i] + m_noise_epsilon * noise[i] / total_noise;
+		}
+	}
+}
 
 template <class Game, class Evaluator, class Selector>
 void Search<Game, Evaluator, Selector>::expandNode(Node* node, Game& game, Policy& policy) {
+
+	if(node->isRoot())
+		addDirichletNoise(policy);
+
 	node->lock();
 	auto available_moves = game.availableMoves();
 	for(auto move : *available_moves) {
@@ -237,7 +256,33 @@ Search<Game, Evaluator, Selector>::Search(
 	m_games(batch_size),
 	m_values(batch_size),
 	m_policies(batch_size),
-	m_evaluator(evaluator) {
+	m_evaluator(evaluator),
+	m_noise_epsilon(0.),
+	m_noise_alpha(1.) {
+	initialise(game);
+}
+
+template <class Game, class Evaluator, class Selector>
+Search<Game, Evaluator, Selector>::Search(
+	const Game& game, SharedEvaluatorPointer evaluator, 
+	size_t batch_size, 
+	size_t n_iterations,
+	float noise_epsilon,
+	float noise_alpha):
+	m_batch_size(batch_size),
+	m_n_iterations(n_iterations),
+	m_n_selections(0),
+	m_n_completions(0),
+	m_n_paused_nodes(0),
+	m_n_evaluation_requests(0),
+	m_nodes(batch_size),
+	m_paused_nodes(batch_size),
+	m_games(batch_size),
+	m_values(batch_size),
+	m_policies(batch_size),
+	m_evaluator(evaluator),
+	m_noise_epsilon(noise_epsilon),
+	m_noise_alpha(noise_alpha) {
 	initialise(game);
 }
 
