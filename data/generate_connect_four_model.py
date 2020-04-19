@@ -18,9 +18,6 @@ print(f"Using tensorflow version {tf.__version__}")
 graph = tf.Graph()
 
 input_data = np.zeros(shape=(7, 7, 6, 2), dtype=np.float32)
-test_policy_labels = np.zeros(shape=(7, 7), dtype=np.float32)
-test_value_labels = np.zeros(shape=(7))
-
 n_training_epochs = 3
 
 for i in range(7):
