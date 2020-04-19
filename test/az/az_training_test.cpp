@@ -71,7 +71,7 @@ namespace oaz::az {
 		shared_evaluator_ptr->load_model("model");
 		
 		SharedSearchPoolPointer  shared_search_pool_ptr(
-			new SearchPool(shared_evaluator_ptr, 1.)
+			new SearchPool(shared_evaluator_ptr, 0.2)
 		);
 
 		SharedTrainerPointer shared_trainer_ptr(new Trainer(16, 1));

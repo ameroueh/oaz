@@ -57,10 +57,12 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGame(
 		typename Game::Policy policy;
 		search.getVisitCounts(policy);
 		normaliseVisitCounts(policy);
-		typename Game::Move move = sampleMove(policy);
+	
+		std::vector<typename Game::Move>* available_moves = game.availableMoves();
+		typename Game::Move move = sampleMove(policy, available_moves);
 
 		policies.push_back(policy);
-
+		
 		game.playMove(move);
 		++n_moves;
 	}
@@ -93,10 +95,19 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::normaliseVisitCoun
 }
 
 template <class Game, class Evaluator, class SearchPool, class Trainer>
-typename Game::Move oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::sampleMove(typename Game::Policy& visit_counts) {
-	std::discrete_distribution<typename Game::Move> distribution(visit_counts.begin(), visit_counts.end());
-	typename Game::Move move = distribution(m_generator);
-	return move;
+typename Game::Move oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::sampleMove(typename Game::Policy& visit_counts, std::vector<typename Game::Move>* available_moves) {
+
+	std::vector<float> available_moves_visit_counts;
+	for(auto move : *available_moves)
+		available_moves_visit_counts.push_back(visit_counts[move]);
+	
+	std::discrete_distribution<size_t> distribution(
+		available_moves_visit_counts.begin(), 
+		available_moves_visit_counts.end()
+	);
+
+	size_t move_index = distribution(m_generator);
+	return (*available_moves)[move_index];
 }
 
 

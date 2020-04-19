@@ -2,6 +2,7 @@
 
 #include "oaz/games/connect_four.hpp"
 #include "boost/multi_array.hpp"
+#include <algorithm>
 
 
 using namespace oaz::games;
@@ -35,13 +36,11 @@ void ConnectFour::setCurrentPlayer(size_t current_player) {
 }
 
 void ConnectFour::initialise() {
-	/* std::cout << "Initialising game" << std::endl; */
 	for(Move i = 0; i != width; ++i) {
 		m_available_moves.push_back(i);
 		m_tokens_in_column[i] = 0;
 	}
 	resetBoard();
-	/* std::cout << "Game initialised" << std::endl; */
 
 }
 
@@ -62,6 +61,7 @@ void ConnectFour::resetBoard() {
 }
 
 void ConnectFour::playMove(Move move) {
+	
 	placeToken(move);
 	maybeDeclareVictory(move);
 	swapPlayers();

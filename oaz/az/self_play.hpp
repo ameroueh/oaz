@@ -37,7 +37,10 @@ namespace oaz::az {
 			void initialise();
 			void playGame(size_t, size_t);
 			void normaliseVisitCounts(typename Game::Policy&);
-			typename Game::Move sampleMove(typename Game::Policy&);
+			typename Game::Move sampleMove(
+				typename Game::Policy&,
+				std::vector<typename Game::Move>*
+			);
 
 			SharedSearchPoolPointer m_search_pool;
 			SharedEvaluatorPointer m_evaluator;
