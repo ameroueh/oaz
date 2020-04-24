@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -fsanitize=address")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address")
 
 ###############################
 # Add GoogleTest

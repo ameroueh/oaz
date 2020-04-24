@@ -26,7 +26,7 @@ namespace oaz::games {
 			static const size_t n_players = 2;
 			static const size_t NBoardDimensions = 3;
 
-			static std::initializer_list<long long int> getBoardDimensions() {return {7, 6, 2};}
+			static std::vector<long long int> getBoardDimensions() {return {7, 6, 2};}
 			static size_t getPolicySize() {
 				return 7;
 			}
