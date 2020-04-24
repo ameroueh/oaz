@@ -35,16 +35,16 @@ namespace oaz::nn {
 				m_values(boost::extents[size]),
 				m_policies(boost::extents[size]),
 				m_notifiers(boost::extents[size]) {
-					std::initializer_list<long long int> dimensions = Game::getBoardDimensions();
+					std::vector<long long int> dimensions = Game::getBoardDimensions();
 					m_element_size_bytes = std::accumulate(
 						dimensions.begin(), 
 						dimensions.end(), 
 						1,
-						std::multiplies<size_t>()
+						std::multiplies<long long int>()
 					) * sizeof(float);
 					
 					std::vector<long long int> tensor_dimensions = {(long long int) size};
-					tensor_dimensions.insert(tensor_dimensions.end(), dimensions);
+					tensor_dimensions.insert(tensor_dimensions.end(), dimensions.begin(), dimensions.end());
 					m_batch = tensorflow::Tensor(
 						tensorflow::DT_FLOAT,
 						tensorflow::TensorShape(tensor_dimensions)

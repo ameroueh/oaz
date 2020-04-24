@@ -143,7 +143,7 @@ bool ConnectFour::checkSecondDiagonalVictory(size_t i, size_t j, size_t player) 
 			break;
 		++counter;
 	}
-	for(size_t k = 0; (i + 1 + k < width) && (j - 1 >= k); ++k) {
+	for(size_t k = 0; (i + 1 + k < width) && (j >= k + 1); ++k) {
 		if (m_board[i + 1 + k][j - 1 - k][player] != BASE_TOKEN)
 			break;
 		++counter;

@@ -41,7 +41,7 @@ using namespace oaz::mcts;
 static const size_t N_SIMULATIONS_PER_MOVE = 40;
 static const size_t SEARCH_BATCH_SIZE = 16;
 static const size_t N_GAMES = 100;
-static const size_t N_WORKERS = 5;
+static const size_t N_WORKERS = 8;
 	
 void selfPlayGames(
 	SharedEvaluatorPointer shared_evaluator_ptr, 
@@ -67,14 +67,14 @@ void selfPlayGames(
 
 namespace oaz::az {
 	TEST (AZTrainingTest, MultiThreaded) {
-		SharedEvaluatorPointer shared_evaluator_ptr(new Evaluator(16));
+		SharedEvaluatorPointer shared_evaluator_ptr(new Evaluator(64));
 		shared_evaluator_ptr->load_model("model");
 		
 		SharedSearchPoolPointer  shared_search_pool_ptr(
 			new SearchPool(shared_evaluator_ptr, 0.2)
 		);
 
-		SharedTrainerPointer shared_trainer_ptr(new Trainer(16, 1));
+		SharedTrainerPointer shared_trainer_ptr(new Trainer(64, 1));
 		shared_trainer_ptr->load_model("model");
 
 		vector<std::thread> workers;

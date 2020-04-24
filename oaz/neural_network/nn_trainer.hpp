@@ -15,18 +15,19 @@ namespace oaz::nn {
 				m_current_index(0),
 				m_n_reads(0),
 				m_size(size) {
-					std::initializer_list<long long int> dimensions = Game::getBoardDimensions();
+					std::vector<long long int> dimensions = Game::getBoardDimensions();
 					m_board_size_bytes = std::accumulate(
 						dimensions.begin(), 
 						dimensions.end(), 
 						1,
-						std::multiplies<size_t>()
+						std::multiplies<long long int>()
 					) * sizeof(float);
+					
 					m_value_size_bytes = sizeof(float);
 					m_policy_size_bytes = Game::getPolicySize() * sizeof(float);
 					
 					std::vector<long long int> tensor_dimensions = {(long long int) size};
-					tensor_dimensions.insert(tensor_dimensions.end(), dimensions);
+					tensor_dimensions.insert(tensor_dimensions.end(), dimensions.begin(), dimensions.end());
 					m_board_batch = tensorflow::Tensor(
 						tensorflow::DT_FLOAT,
 						tensorflow::TensorShape(tensor_dimensions)
