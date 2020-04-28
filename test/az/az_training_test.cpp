@@ -2,6 +2,9 @@
 #include "gmock/gmock.h"
 
 #include "tensorflow/core/framework/tensor.h"
+
+
+#include "oaz/neural_network/model.hpp"
 #include "oaz/neural_network/nn_evaluator.hpp"
 #include "oaz/neural_network/nn_trainer.hpp"
 #include "oaz/games/connect_four.hpp"
@@ -15,7 +18,6 @@
 #include <thread>
 #include <vector>
 
-
 using namespace std;
 using namespace oaz::mcts;
 using namespace oaz::games;
@@ -23,6 +25,7 @@ using namespace oaz::games;
 using Game = ConnectFour;
 using Move = typename ConnectFour::Move;
 using Node = SearchNode<Move>;
+using Model = oaz::nn::Model;
 using Evaluator = NNEvaluator<Game, SafeQueueNotifier>;
 using GameSearch = AZSearch<Game, Evaluator>;
 using SearchPool = AZSearchPool<Game, Evaluator>;
@@ -32,16 +35,17 @@ using Value = typename Game::Value;
 using Trainer = NNTrainer<Game>;
 using SelfPlay = oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>;
 
+using SharedModelPointer = std::shared_ptr<Model>;
 using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
 using SharedSearchPoolPointer = std::shared_ptr<SearchPool>;
 using SharedTrainerPointer = std::shared_ptr<Trainer>;
 
 using namespace oaz::mcts;
 
-static const size_t N_SIMULATIONS_PER_MOVE = 40;
+static const size_t N_SIMULATIONS_PER_MOVE = 800;
 static const size_t SEARCH_BATCH_SIZE = 16;
-static const size_t N_GAMES = 100;
-static const size_t N_WORKERS = 8;
+static const size_t N_GAMES = 50;
+static const size_t N_WORKERS = 32;
 	
 void selfPlayGames(
 	SharedEvaluatorPointer shared_evaluator_ptr, 
@@ -67,24 +71,27 @@ void selfPlayGames(
 
 namespace oaz::az {
 	TEST (AZTrainingTest, MultiThreaded) {
-		SharedEvaluatorPointer shared_evaluator_ptr(new Evaluator(64));
-		shared_evaluator_ptr->load_model("model");
+		SharedModelPointer model(new Model());
+		model->Load("model");
 		
-		SharedSearchPoolPointer  shared_search_pool_ptr(
-			new SearchPool(shared_evaluator_ptr, 0.2)
+		SharedModelPointer model2(new Model());
+		model2->Load("model");
+
+		SharedEvaluatorPointer evaluator(new Evaluator(model, 64));
+		SharedSearchPoolPointer  search_pool(
+			new SearchPool(evaluator, 0.4)
 		);
 
-		SharedTrainerPointer shared_trainer_ptr(new Trainer(64, 1));
-		shared_trainer_ptr->load_model("model");
+		SharedTrainerPointer trainer(new Trainer(model2, 40, 20));
 
 		vector<std::thread> workers;
 		for(size_t i = 0; i != N_WORKERS; ++i) {
 			workers.push_back(
 				std::thread(
 					&selfPlayGames,
-					shared_evaluator_ptr,
-					shared_search_pool_ptr,
-					shared_trainer_ptr,
+					evaluator,
+					search_pool,
+					trainer,
 					N_GAMES,
 					N_SIMULATIONS_PER_MOVE,
 					SEARCH_BATCH_SIZE

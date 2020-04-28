@@ -1,18 +1,16 @@
-#ifndef __NN_TRAINER_H__
-#define __NN_TRAINER_H__
+#ifndef __NN_SAVER_H__
+#define __NN_SAVER_H__
 
 #include "tensorflow/core/framework/tensor.h"
-#include "oaz/neural_network/model.hpp"
 #include "oaz/neural_network/training_batch.hpp"
 
 namespace oaz::nn {
-
+	
 	template <class Game>
-	class NNTrainer {
+	class NNSaver {
 		public:
-			using SharedModelPointer = std::shared_ptr<Model>;
 
-			NNTrainer(SharedModelPointer, size_t, size_t);
+			NNTrainer(size_t, size_t);
 			void addTrainingExample(
 				typename Game::Board*,
 				typename Game::Value*,

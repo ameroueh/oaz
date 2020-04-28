@@ -91,7 +91,7 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::normaliseVisitCoun
 		total += visit_counts[i];
 	
 	for(size_t i=0; i!=visit_counts.size(); ++i)
-		total /= total;
+		visit_counts[i] /= total;
 }
 
 template <class Game, class Evaluator, class SearchPool, class Trainer>
@@ -118,6 +118,7 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGames(
 	size_t search_batch_size
 ) {
 	for(size_t i=0; i != n_games; ++i) {
+		std::cout << "Playing game " << i << std::endl;
 		playGame(n_simulations_per_move, search_batch_size);
 	}
 }
