@@ -15,11 +15,12 @@
 #include "stdint.h"
 
 #include "tensorflow/core/framework/tensor.h"
-#include "tensorflow/core/public/session.h"
-#include "tensorflow/cc/saved_model/loader.h"
 
 #include "oaz/queue/queue.hpp"
+#include "oaz/mutex/mutex.hpp"
 #include "boost/multi_array.hpp"
+
+#include "oaz/neural_network/model.hpp"
 
 namespace oaz::nn {
 	template <class Game, class Notifier>	
@@ -127,8 +128,9 @@ namespace oaz::nn {
 	template <class Game, class Notifier> 
 	class NNEvaluator { 
 		public: 
-			NNEvaluator(size_t);
-			void load_model(std::string);
+			using SharedModelPointer = std::shared_ptr<Model>;
+			
+			NNEvaluator(SharedModelPointer, size_t);
 			void requestEvaluation(
 				Game*, 
 				typename Game::Value*,
@@ -138,16 +140,16 @@ namespace oaz::nn {
 			void forceEvaluation();
 			void addNewBatch();
 		private:
+			
 			using Batch = EvaluationBatch<Game, Notifier>;
 			using UniqueBatchPointer = std::unique_ptr<Batch>;
-			using UniqueSessionPointer = std::unique_ptr<tensorflow::Session>;
 			
-			void initialise();
 			void evaluateBatch(Batch*);
+			
 			
 			oaz::queue::SafeDeque<UniqueBatchPointer> m_batches;
 			oaz::mutex::SpinlockMutex m_requests_lock;
-			UniqueSessionPointer m_session;
+			SharedModelPointer m_model;
 			size_t m_batch_size;
 	};
 }

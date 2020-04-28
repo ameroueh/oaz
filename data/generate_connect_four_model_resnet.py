@@ -170,22 +170,26 @@ with tf.Session() as session:
     output1 = resnet_layer(inputs=input, strides=1, num_filters=16)
     output2 = resnet_layer(inputs=output1, strides=1, num_filters=32)
     output3 = resnet_layer(inputs=output2, strides=1, num_filters=64)
+    output4 = resnet_layer(inputs=output3, strides=1, num_filters=64)
+    output5 = resnet_layer(inputs=output4, strides=1, num_filters=64)
 
-    body = Flatten()(output3)
+    body = Flatten()(output5)
+    dense1 = Dense(units=256, activation="relu")(body)
+    dense2 = Dense(units=256, activation="relu")(dense1)
 
-    policy_logits = Dense(units=7)(body)
+    policy_logits = Dense(units=7)(dense2)
 
-    value = tf.nn.sigmoid(Dense(units=1)(body))
+    value = 2 * tf.nn.sigmoid(Dense(units=1)(dense2)) - 1
     value = tf.reshape(value, shape=[-1], name="value")
     policy = tf.nn.softmax(policy_logits, name="policy")
     loss = tf.reduce_mean(
         tf.nn.softmax_cross_entropy_with_logits(
             logits=policy_logits, labels=policy_labels
         )
-        + tf.nn.l2_loss(value - value_labels),
+        + tf.math.squared_difference(value, value_labels),
         name="loss",
     )
-    optimizer = tf.train.GradientDescentOptimizer(0.1)
+    optimizer = tf.train.GradientDescentOptimizer(0.01)
     train = optimizer.minimize(loss, name="train")
     session.run(tf.global_variables_initializer())
 

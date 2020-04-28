@@ -3,9 +3,6 @@
 #include "stdint.h"
 
 #include "tensorflow/core/framework/tensor.h"
-#include "tensorflow/core/public/session.h"
-#include "tensorflow/core/protobuf/meta_graph.pb.h"
-
 #include "oaz/neural_network/nn_evaluator.hpp"
 
 #include <iostream>
@@ -18,10 +15,9 @@ using namespace tensorflow;
 using namespace std;
 
 template <class Game, class Notifier>
-NNEvaluator<Game, Notifier>::NNEvaluator(size_t batch_size): 
+NNEvaluator<Game, Notifier>::NNEvaluator(SharedModelPointer model, size_t batch_size): 
 	m_batch_size(batch_size), 
-	m_session(nullptr) {
-	initialise();
+	m_model(model) {
 }
 
 template <class Game, class Notifier>
@@ -30,32 +26,6 @@ void NNEvaluator<Game, Notifier>::addNewBatch() {
 	m_batches.push_back(std::move(batch));
 }
 
-
-template <class Game, class Notifier>
-void NNEvaluator<Game, Notifier>::initialise() {
-	tensorflow::SessionOptions options;
-	tensorflow::Session* session;
-  	TF_CHECK_OK(tensorflow::NewSession(options, &session));
-	m_session.reset(session);
-	addNewBatch();
-}
-
-template <class Game, class Notifier>
-void NNEvaluator<Game, Notifier>::load_model(std::string model_path) {
-	
-	MetaGraphDef graph_def;
-	ReadBinaryProto(Env::Default(), model_path + "/graph.pb", &graph_def);
-	m_session->Create(graph_def.graph_def());
-	
-	Tensor checkpoint_path_tensor(DT_STRING, TensorShape());
-	checkpoint_path_tensor.scalar<std::string>()() = model_path + "/model";
-	m_session->Run(
-		{{graph_def.saver_def().filename_tensor_name(), checkpoint_path_tensor},},
-		{},
-		{graph_def.saver_def().restore_op_name()},
-		nullptr
-	);
-}
 
 template <class Game, class Notifier>
 void NNEvaluator<Game, Notifier>::requestEvaluation(
@@ -115,12 +85,13 @@ void NNEvaluator<Game, Notifier>::requestEvaluation(
 template <class Game, class Notifier>
 void NNEvaluator<Game, Notifier>::evaluateBatch(Batch* batch) {
 	std::vector<tensorflow::Tensor> outputs;
-	TF_CHECK_OK(m_session->Run(
+
+	m_model->Run(
 		{{"input:0", batch->getBatchTensor()}}, 
 		{"value", "policy"},
 		{},
 		&outputs
-	));
+	);
 
  	auto values_map = outputs[0].template tensor<float, 1>();
  	auto policies_map = outputs[1].template tensor<float, 2>();

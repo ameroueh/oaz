@@ -10,6 +10,7 @@
 
 #include "oaz/neural_network/nn_testing.hpp"
 #include "oaz/neural_network/nn_evaluator.hpp"
+#include "oaz/neural_network/model.hpp"
 #include "oaz/games/connect_four.hpp"
 #include "oaz/queue/queue.hpp"
 
@@ -30,6 +31,9 @@ using namespace tensorflow;
 using namespace oaz::nn;
 using json = nlohmann::json;
 using Game = ConnectFour;
+using Model = oaz::nn::Model;
+
+using SharedModelPointer = std::shared_ptr<Model>;
 
 class DummyNotifier {
 	public:
@@ -75,23 +79,23 @@ namespace oaz::nn {
 	}
 
 	TEST (NNEvaluator, Instantiation) {
+		
+		SharedModelPointer model(new Model());
+		model->Load("model");
 
-		Evaluator evaluator(64);
-	}
-
-	TEST (NNEvaluator, LoadModel) {
-
-		Evaluator evaluator(64);
-		evaluator.load_model("model");
+		Evaluator evaluator(model, 64);
 	}
 
 	TEST (NNEvaluator, requestEvaluation) {
+		
+		SharedModelPointer model(new Model());
+		model->Load("model");
 		
 		DummyNotifier notifier;
 		typename Game::Value value;
 		typename Game::Policy policy;
 
-		Evaluator evaluator(64);
+		Evaluator evaluator(model, 64);
 		Game game;
 		evaluator.requestEvaluation(
 			&game,
@@ -103,12 +107,14 @@ namespace oaz::nn {
 
 	TEST (NNEvaluator, forceEvaluation) {
 		
+		SharedModelPointer model(new Model());
+		model->Load("model");
+		
 		DummyNotifier notifier;
 		typename Game::Value value;
 		typename Game::Policy policy;
 
-		Evaluator evaluator(64);
-		evaluator.load_model("model");
+		Evaluator evaluator(model, 64);
 		Game game;
 		evaluator.requestEvaluation(
 			&game,
@@ -119,10 +125,41 @@ namespace oaz::nn {
 
 		evaluator.forceEvaluation();
 	}
+	
+	/* TEST (NNEvaluator, playMoves) { */
+		
+	/* 	SharedModelPointer model(new Model()); */
+	/* 	model->Load("model"); */
+		
+	/* 	DummyNotifier notifier; */
+	/* 	typename Game::Value value; */
+	/* 	typename Game::Policy policy; */
+
+	/* 	Evaluator evaluator(model, 64); */
+	/* 	Game game; */
+		
+	/* 	game.playMove(0); */
+	/* 	game.playMove(2); */
+	/* 	game.playMove(3); */
+
+	/* 	evaluator.requestEvaluation( */
+	/* 		&game, */
+	/* 		&value, */
+	/* 		&policy, */
+	/* 		notifier */
+	/* 	); */
+
+	/* 	evaluator.forceEvaluation(); */
+
+	/* 	std::cout << "Value is " << value << std::endl; */
+	/* } */
 
 	TEST (Inference, CheckResults) {
-		Evaluator evaluator(64);
-		evaluator.load_model("model");
+		
+		SharedModelPointer model(new Model());
+		model->Load("model");
+		
+		Evaluator evaluator(model, 64);
 
 		std::ifstream ifs("data.json");
 		json data = json::parse(ifs);
@@ -150,11 +187,13 @@ namespace oaz::nn {
 	}
 	
 	TEST (Inference, DelayedEvaluation) {
+		
+		SharedModelPointer model(new Model());
+		model->Load("model");
 
 		size_t N_REQUESTS = 100;
 		size_t BATCH_SIZE = 16;
-		Evaluator evaluator(BATCH_SIZE);
-		evaluator.load_model("model");
+		Evaluator evaluator(model, BATCH_SIZE);
 
 		std::ifstream ifs("data.json");
 		json data = json::parse(ifs);
@@ -218,9 +257,11 @@ namespace oaz::nn {
 		size_t N_REQUESTS = 100;
 		size_t BATCH_SIZE = 16;
 		size_t N_THREADS = 2;
+		
+		SharedModelPointer model(new Model());
+		model->Load("model");
 
-		Evaluator evaluator(BATCH_SIZE);
-		evaluator.load_model("model");
+		Evaluator evaluator(model, BATCH_SIZE);
 
 		std::ifstream ifs("data.json");
 		json data = json::parse(ifs);
@@ -268,9 +309,11 @@ namespace oaz::nn {
 		size_t N_REQUESTS = 100;
 		size_t BATCH_SIZE = 16;
 		size_t N_THREADS = 2;
+		
+		SharedModelPointer model(new Model());
+		model->Load("model");
 
-		Evaluator evaluator(BATCH_SIZE);
-		evaluator.load_model("model");
+		Evaluator evaluator(model, BATCH_SIZE);
 
 		std::ifstream ifs("data.json");
 		json data = json::parse(ifs);
