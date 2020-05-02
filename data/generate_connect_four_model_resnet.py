@@ -189,7 +189,7 @@ with tf.Session() as session:
         + tf.math.squared_difference(value, value_labels),
         name="loss",
     )
-    optimizer = tf.train.GradientDescentOptimizer(0.01)
+    optimizer = tf.train.GradientDescentOptimizer(0.1)
     train = optimizer.minimize(loss, name="train")
     session.run(tf.global_variables_initializer())
 

@@ -22,20 +22,31 @@ namespace oaz::az {
 			using SharedTrainerPointer = std::shared_ptr<Trainer>;
 			SelfPlay(
 				SharedEvaluatorPointer, 
-				SharedSearchPoolPointer
+				SharedSearchPoolPointer,
+				size_t,
+				size_t,
+				size_t,
+				size_t
 			);
 			
 			SelfPlay(
 				SharedEvaluatorPointer, 
 				SharedSearchPoolPointer,
-				SharedTrainerPointer
+				SharedTrainerPointer,
+				size_t,
+				size_t,
+				size_t,
+				size_t
 			);
 
-			void playGames(size_t, size_t, size_t);
-		
+			std::string getStatus();
+			void playGames();
+
 		private:
 			void initialise();
+		
 			void playGame(size_t, size_t);
+			void work();
 			void normaliseVisitCounts(typename Game::Policy&);
 			typename Game::Move sampleMove(
 				typename Game::Policy&,
@@ -45,6 +56,12 @@ namespace oaz::az {
 			SharedSearchPoolPointer m_search_pool;
 			SharedEvaluatorPointer m_evaluator;
 			SharedTrainerPointer m_trainer;
+
+			size_t m_n_games;
+			size_t m_n_simulations_per_move;
+			size_t m_search_batch_size;
+			size_t m_n_workers;
+			std::atomic<size_t> m_counter;
 
 			std::mt19937 m_generator;
 	};

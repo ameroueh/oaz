@@ -40,6 +40,8 @@ namespace oaz::mcts {
 			AZSearchPool(SharedEvaluatorPointer, float); // OK
 			void performSearch(Search*); // OK
 
+			std::string getStatus() const;
+
 			~AZSearchPool();
 
 		private:
@@ -67,8 +69,8 @@ namespace oaz::mcts {
 			std::atomic<size_t> m_n_searches;
 
 			oaz::mutex::SpinlockMutex m_workers_lock;
-			oaz::mutex::SpinlockMutex m_waiting_searches_lock;
-			std::unordered_set<Search*> m_waiting_searches;
+			/* oaz::mutex::SpinlockMutex m_waiting_searches_lock; */
+			/* std::unordered_set<Search*> m_waiting_searches; */
 			std::vector<std::thread> m_workers;
 
 	};

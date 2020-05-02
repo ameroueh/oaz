@@ -11,6 +11,7 @@
 #include <vector>
 #include <queue>
 #include <iostream>
+#include <future>
 
 #include "stdint.h"
 
@@ -131,26 +132,37 @@ namespace oaz::nn {
 			using SharedModelPointer = std::shared_ptr<Model>;
 			
 			NNEvaluator(SharedModelPointer, size_t);
+			~NNEvaluator();
 			void requestEvaluation(
 				Game*, 
 				typename Game::Value*,
 				typename Game::Policy*,
 				Notifier
 			);
-			void forceEvaluation();
 			void addNewBatch();
+
+			std::string getStatus() const;
 		private:
-			
 			using Batch = EvaluationBatch<Game, Notifier>;
 			using UniqueBatchPointer = std::unique_ptr<Batch>;
 			
 			void evaluateBatch(Batch*);
-			
+			void forceEvaluation();
+
+			void monitor(std::future<void>);
 			
 			oaz::queue::SafeDeque<UniqueBatchPointer> m_batches;
 			oaz::mutex::SpinlockMutex m_requests_lock;
 			SharedModelPointer m_model;
 			size_t m_batch_size;
+
+			std::atomic<size_t> m_n_evaluation_requests;
+			std::atomic<size_t> m_n_evaluations;
+
+			std::thread m_worker;
+			std::promise<void> m_exit_signal;
+
+			std::atomic<bool> m_evaluation_completed;
 	};
 }
 
