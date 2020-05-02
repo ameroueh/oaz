@@ -21,13 +21,11 @@ AZSearch<Game, Evaluator>* SearchContext<Game, Evaluator>::getSearch() {
 
 template <class Game, class Evaluator>
 SearchContext<Game, Evaluator>::~SearchContext() {
-	/* std::cout << "Destroying" << std::endl; */
 	{
 		std::lock_guard<std::mutex> lock(*m_mutex);
 		*m_status = true;
 	}
 	m_condition_variable->notify_one();
-	/* std::cout << "Destroyed" << std::endl; */
 }
 
 template <class Game, class Evaluator>
@@ -54,15 +52,10 @@ void AZSearchPool<Game, Evaluator>::performSearch(Search* search) {
 	updateNRequiredWorkers();
 	maybeAddWorkers();
 	
-	/* std::cout << "Waiting" << std::endl; */
 	lock.lock();
-	/* std::cout << "Locked" << std::endl; */
 	while(!status) {
-		/* std::cout << "Status" << status << std::endl; */
 		cond_variable.wait(lock);
 	}
-
-	/* std::cout << "Finished" << std::endl; */
 	decrementNSearches();
 	updateNRequiredWorkers();
 }
@@ -145,20 +138,19 @@ void AZSearchPool<Game, Evaluator>::work() {
 			m_search_contexts_dq.pop_front();
 			Search* search = shared_search_context_ptr->getSearch();
 			if(!search->done()) {
-				/* std::cout << "Search not done" << std::endl; */
 				m_search_contexts_dq.push_back(shared_search_context_ptr);
 				m_search_contexts_dq.unlock();
-				m_waiting_searches_lock.lock();
-				if(search->waitingForEvaluation()) {
-					/* std::cout << "Waiting for evaluation" << std::endl; */
-					m_waiting_searches.insert(search);	
-					maybeForceEvaluation();
-				} else {
-					/* std::cout << "Not waiting for evaluation" << std::endl; */
-					m_waiting_searches.erase(search);
-					m_waiting_searches_lock.unlock();
+				if(!search->waitingForEvaluation())
 					search->work();
-				}
+				/* m_waiting_searches_lock.lock(); */
+				/* if(search->waitingForEvaluation()) { */
+				/* 	m_waiting_searches.insert(search); */	
+				/* 	maybeForceEvaluation(); */
+				/* } else { */
+				/* 	m_waiting_searches.erase(search); */
+				/* 	m_waiting_searches_lock.unlock(); */
+				/* 	search->work(); */
+				/* } */
 			} else m_search_contexts_dq.unlock(); 
 		} else m_search_contexts_dq.unlock();
 	}
@@ -177,20 +169,24 @@ bool AZSearchPool<Game, Evaluator>::maybeStopWorking() {
 	return false;
 }
 
-template <class Game, class Evaluator>
-void AZSearchPool<Game, Evaluator>::maybeForceEvaluation() {
-	if(m_waiting_searches.size() >= getNSearches()) {
-		m_waiting_searches_lock.unlock();
-		/* std::cout << "Forcing evaluation" << std::endl; */
-		m_evaluator->forceEvaluation();
-	} else m_waiting_searches_lock.unlock();
-}
+/* template <class Game, class Evaluator> */
+/* void AZSearchPool<Game, Evaluator>::maybeForceEvaluation() { */
+/* 	if(m_waiting_searches.size() >= getNSearches()) { */
+/* 		m_waiting_searches_lock.unlock(); */
+/* 		m_evaluator->forceEvaluation(); */
+/* 	} else m_waiting_searches_lock.unlock(); */
+/* } */
 
 template <class Game, class Evaluator>
 size_t AZSearchPool<Game, Evaluator>::getNSearches() const {
 	return m_n_searches;
 }
 
+
+template <class Game, class Evaluator>
+std::string AZSearchPool<Game, Evaluator>::getStatus() const {
+	return "Search pool status: " + std::to_string(m_n_active_workers) + " active workers";
+}
 
 template <class Game, class Evaluator>
 size_t AZSearchPool<Game, Evaluator>::getNActiveWorkers() const {

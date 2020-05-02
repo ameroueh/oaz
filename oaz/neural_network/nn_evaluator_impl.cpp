@@ -9,6 +9,7 @@
 #include <queue>
 #include <thread>
 #include <memory>
+#include <future>
 
 using namespace oaz::nn;
 using namespace tensorflow;
@@ -17,13 +18,42 @@ using namespace std;
 template <class Game, class Notifier>
 NNEvaluator<Game, Notifier>::NNEvaluator(SharedModelPointer model, size_t batch_size): 
 	m_batch_size(batch_size), 
-	m_model(model) {
+	m_model(model),
+	m_n_evaluation_requests(0),
+	m_n_evaluations(0) {
+		std::future<void> future_exit_signal = m_exit_signal.get_future();
+		m_worker = std::thread(	
+			&NNEvaluator::monitor,
+			this,
+			std::move(future_exit_signal)
+		);
 }
+
+template <class Game, class Notifier>
+NNEvaluator<Game, Notifier>::~NNEvaluator() {
+	m_exit_signal.set_value();
+	m_worker.join();
+}
+
+template <class Game, class Notifier>
+void NNEvaluator<Game, Notifier>::monitor(std::future<void> future_exit_signal) {
+	while(future_exit_signal.wait_for(std::chrono::milliseconds(10)) == std::future_status::timeout) {
+		if(!m_evaluation_completed) {
+			forceEvaluation();
+		}
+		m_evaluation_completed = false;
+	}
+};
 
 template <class Game, class Notifier>
 void NNEvaluator<Game, Notifier>::addNewBatch() {
 	UniqueBatchPointer batch(new Batch(m_batch_size));
 	m_batches.push_back(std::move(batch));
+}
+
+template <class Game, class Notifier>
+std::string NNEvaluator<Game, Notifier>::getStatus() const {
+	return "Evaluator status: " + std::to_string(m_n_evaluations) + "/" + std::to_string(m_n_evaluation_requests);
 }
 
 
@@ -86,12 +116,14 @@ template <class Game, class Notifier>
 void NNEvaluator<Game, Notifier>::evaluateBatch(Batch* batch) {
 	std::vector<tensorflow::Tensor> outputs;
 
+	m_n_evaluation_requests++;
 	m_model->Run(
 		{{"input:0", batch->getBatchTensor()}}, 
 		{"value", "policy"},
 		{},
 		&outputs
 	);
+	m_n_evaluations++;
 
  	auto values_map = outputs[0].template tensor<float, 1>();
  	auto policies_map = outputs[1].template tensor<float, 2>();

@@ -7,11 +7,17 @@ template <class Game>
 NNTrainer<Game>::NNTrainer(SharedModelPointer model, size_t batch_size, size_t epoch_size): 
 	m_batch_size(batch_size),
 	m_epoch_size(epoch_size),
-	m_model(model) {}
+	m_model(model),
+	m_last_training_loss(0) {}
 
 template <class Game>
 size_t NNTrainer<Game>::getEpochSize() const {
 	return m_epoch_size;
+}
+
+template <class Game>
+std::string NNTrainer<Game>::getStatus() const {
+	return "Training progress: " + std::to_string(m_last_training_loss);
 }
 
 template <class Game>
@@ -73,7 +79,7 @@ void NNTrainer<Game>::trainFromBatch(Batch* batch) {
 		{"train"},
 		&outputs
 	);
-	std::cout << "Training batch loss: " << *(outputs[0].flat<float>().data()) << std::endl;
+	m_last_training_loss = *(outputs[0].flat<float>().data());
 }
 
 template <class Game>

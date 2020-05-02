@@ -12,6 +12,7 @@
 #include "oaz/mcts/az_search.hpp"
 #include "oaz/mcts/az_search_pool.hpp"
 #include "oaz/az/self_play.hpp"
+#include "oaz/logging/monitor.hpp"
 
 #include <iostream>
 #include <queue>
@@ -34,40 +35,20 @@ using Board = typename Game::Board;
 using Value = typename Game::Value;
 using Trainer = NNTrainer<Game>;
 using SelfPlay = oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>;
+using Monitor = oaz::logging::Monitor<::SelfPlay, Trainer, Evaluator, SearchPool>;
 
 using SharedModelPointer = std::shared_ptr<Model>;
 using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
 using SharedSearchPoolPointer = std::shared_ptr<SearchPool>;
 using SharedTrainerPointer = std::shared_ptr<Trainer>;
+using SharedSelfPlayPointer = std::shared_ptr<::SelfPlay>;
 
 using namespace oaz::mcts;
 
 static const size_t N_SIMULATIONS_PER_MOVE = 800;
 static const size_t SEARCH_BATCH_SIZE = 16;
-static const size_t N_GAMES = 50;
+static const size_t N_GAMES = 640;
 static const size_t N_WORKERS = 32;
-	
-void selfPlayGames(
-	SharedEvaluatorPointer shared_evaluator_ptr, 
-	SharedSearchPoolPointer shared_search_pool_ptr,
-	SharedTrainerPointer shared_trainer_ptr,
-	size_t n_games,
-	size_t n_simulations_per_move,
-	size_t search_batch_size) {
-	
-	::SelfPlay self_play(
-		shared_evaluator_ptr,
-		shared_search_pool_ptr,
-		shared_trainer_ptr
-	);
-	
-	self_play.playGames(
-		n_games, 
-		n_simulations_per_move,
-		search_batch_size
-	); 
-
-}
 
 namespace oaz::az {
 	TEST (AZTrainingTest, MultiThreaded) {
@@ -79,27 +60,26 @@ namespace oaz::az {
 
 		SharedEvaluatorPointer evaluator(new Evaluator(model, 64));
 		SharedSearchPoolPointer  search_pool(
-			new SearchPool(evaluator, 0.4)
+			new SearchPool(evaluator, (2. + 0.01) / 32.)
 		);
 
 		SharedTrainerPointer trainer(new Trainer(model2, 40, 20));
-
-		vector<std::thread> workers;
-		for(size_t i = 0; i != N_WORKERS; ++i) {
-			workers.push_back(
-				std::thread(
-					&selfPlayGames,
+		
+	
+		SharedSelfPlayPointer self_play(
+			new ::SelfPlay(
 					evaluator,
 					search_pool,
 					trainer,
 					N_GAMES,
 					N_SIMULATIONS_PER_MOVE,
-					SEARCH_BATCH_SIZE
-				)
-			);
-		}
-
-		for(size_t i=0; i!=N_WORKERS; ++i) 
-			workers[i].join();
+					SEARCH_BATCH_SIZE,
+					N_WORKERS
+			)
+		);
+		
+		Monitor monitor(self_play, trainer, evaluator, search_pool);
+		
+		self_play->playGames();
 	}
 }

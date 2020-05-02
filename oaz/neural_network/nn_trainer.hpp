@@ -1,6 +1,8 @@
 #ifndef __NN_TRAINER_H__
 #define __NN_TRAINER_H__
 
+#include <iostream>
+
 #include "tensorflow/core/framework/tensor.h"
 #include "oaz/neural_network/model.hpp"
 #include "oaz/neural_network/training_batch.hpp"
@@ -19,6 +21,8 @@ namespace oaz::nn {
 				typename Game::Policy*
 			);
 
+			std::string getStatus() const;
+
 		private:
 			using Batch = TrainingBatch<Game>;
 			using UniqueBatchPointer = std::unique_ptr<Batch>;
@@ -33,6 +37,8 @@ namespace oaz::nn {
 			SharedModelPointer m_model;
 			size_t m_batch_size;
 			size_t m_epoch_size;
+
+			float m_last_training_loss;
 	};
 }
 
