@@ -16,7 +16,7 @@ namespace oaz::nn {
 
 	class Model {
 		public:
-			Model(): m_session(nullptr), m_run_semaphore(1) {
+			Model(): m_session(nullptr), m_run_semaphore(6) {
 				initialise();	
 			}
 

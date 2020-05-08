@@ -29,12 +29,18 @@ SearchContext<Game, Evaluator>::~SearchContext() {
 }
 
 template <class Game, class Evaluator>
-AZSearchPool<Game, Evaluator>::AZSearchPool(SharedEvaluatorPointer evaluator, float n_workers_per_search):
+AZSearchPool<Game, Evaluator>::AZSearchPool(SharedEvaluatorPointer evaluator, size_t n_workers):
 	m_evaluator(evaluator),
-	m_n_workers_per_search(n_workers_per_search),
-	m_n_active_workers(0),
-	m_n_required_workers(0),
-	m_n_searches(0) {
+	m_n_workers(n_workers),
+	/* m_n_active_workers(0), */
+	/* m_n_required_workers(0), */
+	m_n_searches(0),
+	m_maybe_stop_working(false),
+	m_n_iterations(n_workers, 0) {
+
+	for(size_t i=0; i!=m_n_workers; ++i) {
+		m_workers.push_back(std::thread(&AZSearchPool<Game, Evaluator>::work, this, i));
+	}
 }
 
 
@@ -49,15 +55,15 @@ void AZSearchPool<Game, Evaluator>::performSearch(Search* search) {
 	
 	incrementNSearches();
 	addSearch(search, &cond_variable, &status, &mutex);	
-	updateNRequiredWorkers();
-	maybeAddWorkers();
+	/* updateNRequiredWorkers(); */
+	/* maybeAddWorkers(); */
 	
 	lock.lock();
 	while(!status) {
 		cond_variable.wait(lock);
 	}
 	decrementNSearches();
-	updateNRequiredWorkers();
+	/* updateNRequiredWorkers(); */
 }
 
 template <class Game, class Evaluator>
@@ -86,51 +92,51 @@ void AZSearchPool<Game, Evaluator>::decrementNSearches() {
 	m_n_searches--;
 }
 
-template <class Game, class Evaluator>
-void AZSearchPool<Game, Evaluator>::updateNRequiredWorkers() {
-	if(getNSearches() == 0) 
-		m_n_required_workers = 0;
-	else 
-		m_n_required_workers = static_cast<size_t>(
-			std::max(
-				static_cast<float>(m_n_searches)*m_n_workers_per_search,
-				1.0f
-			)
-		);
-}
+/* template <class Game, class Evaluator> */
+/* void AZSearchPool<Game, Evaluator>::updateNRequiredWorkers() { */
+/* 	if(getNSearches() == 0) */ 
+/* 		m_n_required_workers = 0; */
+/* 	else */ 
+/* 		m_n_required_workers = static_cast<size_t>( */
+/* 			std::max( */
+/* 				static_cast<float>(m_n_searches)*m_n_workers_per_search, */
+/* 				1.0f */
+/* 			) */
+/* 		); */
+/* } */
 
-template <class Game, class Evaluator>
-size_t AZSearchPool<Game, Evaluator>::getNRequiredWorkers() const {
-	return m_n_required_workers;
-}
+/* template <class Game, class Evaluator> */
+/* size_t AZSearchPool<Game, Evaluator>::getNRequiredWorkers() const { */
+/* 	return m_n_required_workers; */
+/* } */
 
-template <class Game, class Evaluator>
-void AZSearchPool<Game, Evaluator>::incrementNActiveWorkers(size_t n_workers) {
-	m_n_active_workers += n_workers;
-}
+/* template <class Game, class Evaluator> */
+/* void AZSearchPool<Game, Evaluator>::incrementNActiveWorkers(size_t n_workers) { */
+/* 	m_n_active_workers += n_workers; */
+/* } */
 
-template <class Game, class Evaluator>
-void AZSearchPool<Game, Evaluator>::decrementNActiveWorkers() {
-	m_n_active_workers--;
-}
+/* template <class Game, class Evaluator> */
+/* void AZSearchPool<Game, Evaluator>::decrementNActiveWorkers() { */
+/* 	m_n_active_workers--; */
+/* } */
 
-template <class Game, class Evaluator>
-void AZSearchPool<Game, Evaluator>::maybeAddWorkers() {
-	m_workers_lock.lock();
-	size_t n_extra_workers = getNRequiredWorkers() - getNActiveWorkers();
-	if(n_extra_workers > 0)
-		incrementNActiveWorkers(n_extra_workers);
-	m_workers_lock.unlock();
+/* template <class Game, class Evaluator> */
+/* void AZSearchPool<Game, Evaluator>::maybeAddWorkers() { */
+/* 	m_workers_lock.lock(); */
+/* 	size_t n_extra_workers = getNRequiredWorkers() - getNActiveWorkers(); */
+/* 	if(n_extra_workers > 0) */
+/* 		incrementNActiveWorkers(n_extra_workers); */
+/* 	m_workers_lock.unlock(); */
 	
-	for(size_t i=0; i!= n_extra_workers; ++i) {
-		m_workers_lock.lock();
-		m_workers.push_back(std::thread(&AZSearchPool<Game, Evaluator>::work, this));
-		m_workers_lock.unlock();
-	}
-}
+/* 	for(size_t i=0; i!= n_extra_workers; ++i) { */
+/* 		m_workers_lock.lock(); */
+/* 		m_workers.push_back(std::thread(&AZSearchPool<Game, Evaluator>::work, this)); */
+/* 		m_workers_lock.unlock(); */
+/* 	} */
+/* } */
 
 template<class Game, class Evaluator>
-void AZSearchPool<Game, Evaluator>::work() {
+void AZSearchPool<Game, Evaluator>::work(size_t i) {
 	while(!maybeStopWorking()) {
 		m_search_contexts_dq.lock();
 		if (!m_search_contexts_dq.empty()) {
@@ -142,31 +148,23 @@ void AZSearchPool<Game, Evaluator>::work() {
 				m_search_contexts_dq.unlock();
 				if(!search->waitingForEvaluation())
 					search->work();
-				/* m_waiting_searches_lock.lock(); */
-				/* if(search->waitingForEvaluation()) { */
-				/* 	m_waiting_searches.insert(search); */	
-				/* 	maybeForceEvaluation(); */
-				/* } else { */
-				/* 	m_waiting_searches.erase(search); */
-				/* 	m_waiting_searches_lock.unlock(); */
-				/* 	search->work(); */
-				/* } */
 			} else m_search_contexts_dq.unlock(); 
 		} else m_search_contexts_dq.unlock();
+		++m_n_iterations[i];
 	}
 }
 
 template <class Game, class Evaluator>
 bool AZSearchPool<Game, Evaluator>::maybeStopWorking() {
-	
-	m_workers_lock.lock();
-	if(getNRequiredWorkers() < getNActiveWorkers()) {
-		decrementNActiveWorkers();
-		m_workers_lock.unlock();
-		return true;
-	}
-	else m_workers_lock.unlock();
-	return false;
+	return m_maybe_stop_working;	
+	/* m_workers_lock.lock(); */
+	/* if(getNRequiredWorkers() < getNActiveWorkers()) { */
+	/* 	decrementNActiveWorkers(); */
+	/* 	m_workers_lock.unlock(); */
+	/* 	return true; */
+	/* } */
+	/* else m_workers_lock.unlock(); */
+	/* return false; */
 }
 
 /* template <class Game, class Evaluator> */
@@ -185,16 +183,21 @@ size_t AZSearchPool<Game, Evaluator>::getNSearches() const {
 
 template <class Game, class Evaluator>
 std::string AZSearchPool<Game, Evaluator>::getStatus() const {
-	return "Search pool status: " + std::to_string(m_n_active_workers) + " active workers";
+	std::string status = "Search pool status: " + std::to_string(m_n_workers) + " workers";
+	for(size_t i=0; i!=m_n_workers; ++i) 
+		status += "\nWorker " + std::to_string(i) + " performed " + std::to_string(m_n_iterations[i]) + " iterations";
+	return status;
+
 }
 
-template <class Game, class Evaluator>
-size_t AZSearchPool<Game, Evaluator>::getNActiveWorkers() const {
-	return m_n_active_workers;
-}
+/* template <class Game, class Evaluator> */
+/* size_t AZSearchPool<Game, Evaluator>::getNActiveWorkers() const { */
+/* 	return m_workers.size(); */
+/* } */
 
 template <class Game, class Evaluator>
 AZSearchPool<Game, Evaluator>::~AZSearchPool() {
+	m_maybe_stop_working = true;
 	for(size_t i=0; i!= m_workers.size(); ++i) {
 		m_workers[i].join();
 	}

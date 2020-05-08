@@ -20,6 +20,7 @@ from tensorflow.keras.optimizers import SGD
 from tensorflow.keras import backend as K
 from tensorflow.keras.losses import mean_squared_error
 from tensorflow.keras.backend import categorical_crossentropy, sigmoid
+from tensorflow.keras.regularizers import l2
 
 
 def resnet_layer(
@@ -51,20 +52,20 @@ def resnet_layer(
         kernel_size=kernel_size,
         strides=strides,
         padding="same",
-        # kernel_initializer="he_normal",
-        # kernel_regularizer=l2(1e-4),
+        kernel_initializer="he_normal",
+        kernel_regularizer=l2(1e-4),
     )
 
     x = inputs
     if conv_first:
         x = conv(x)
-        if batch_normalization:
-            x = BatchNormalization()(x)
+        # if batch_normalization:
+        #     x = BatchNormalization()(x)
         if activation is not None:
             x = Activation(activation)(x)
     else:
-        if batch_normalization:
-            x = BatchNormalization()(x)
+        # if batch_normalization:
+        #     x = BatchNormalization()(x)
         if activation is not None:
             x = Activation(activation)(x)
         x = conv(x)
@@ -174,22 +175,55 @@ with tf.Session() as session:
     output5 = resnet_layer(inputs=output4, strides=1, num_filters=64)
 
     body = Flatten()(output5)
-    dense1 = Dense(units=256, activation="relu")(body)
-    dense2 = Dense(units=256, activation="relu")(dense1)
+    dense1 = Dense(
+        units=256,
+        activation="relu",
+        kernel_regularizer=l2(1e-4),
+        kernel_initializer="he_normal",
+    )(body)
+    dense2 = Dense(
+        units=256,
+        activation="relu",
+        kernel_regularizer=l2(1e-4),
+        kernel_initializer="he_normal",
+    )(dense1)
 
-    policy_logits = Dense(units=7)(dense2)
+    dense3 = Dense(
+        units=256,
+        activation="relu",
+        kernel_regularizer=l2(1e-4),
+        kernel_initializer="he_normal",
+    )(body)
+    layer = Dense(
+        units=256,
+        activation="relu",
+        kernel_regularizer=l2(1e-4),
+        kernel_initializer="he_normal",
+    )
+    dense4 = layer(dense3)
 
-    value = 2 * tf.nn.sigmoid(Dense(units=1)(dense2)) - 1
+    print(layer.weights)
+
+    policy_logits = Dense(
+        units=7, kernel_regularizer=l2(1e-4), kernel_initializer="he_normal"
+    )(dense2)
+
+    print(layer.weights)
+
+    value = 2 * tf.nn.sigmoid(Dense(units=1)(dense4)) - 1
     value = tf.reshape(value, shape=[-1], name="value")
     policy = tf.nn.softmax(policy_logits, name="policy")
-    loss = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits(
-            logits=policy_logits, labels=policy_labels
-        )
-        + tf.math.squared_difference(value, value_labels),
+    loss = tf.add(
+        tf.reduce_mean(
+            tf.nn.softmax_cross_entropy_with_logits(
+                logits=policy_logits, labels=policy_labels
+            )
+            + tf.math.squared_difference(value, value_labels)
+        ),
+        10000000 * tf.losses.get_regularization_loss(),
         name="loss",
     )
-    optimizer = tf.train.GradientDescentOptimizer(0.1)
+    optimizer = tf.train.GradientDescentOptimizer(0.01)
     train = optimizer.minimize(loss, name="train")
     session.run(tf.global_variables_initializer())
 
