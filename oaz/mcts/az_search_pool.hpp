@@ -37,7 +37,7 @@ namespace oaz::mcts {
 			using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
 			using SharedSearchContextPointer = std::shared_ptr<SearchContext<Game, Evaluator>>;
 
-			AZSearchPool(SharedEvaluatorPointer, float); // OK
+			AZSearchPool(SharedEvaluatorPointer, size_t); // OK
 			void performSearch(Search*); // OK
 
 			std::string getStatus() const;
@@ -50,28 +50,30 @@ namespace oaz::mcts {
 
 			size_t getNSearches() const;
 			size_t getNSearchesMaybeWaitingForEvaluation() const;
-			size_t getNActiveWorkers() const;
-			size_t getNRequiredWorkers() const;
-			void updateNRequiredWorkers(); // OK
-			void maybeForceEvaluation();
+			/* size_t getNActiveWorkers() const; */
+			/* size_t getNRequiredWorkers() const; */
+			/* void updateNRequiredWorkers(); // OK */
+			/* void maybeForceEvaluation(); */
 			bool maybeStopWorking();
-			void work();
-			void maybeAddWorkers();
+			void work(size_t);
+			/* void maybeAddWorkers(); */
 			void addSearch(Search*, std::condition_variable*, bool*, std::mutex*);
 			void incrementNSearches();
 			void decrementNSearches();
-			void incrementNActiveWorkers(size_t);
-			void decrementNActiveWorkers();
+			/* void incrementNActiveWorkers(size_t); */
+			/* void decrementNActiveWorkers(); */
 
-			size_t m_n_active_workers;
-			float m_n_workers_per_search;
-			size_t m_n_required_workers;
+			/* size_t m_n_active_workers; */
+			size_t m_n_workers;
+			/* size_t m_n_required_workers; */
 			std::atomic<size_t> m_n_searches;
 
 			oaz::mutex::SpinlockMutex m_workers_lock;
 			/* oaz::mutex::SpinlockMutex m_waiting_searches_lock; */
 			/* std::unordered_set<Search*> m_waiting_searches; */
 			std::vector<std::thread> m_workers;
+			bool m_maybe_stop_working;
+			std::vector<size_t> m_n_iterations;
 
 	};
 }

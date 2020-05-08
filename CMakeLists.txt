@@ -27,6 +27,7 @@ set(TensorFlow_BAZEL_GENFILES ${PROJECT_SOURCE_DIR}/extern/tensorflow/bazel-genf
 find_package(Boost 1.67.0 REQUIRED COMPONENTS system)
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
+find_package(HDF5 REQUIRED)
 
 ##############################
 # Flags
@@ -104,6 +105,10 @@ set_target_properties(connect_four_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${P
 add_executable(mcts_test test/mcts/mcts_test.cpp)
 target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(mcts_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts")
+
+add_executable(hdf5_test test/hdf5/hdf5_test.cpp)
+target_include_directories(hdf5_test PRIVATE ${PROJECT_SOURCE_DIR} ${HDF5_CXX_INCLUDE_DIRS})
+set_target_properties(hdf5_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/hdf5")
 
 add_executable(mcts_search_test test/mcts/mcts_search_test.cpp)
 target_include_directories(

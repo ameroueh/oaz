@@ -70,7 +70,9 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGame(
 			game, 
 			m_evaluator,
 			search_batch_size, 
-			n_simulations_per_move
+			n_simulations_per_move,
+			0.25,
+			1.0
 		);
 
 		m_search_pool->performSearch(&search);
@@ -89,6 +91,7 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGame(
 	}
 
 	float score = game.score(); // 1 if first player won, -1 if second player won, 0 for a draw
+	std::cout << "Score: " << score << " game length " << n_moves << std::endl;
 
 	for(size_t i=0; i!=n_moves; ++i)
 		values.push_back(score);

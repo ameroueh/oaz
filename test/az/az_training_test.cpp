@@ -47,39 +47,55 @@ using namespace oaz::mcts;
 
 static const size_t N_SIMULATIONS_PER_MOVE = 800;
 static const size_t SEARCH_BATCH_SIZE = 16;
-static const size_t N_GAMES = 640;
-static const size_t N_WORKERS = 32;
+static const size_t N_GAMES_PER_EPOCH = 200;
+static const size_t N_EPOCHS = 50;
+static const size_t N_WORKERS = 64;
 
 namespace oaz::az {
+	
+	/* void playFromString(ConnectFour* game, std::string sMoves) { */
+	/* 	for(char& c : sMoves) */
+	/* 		game->playMove(c - '0'); */
+	/* } */
+
+	/* void benchmarkModel(SharedModelPointer model, SharedSearchPoolPointer search_pool, SharedEvaluatorPointer evaluator) { */
+	/* 	Game game; */
+	/* 	playFromString(&game, moves); */
+
+
+	/* } */
+
 	TEST (AZTrainingTest, MultiThreaded) {
 		SharedModelPointer model(new Model());
 		model->Load("model");
 		
-		SharedModelPointer model2(new Model());
-		model2->Load("model");
-
-		SharedEvaluatorPointer evaluator(new Evaluator(model, 64));
+		SharedEvaluatorPointer evaluator(new Evaluator(model, 96));
 		SharedSearchPoolPointer  search_pool(
-			new SearchPool(evaluator, (2. + 0.01) / 32.)
+			new SearchPool(evaluator, 6)
 		);
 
-		SharedTrainerPointer trainer(new Trainer(model2, 40, 20));
+		SharedTrainerPointer trainer(new Trainer(model, 40, 20));
 		
-	
-		SharedSelfPlayPointer self_play(
-			new ::SelfPlay(
-					evaluator,
-					search_pool,
-					trainer,
-					N_GAMES,
-					N_SIMULATIONS_PER_MOVE,
-					SEARCH_BATCH_SIZE,
-					N_WORKERS
-			)
-		);
-		
-		Monitor monitor(self_play, trainer, evaluator, search_pool);
-		
-		self_play->playGames();
+
+		for(size_t i=0; i!=N_EPOCHS; ++i) {
+			std::cout << "Epoch " << i << "; generating " << N_GAMES_PER_EPOCH << " games" << std::endl;
+			SharedSelfPlayPointer self_play(
+				new ::SelfPlay(
+						evaluator,
+						search_pool,
+						trainer,
+						N_GAMES_PER_EPOCH,
+						N_SIMULATIONS_PER_MOVE,
+						SEARCH_BATCH_SIZE,
+						N_WORKERS
+				)
+			);
+			Monitor monitor(self_play, trainer, evaluator, search_pool);
+			self_play->playGames();
+
+			model->Checkpoint("model_" + std::to_string(i));
+
+			std::cout << "Benchmarking model" << std::endl;
+		}	
 	}
 }
