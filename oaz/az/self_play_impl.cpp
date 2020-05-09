@@ -5,17 +5,18 @@
 #include <stack>
 
 
-template <class Game, class Evaluator, class SearchPool, class Trainer>
-oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::SelfPlay(
+template <class Game, class Evaluator, class SearchPool>
+oaz::az::SelfPlay<Game, Evaluator, SearchPool>::SelfPlay(
+	std::string file_path,
 	SharedEvaluatorPointer evaluator,
 	SharedSearchPoolPointer search_pool,
 	size_t n_games,
 	size_t n_simulations_per_move,
 	size_t search_batch_size,
 	size_t n_workers):
+	m_file(file_path, H5F_ACC_TRUNC),
 	m_search_pool(search_pool),
 	m_evaluator(evaluator),
-	m_trainer(nullptr),
 	m_n_games(n_games), 
 	m_n_simulations_per_move(n_simulations_per_move),
 	m_search_batch_size(search_batch_size), 
@@ -25,47 +26,31 @@ oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::SelfPlay(
 		initialise();
 }
 
-template <class Game, class Evaluator, class SearchPool, class Trainer>
-oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::SelfPlay(
-	SharedEvaluatorPointer evaluator,
-	SharedSearchPoolPointer search_pool,
-	SharedTrainerPointer trainer,
-	size_t n_games,
+template <class Game, class Evaluator, class SearchPool>
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::initialise() {}
+
+template <class Game, class Evaluator, class SearchPool>
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::playGame(
 	size_t n_simulations_per_move,
 	size_t search_batch_size,
-	size_t n_workers):
-	m_search_pool(search_pool),
-	m_evaluator(evaluator),
-	m_trainer(trainer),
-	m_n_games(n_games), 
-	m_n_simulations_per_move(n_simulations_per_move),
-	m_search_batch_size(search_batch_size), 
-	m_n_workers(n_workers),
-	m_counter(0) {
-		initialise();
-}
-
-template <class Game, class Evaluator, class SearchPool, class Trainer>
-void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::initialise() {}
-
-template <class Game, class Evaluator, class SearchPool, class Trainer>
-void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGame(
-	size_t n_simulations_per_move,
-	size_t search_batch_size
+	size_t counter
 ) {
 
 	Game game;
 
-	std::vector<typename Game::Board> boards;
-	std::vector<typename Game::Policy> policies;
-	std::vector<typename Game::Value> values;
+	auto board_dimensions = Game::getBoardDimensionsUnsigned();
+	board_dimensions.insert(board_dimensions.begin(), Game::max_n_moves);
+	boost::multi_array<float, 4> boards(
+		boost::extents[Game::max_n_moves][Game::width][Game::height][Game::n_players]
+	);
+	boost::multi_array<float, 2> policies(boost::extents[Game::max_n_moves][Game::getPolicySize()]);
+	boost::multi_array<float, 1> values(boost::extents[Game::max_n_moves]);
 
 
 	size_t n_moves = 0;
 	while(!game.Finished()) {
 
-		boards.push_back(game.getBoard());
-
+		boards[n_moves] = game.getBoard();	
 		AZSearch<Game, Evaluator> search(
 			game, 
 			m_evaluator,
@@ -84,7 +69,8 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGame(
 		std::vector<typename Game::Move>* available_moves = game.availableMoves();
 		typename Game::Move move = sampleMove(policy, available_moves);
 
-		policies.push_back(policy);
+		for(size_t i=0; i!=Game::getPolicySize(); ++i)
+			policies[n_moves][i] = policy[i];
 		
 		game.playMove(move);
 		++n_moves;
@@ -94,22 +80,19 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGame(
 	std::cout << "Score: " << score << " game length " << n_moves << std::endl;
 
 	for(size_t i=0; i!=n_moves; ++i)
-		values.push_back(score);
+		values[i] = score;
+	
+	// Saving game to file
+	std::string group_name = "/Game" + std::to_string(counter);
+	m_file.createGroup(group_name);
 
-	if (m_trainer) {
-		for(size_t i=0; i!=n_moves; ++i) {
-			m_trainer->addTrainingExample(
-				&boards[i],
-				&values[i],
-				&policies[i]
-			);
-		}
-
-	}
+	H5::DataSpace boards_space(board_dimensions.size(), board_dimensions.data());
+	H5::DataSet dataset = m_file.createDataSet(group_name + "/Boards", H5::PredType::NATIVE_FLOAT, boards_space);
+	dataset.write(boards.data(), H5::PredType::NATIVE_FLOAT); 	
 }
 
-template <class Game, class Evaluator, class SearchPool, class Trainer>
-void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::normaliseVisitCounts(typename Game::Policy& visit_counts) {
+template <class Game, class Evaluator, class SearchPool>
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::normaliseVisitCounts(typename Game::Policy& visit_counts) {
 	float total = 0.;
 	for(size_t i=0; i!=visit_counts.size(); ++i)
 		total += visit_counts[i];
@@ -118,8 +101,8 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::normaliseVisitCoun
 		visit_counts[i] /= total;
 }
 
-template <class Game, class Evaluator, class SearchPool, class Trainer>
-typename Game::Move oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::sampleMove(typename Game::Policy& visit_counts, std::vector<typename Game::Move>* available_moves) {
+template <class Game, class Evaluator, class SearchPool>
+typename Game::Move oaz::az::SelfPlay<Game, Evaluator, SearchPool>::sampleMove(typename Game::Policy& visit_counts, std::vector<typename Game::Move>* available_moves) {
 
 	std::vector<float> available_moves_visit_counts;
 	for(auto move : *available_moves)
@@ -134,22 +117,23 @@ typename Game::Move oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::sam
 	return (*available_moves)[move_index];
 }
 
-template <class Game, class Evaluator, class SearchPool, class Trainer>
-void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::work() {
-	while(m_counter++ < m_n_games) {
-		playGame(m_n_simulations_per_move, m_search_batch_size);
+template <class Game, class Evaluator, class SearchPool>
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::work() {
+	size_t counter;
+	while((counter = m_counter++) < m_n_games) {
+		playGame(m_n_simulations_per_move, m_search_batch_size, counter);
 	}
 }
 
-template <class Game, class Evaluator, class SearchPool, class Trainer>
-void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGames() {
+template <class Game, class Evaluator, class SearchPool>
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::playGames() {
 
 	vector<std::thread> workers;
 	
 	for(size_t i = 0; i != m_n_workers; ++i) {
 		workers.push_back(
 			std::thread(
-				&SelfPlay<Game, Evaluator, SearchPool, Trainer>::work,
+				&SelfPlay<Game, Evaluator, SearchPool>::work,
 				this
 			)
 		);
@@ -159,8 +143,8 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::playGames() {
 		workers[i].join();
 }
 
-template <class Game, class Evaluator, class SearchPool, class Trainer>
-std::string oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>::getStatus() {
+template <class Game, class Evaluator, class SearchPool>
+std::string oaz::az::SelfPlay<Game, Evaluator, SearchPool>::getStatus() {
 	size_t counter = std::min<size_t>(m_counter, m_n_games);
 	return "Self-play progress: " + std::to_string(counter) + "/" + to_string(m_n_games);
 }

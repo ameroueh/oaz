@@ -27,7 +27,7 @@ set(TensorFlow_BAZEL_GENFILES ${PROJECT_SOURCE_DIR}/extern/tensorflow/bazel-genf
 find_package(Boost 1.67.0 REQUIRED COMPONENTS system)
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
-find_package(HDF5 REQUIRED)
+find_package(HDF5 REQUIRED COMPONENTS C CXX)
 
 ##############################
 # Flags
@@ -107,8 +107,10 @@ target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(mcts_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts")
 
 add_executable(hdf5_test test/hdf5/hdf5_test.cpp)
-target_include_directories(hdf5_test PRIVATE ${PROJECT_SOURCE_DIR} ${HDF5_CXX_INCLUDE_DIRS})
+target_include_directories(hdf5_test PRIVATE ${PROJECT_SOURCE_DIR} ${HDF5_INCLUDE_DIRS})
 set_target_properties(hdf5_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/hdf5")
+
+# message(STATUS "HDF5_INCLUDE_DIRS=${HDF5_INCLUDE_DIRS}")
 
 add_executable(mcts_search_test test/mcts/mcts_search_test.cpp)
 target_include_directories(
@@ -188,6 +190,8 @@ target_include_directories(
 	TensorFlow_DEP 
 	${TensorFlow_SOURCE_DIR} 
 	${TensorFlow_BAZEL_GENFILES}
+	${HDF5_INCLUDE_DIRS}
+
 )
 
 set_target_properties(
@@ -302,6 +306,10 @@ add_dependencies(board_test gtest)
 add_dependencies(board_test gmock)
 target_link_libraries(board_test gtest_main gmock_main)
 
+add_dependencies(hdf5_test gtest)
+add_dependencies(hdf5_test gmock)
+target_link_libraries(hdf5_test gtest_main gmock_main ${HDF5_CXX_LIBRARIES})
+
 add_dependencies(connect_four_test gtest)
 add_dependencies(connect_four_test gmock)
 target_link_libraries(connect_four_test gtest_main gmock_main)
@@ -336,7 +344,7 @@ target_link_libraries(self_play_test gtest_main gmock_main nlohmann_json::nlohma
 
 add_dependencies(az_training_test gtest)
 add_dependencies(az_training_test gmock)
-target_link_libraries(az_training_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
+target_link_libraries(az_training_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES})
 
 add_dependencies(mcts_connect_four_test gtest)
 add_dependencies(mcts_connect_four_test gmock)
