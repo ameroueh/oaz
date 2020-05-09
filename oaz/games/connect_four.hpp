@@ -24,9 +24,11 @@ namespace oaz::games {
 			static const size_t height = 6;
 			static const size_t n_moves = 7;
 			static const size_t n_players = 2;
+			static const size_t max_n_moves = 42;
 			static const size_t NBoardDimensions = 3;
 
 			static std::vector<long long int> getBoardDimensions() {return {7, 6, 2};}
+			static std::vector<unsigned long long> getBoardDimensionsUnsigned() {return {7, 6, 2};}
 			static size_t getPolicySize() {
 				return 7;
 			}

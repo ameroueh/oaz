@@ -6,7 +6,6 @@
 
 #include "oaz/neural_network/model.hpp"
 #include "oaz/neural_network/nn_evaluator.hpp"
-#include "oaz/neural_network/nn_trainer.hpp"
 #include "oaz/games/connect_four.hpp"
 #include "oaz/random/random_evaluator.hpp"
 #include "oaz/mcts/az_search.hpp"
@@ -33,14 +32,12 @@ using SearchPool = AZSearchPool<Game, Evaluator>;
 using Policy = typename Game::Policy;
 using Board = typename Game::Board;
 using Value = typename Game::Value;
-using Trainer = NNTrainer<Game>;
-using SelfPlay = oaz::az::SelfPlay<Game, Evaluator, SearchPool, Trainer>;
-using Monitor = oaz::logging::Monitor<::SelfPlay, Trainer, Evaluator, SearchPool>;
+using SelfPlay = oaz::az::SelfPlay<Game, Evaluator, SearchPool> ;
+using Monitor = oaz::logging::Monitor<::SelfPlay, Evaluator, SearchPool>;
 
 using SharedModelPointer = std::shared_ptr<Model>;
 using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
 using SharedSearchPoolPointer = std::shared_ptr<SearchPool>;
-using SharedTrainerPointer = std::shared_ptr<Trainer>;
 using SharedSelfPlayPointer = std::shared_ptr<::SelfPlay>;
 
 using namespace oaz::mcts;
@@ -74,23 +71,20 @@ namespace oaz::az {
 			new SearchPool(evaluator, 6)
 		);
 
-		SharedTrainerPointer trainer(new Trainer(model, 40, 20));
-		
-
 		for(size_t i=0; i!=N_EPOCHS; ++i) {
 			std::cout << "Epoch " << i << "; generating " << N_GAMES_PER_EPOCH << " games" << std::endl;
 			SharedSelfPlayPointer self_play(
 				new ::SelfPlay(
+						"output.h5",
 						evaluator,
 						search_pool,
-						trainer,
 						N_GAMES_PER_EPOCH,
 						N_SIMULATIONS_PER_MOVE,
 						SEARCH_BATCH_SIZE,
 						N_WORKERS
 				)
 			);
-			Monitor monitor(self_play, trainer, evaluator, search_pool);
+			Monitor monitor(self_play, evaluator, search_pool);
 			self_play->playGames();
 
 			model->Checkpoint("model_" + std::to_string(i));

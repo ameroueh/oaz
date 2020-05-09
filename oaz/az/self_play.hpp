@@ -7,11 +7,14 @@
 
 #include <random>
 #include <string>
+
+#include "H5Cpp.h"
+
 #include "oaz/neural_network/nn_evaluator.hpp"
 #include "oaz/mcts/az_search_pool.hpp"
 
 namespace oaz::az {
-	template <class Game, class Evaluator, class SearchPool, class Trainer>
+	template <class Game, class Evaluator, class SearchPool>
 	class SelfPlay {
 
 		/* TEST_FRIENDS; */
@@ -19,8 +22,8 @@ namespace oaz::az {
 		public:	
 			using SharedSearchPoolPointer = std::shared_ptr<SearchPool>;
 			using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
-			using SharedTrainerPointer = std::shared_ptr<Trainer>;
 			SelfPlay(
+				std::string,
 				SharedEvaluatorPointer, 
 				SharedSearchPoolPointer,
 				size_t,
@@ -29,23 +32,13 @@ namespace oaz::az {
 				size_t
 			);
 			
-			SelfPlay(
-				SharedEvaluatorPointer, 
-				SharedSearchPoolPointer,
-				SharedTrainerPointer,
-				size_t,
-				size_t,
-				size_t,
-				size_t
-			);
-
 			std::string getStatus();
 			void playGames();
 
 		private:
 			void initialise();
 		
-			void playGame(size_t, size_t);
+			void playGame(size_t, size_t, size_t);
 			void work();
 			void normaliseVisitCounts(typename Game::Policy&);
 			typename Game::Move sampleMove(
@@ -55,7 +48,6 @@ namespace oaz::az {
 
 			SharedSearchPoolPointer m_search_pool;
 			SharedEvaluatorPointer m_evaluator;
-			SharedTrainerPointer m_trainer;
 
 			size_t m_n_games;
 			size_t m_n_simulations_per_move;
@@ -64,6 +56,8 @@ namespace oaz::az {
 			std::atomic<size_t> m_counter;
 
 			std::mt19937 m_generator;
+
+			H5::H5File m_file;
 	};
 
 }
