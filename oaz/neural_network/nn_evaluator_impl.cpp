@@ -53,7 +53,7 @@ void NNEvaluator<Game, Notifier>::addNewBatch() {
 
 template <class Game, class Notifier>
 std::string NNEvaluator<Game, Notifier>::getStatus() const {
-	return "Evaluator status: " + std::to_string(m_n_evaluations) + "/" + std::to_string(m_n_evaluation_requests);
+	return "Evaluator status: " + std::to_string(m_n_evaluations * m_batch_size) + "/" + std::to_string(m_n_evaluation_requests * m_batch_size);
 }
 
 

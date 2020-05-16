@@ -25,8 +25,11 @@ using namespace oaz::games;
 using Game = ConnectFour;
 using Move = typename Game::Move;
 using Node = SearchNode<Move>;
+using Model = oaz::nn::Model;
 using Evaluator = NNEvaluator<Game, oaz::mcts::SafeQueueNotifier>;
 using GameSearch = AZSearch<Game, Evaluator>;
+
+using SharedModelPointer = std::shared_ptr<Model>;
 
 template <class Node>
 bool checkSearchTree(Node* node) {
@@ -60,41 +63,49 @@ void search_until_done(GameSearch* search, Evaluator* evaluator) {
 	bool work_done = false;
 	while(!search->done()) {
 		/* std::cout << "Working" << std::endl; */
-		work_done = search->work();
-		if (!work_done) {
-			/* std::cout << "Forcing evaluation" << std::endl; */
-			evaluator->forceEvaluation();
-		}
+		search->work();
+		/* if (!work_done) { */
+		/* 	/1* std::cout << "Forcing evaluation" << std::endl; *1/ */
+		/* 	evaluator->forceEvaluation(); */
+		/* } */
 	}
 }
 
 namespace oaz::mcts {
 	TEST (Instantiation, Default) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(64));
-		shared_evaluator_ptr->load_model("model");
+		SharedModelPointer model(new Model());
+		model->Load("model");
+
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 64));
 		Game game;
 		GameSearch(game, shared_evaluator_ptr, 1, 1);
 	}
 	
-	TEST (WaitingForEvaluation, Default) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(64));
-		shared_evaluator_ptr->load_model("model");
-		Game game;
-		GameSearch search(game, shared_evaluator_ptr, 1, 1);
+	/* TEST (WaitingForEvaluation, Default) { */
+	/* 	SharedModelPointer model(new Model()); */
+	/* 	model->Load("model"); */
 		
-		ASSERT_FALSE(search.waitingForEvaluation());
-		search.selectNode(0);
-		ASSERT_TRUE(search.waitingForEvaluation());
-		shared_evaluator_ptr->forceEvaluation();
-		ASSERT_FALSE(search.waitingForEvaluation());
-	}
+	/* 	std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 64)); */
+	/* 	Game game; */
+	/* 	GameSearch search(game, shared_evaluator_ptr, 1, 1); */
+		
+	/* 	ASSERT_FALSE(search.waitingForEvaluation()); */
+	/* 	search.selectNode(0); */
+	/* 	ASSERT_TRUE(search.waitingForEvaluation()); */
+	/* 	shared_evaluator_ptr->forceEvaluation(); */
+	/* 	ASSERT_FALSE(search.waitingForEvaluation()); */
+	/* } */
 	
 	
 
 	TEST (Search, CheckSearchTree) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(64));
-		shared_evaluator_ptr->load_model("model");
+		SharedModelPointer model(new Model());
+		model->Load("model");
+		
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 64));
+		
 		Game game;
+		
 		GameSearch search(game, shared_evaluator_ptr, 1, 100);
 		
 		search_until_done(&search, shared_evaluator_ptr.get());
@@ -104,11 +115,13 @@ namespace oaz::mcts {
 	}
 	
 	TEST (MultithreadedSearch, CheckSearchTree) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(16));
-		shared_evaluator_ptr->load_model("model");
+		SharedModelPointer model(new Model());
+		model->Load("model");
+		
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 16));
 		Game game;
 		
-		GameSearch search(game, shared_evaluator_ptr, 16, 10000);
+		GameSearch search(game, shared_evaluator_ptr, 16, 1000);
 
 		vector<std::thread> threads;
 		for(size_t i=0; i!=2; ++i) {
@@ -118,16 +131,18 @@ namespace oaz::mcts {
 			threads[i].join();
 		}
 
-		ASSERT_EQ(search.getTreeRoot()->getNVisits(), 10000);
+		ASSERT_EQ(search.getTreeRoot()->getNVisits(), 1000);
 		ASSERT_TRUE(checkSearchTree(search.getTreeRoot()));
 	}
 	
 	TEST (MultithreadedSearch, WithNoiseCheckSearchTree) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(16));
-		shared_evaluator_ptr->load_model("model");
+		SharedModelPointer model(new Model());
+		model->Load("model");
+		
+		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 16));
 		Game game;
 		
-		GameSearch search(game, shared_evaluator_ptr, 16, 10000, 0.25, 0.3);
+		GameSearch search(game, shared_evaluator_ptr, 16, 1000, 0.25, 0.3);
 
 		vector<std::thread> threads;
 		for(size_t i=0; i!=2; ++i) {
@@ -137,7 +152,7 @@ namespace oaz::mcts {
 			threads[i].join();
 		}
 
-		ASSERT_EQ(search.getTreeRoot()->getNVisits(), 10000);
+		ASSERT_EQ(search.getTreeRoot()->getNVisits(), 1000);
 		ASSERT_TRUE(checkSearchTree(search.getTreeRoot()));
 	}
 }
