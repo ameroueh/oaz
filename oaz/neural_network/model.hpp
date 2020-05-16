@@ -21,20 +21,20 @@ namespace oaz::nn {
 			}
 
 			void Load(std::string model_path) {
-				MetaGraphDef graph_def;
-				ReadBinaryProto(Env::Default(), model_path + "/graph.pb", &graph_def);
-				m_session->Create(graph_def.graph_def());
+				GraphDef graph_def;
+				ReadBinaryProto(Env::Default(), model_path + "/tf_model.pb", &graph_def);
+				m_session->Create(graph_def);
 				
-				Tensor checkpoint_path_tensor(DT_STRING, TensorShape());
-				checkpoint_path_tensor.scalar<std::string>()() = model_path + "/model";
-				TF_CHECK_OK(
-					m_session->Run(
-						{{graph_def.saver_def().filename_tensor_name(), checkpoint_path_tensor},},
-						{},
-						{graph_def.saver_def().restore_op_name()},
-						nullptr
-					)
-				);
+				/* Tensor checkpoint_path_tensor(DT_STRING, TensorShape()); */
+				/* checkpoint_path_tensor.scalar<std::string>()() = model_path + "/model"; */
+				/* TF_CHECK_OK( */
+				/* 	m_session->Run( */
+				/* 		{{graph_def.saver_def().filename_tensor_name(), checkpoint_path_tensor},}, */
+				/* 		{}, */
+				/* 		{graph_def.saver_def().restore_op_name()}, */
+				/* 		nullptr */
+				/* 	) */
+				/* ); */
 
 			}
 			

@@ -3,6 +3,11 @@ import os
 import shutil
 import sys
 
+import numpy
+import h5py
+
+import click
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import (
@@ -15,12 +20,16 @@ from tensorflow.keras.layers import (
     Softmax,
     add,
 )
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras import backend as K
 from tensorflow.keras.losses import mean_squared_error
 from tensorflow.keras.backend import categorical_crossentropy, sigmoid
 from tensorflow.keras.regularizers import l2
+from tensorflow.python.framework.graph_util import (
+    convert_variables_to_constants,
+)
+from tensorflow.train import write_graph
 
 
 def resnet_layer(
@@ -139,34 +148,13 @@ def resnet_v1(input, depth):
     return y
 
 
-save_dir = sys.argv[1]
-model_dir = os.path.join(save_dir, "model")
+@click.group()
+def cli():
+    pass
 
-if os.path.exists(model_dir):
-    print(f"Removing existing model directory {model_dir}")
-    shutil.rmtree(model_dir)
 
-print(f"Using tensorflow version {tf.__version__}")
-
-input_data = np.zeros(shape=(7, 7, 6, 2), dtype=np.float32)
-test_policy_labels = np.zeros(shape=(7, 7), dtype=np.float32)
-test_value_labels = np.zeros(shape=(7))
-n_training_epochs = 3
-
-with tf.Session() as session:
-    K.set_session(session)
-
-    input = tf.placeholder(
-        dtype=tf.float32, shape=[None, 7, 6, 2], name="input"
-    )
-    policy_labels = tf.placeholder(
-        dtype=tf.float32, shape=[None, 7], name="policy_labels"
-    )
-    value_labels = tf.placeholder(
-        dtype=tf.float32, shape=[None], name="value_labels"
-    )
-
-    body = resnet_v1(input=input, depth=14)
+def create_model():
+    input = tf.keras.Input(shape=(7, 6, 2), name="input")
 
     output1 = resnet_layer(inputs=input, strides=1, num_filters=16)
     output2 = resnet_layer(inputs=output1, strides=1, num_filters=32)
@@ -202,67 +190,140 @@ with tf.Session() as session:
     )
     dense4 = layer(dense3)
 
-    print(layer.weights)
-
     policy_logits = Dense(
         units=7, kernel_regularizer=l2(1e-4), kernel_initializer="he_normal"
     )(dense2)
 
-    print(layer.weights)
-
     value = 2 * tf.nn.sigmoid(Dense(units=1)(dense4)) - 1
     value = tf.reshape(value, shape=[-1], name="value")
     policy = tf.nn.softmax(policy_logits, name="policy")
-    loss = tf.add(
-        tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits(
-                logits=policy_logits, labels=policy_labels
-            )
-            + tf.math.squared_difference(value, value_labels)
+
+    model = tf.keras.Model(inputs=input, outputs=[value, policy])
+    model.compile(
+        loss={
+            "tf_op_layer_policy": "categorical_crossentropy",
+            "tf_op_layer_value": "mean_squared_error",
+        },
+        optimizer=tf.keras.optimizers.SGD(
+            learning_rate=0.01, momentum=0.0, nesterov=False, name="SGD"
         ),
-        10000000 * tf.losses.get_regularization_loss(),
-        name="loss",
+        loss_weights=[0.5, 0.5],
     )
-    optimizer = tf.train.GradientDescentOptimizer(0.01)
-    train = optimizer.minimize(loss, name="train")
-    session.run(tf.global_variables_initializer())
+    return model
 
-    print("Generating inference data")
-    output_data = session.run([value, policy], feed_dict={input: input_data})
 
-    print("Saving model")
-    saver = tf.compat.v1.train.Saver()
-    saver.export_meta_graph(filename=os.path.join(model_dir, "graph.pb"))
-    saver.save(session, save_path=os.path.join(model_dir, "model"))
+def load_dataset(input):
+    dataset = {"Boards": [], "Policies": [], "Values": []}
+    with h5py.File(input, "r") as f:
+        for key in f.keys():
+            dataset["Boards"].append(f[key]["Boards"].value)
+            dataset["Policies"].append(f[key]["Policies"].value)
+            dataset["Values"].append(f[key]["Values"].value)
+    dataset["Boards"] = numpy.concatenate(dataset["Boards"], axis=0)
+    dataset["Policies"] = numpy.concatenate(dataset["Policies"], axis=0)
+    dataset["Values"] = numpy.concatenate(dataset["Values"], axis=0)
 
-    with open(os.path.join(save_dir, "data.json"), "w") as f:
-        f.write(
-            json.dumps(
-                [
-                    {
-                        "input": input_data[i, :].tolist(),
-                        "value": output_data[0][i].tolist(),
-                        "policy": output_data[1][i, :].tolist(),
-                        "batch_size": 1,
-                    }
-                    for i in range(input_data.shape[0])
-                ]
-            )
+    print(dataset["Policies"].shape)
+    return dataset
+
+
+def train_model(model, dataset):
+    pass
+
+
+@cli.command()
+@click.argument("output", type=click.Path())
+def create(output):
+    model = create_model()
+    model.save(output)
+
+
+@cli.command()
+@click.argument("input", type=click.Path(exists=True))
+@click.argument("output", type=click.Path())
+@click.argument("dataset", type=click.Path(exists=True))
+def train(input, output, dataset):
+    dataset = load_dataset(dataset)
+    model = load_model(input)
+    train_model(model, dataset)
+    pass
+
+
+@cli.command()
+@click.argument("input", type=click.Path(exists=True))
+@click.argument("output", type=click.Path())
+def freeze(input, output):
+    with tf.Session() as session:
+        K.set_session(session)
+        model = load_model(input)
+        frozen_graph = convert_variables_to_constants(
+            session,
+            session.graph.as_graph_def(),
+            [out.op.name for out in model.outputs],
         )
+    write_graph(frozen_graph, "model", "tf_model.pb", as_text=False)
 
-    print("Training")
-    for i in range(n_training_epochs):
-        out = session.run(
-            [train, loss],
-            feed_dict={
-                input: input_data,
-                value_labels: test_value_labels,
-                policy_labels: test_policy_labels,
-            },
-        )
-        print(f"Loss: {out[1]}")
 
-    print("Generating inference data after training")
-    output_data_after_training = session.run(
-        [value, policy], feed_dict={input: input_data}
-    )
+# save_dir = sys.argv[1]
+# model_dir = os.path.join(save_dir, "model")
+
+# if os.path.exists(model_dir):
+#     print(f"Removing existing model directory {model_dir}")
+#     shutil.rmtree(model_dir)
+
+# print(f"Using tensorflow version {tf.__version__}")
+
+# input_data = np.zeros(shape=(7, 7, 6, 2), dtype=np.float32)
+# test_policy_labels = np.zeros(shape=(7, 7), dtype=np.float32)
+# test_value_labels = np.zeros(shape=(7))
+# n_training_epochs = 3
+# with tf.Session() as session: K.set_session(session)
+
+#     print("Generating inference data")
+#     output_data = model.predict(input_data)
+#     # output_data = session.run([value, policy], feed_dict={input: input_data})
+
+#     print("Saving model")
+#     model.save(model_dir, save_format="tf")
+
+#     frozen_graph = convert_variables_to_constants(
+#         session,
+#         session.graph.as_graph_def(),
+#         [out.op.name for out in model.outputs],
+#     )
+
+#     # saver = tf.compat.v1.train.Saver()
+#     # saver.export_meta_graph(filename=os.path.join(model_dir, "graph.pb"))
+#     # saver.save(session, save_path=os.path.join(model_dir, "model"))
+
+#     with open(os.path.join(save_dir, "data.json"), "w") as f:
+#         f.write(
+#             json.dumps(
+#                 [
+#                     {
+#                         "input": input_data[i, :].tolist(),
+#                         "value": output_data[0][i].tolist(),
+#                         "policy": output_data[1][i, :].tolist(),
+#                         "batch_size": 1,
+#                     }
+#                     for i in range(input_data.shape[0])
+#                 ]
+#             )
+#         )
+
+# print("Training")
+# for i in range(n_training_epochs):
+#     out = session.run(
+#         [train, loss],
+#         feed_dict={
+#             input: input_data,
+#             value_labels: test_value_labels,
+#             policy_labels: test_policy_labels,
+#         },
+#     )
+#     print(f"Loss: {out[1]}")
+
+# print("Generating inference data after training")
+# output_data_after_training = session.run(
+#     [value, policy], feed_dict={input: input_data}
+# )

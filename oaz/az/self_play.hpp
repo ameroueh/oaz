@@ -12,6 +12,7 @@
 
 #include "oaz/neural_network/nn_evaluator.hpp"
 #include "oaz/mcts/az_search_pool.hpp"
+#include "oaz/mutex/mutex.hpp"
 
 namespace oaz::az {
 	template <class Game, class Evaluator, class SearchPool>
@@ -58,6 +59,7 @@ namespace oaz::az {
 			std::mt19937 m_generator;
 
 			H5::H5File m_file;
+			oaz::mutex::SpinlockMutex m_lock;
 	};
 
 }

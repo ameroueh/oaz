@@ -24,7 +24,7 @@ set(TensorFlow_BAZEL_GENFILES ${PROJECT_SOURCE_DIR}/extern/tensorflow/bazel-genf
 
 ##############################
 # Define libraries
-find_package(Boost 1.67.0 REQUIRED COMPONENTS system)
+find_package(Boost 1.67.0 REQUIRED COMPONENTS program_options)
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
@@ -202,6 +202,19 @@ set_target_properties(
 
 add_dependencies(az_training_test generate_az_search_model)
 
+add_executable(az_self_play bin/az_self_play.cpp)
+target_include_directories(
+	az_self_play 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+	${HDF5_INCLUDE_DIRS}
+)
+set_target_properties(az_self_play PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+
 
 add_executable(mcts_connect_four_test test/mcts/mcts_connect_four_test.cpp)
 
@@ -231,8 +244,7 @@ set_target_properties(
 add_executable(mutex_test test/mutex/mutex_test.cpp)
 target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(mutex_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mutex")
-
-add_executable(queue_test test/queue/queue_test.cpp)
+add_executable(queue_test test/queue/queue_test.cpp) 
 target_include_directories(queue_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(queue_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/queue")
 
@@ -345,6 +357,8 @@ target_link_libraries(self_play_test gtest_main gmock_main nlohmann_json::nlohma
 add_dependencies(az_training_test gtest)
 add_dependencies(az_training_test gmock)
 target_link_libraries(az_training_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES})
+
+target_link_libraries(az_self_play nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES})
 
 add_dependencies(mcts_connect_four_test gtest)
 add_dependencies(mcts_connect_four_test gmock)

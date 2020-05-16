@@ -38,13 +38,11 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::playGame(
 
 	Game game;
 
-	auto board_dimensions = Game::getBoardDimensionsUnsigned();
-	board_dimensions.insert(board_dimensions.begin(), Game::max_n_moves);
 	boost::multi_array<float, 4> boards(
-		boost::extents[Game::max_n_moves][Game::width][Game::height][Game::n_players]
+		boost::extents[Game::max_n_moves + 1][Game::width][Game::height][Game::n_players]
 	);
-	boost::multi_array<float, 2> policies(boost::extents[Game::max_n_moves][Game::getPolicySize()]);
-	boost::multi_array<float, 1> values(boost::extents[Game::max_n_moves]);
+	boost::multi_array<float, 2> policies(boost::extents[Game::max_n_moves + 1][Game::getPolicySize()]);
+	boost::multi_array<float, 1> values(boost::extents[Game::max_n_moves + 1]);
 
 
 	size_t n_moves = 0;
@@ -75,20 +73,40 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::playGame(
 		game.playMove(move);
 		++n_moves;
 	}
+	
+	boards[n_moves] = game.getBoard();	
+	for(size_t i=0; i!=Game::getPolicySize(); ++i)
+		policies[n_moves][i] = 1. / Game::width;
+
+	
 
 	float score = game.score(); // 1 if first player won, -1 if second player won, 0 for a draw
-	std::cout << "Score: " << score << " game length " << n_moves << std::endl;
+	/* std::cout << "Score: " << score << " game length " << n_moves << std::endl; */
 
-	for(size_t i=0; i!=n_moves; ++i)
+	for(size_t i=0; i!=n_moves + 1; ++i)
 		values[i] = score;
 	
 	// Saving game to file
+	m_lock.lock();
 	std::string group_name = "/Game" + std::to_string(counter);
 	m_file.createGroup(group_name);
-
-	H5::DataSpace boards_space(board_dimensions.size(), board_dimensions.data());
-	H5::DataSet dataset = m_file.createDataSet(group_name + "/Boards", H5::PredType::NATIVE_FLOAT, boards_space);
-	dataset.write(boards.data(), H5::PredType::NATIVE_FLOAT); 	
+	
+	auto board_dimensions = Game::getBoardDimensionsUnsigned();
+	board_dimensions.insert(board_dimensions.begin(), n_moves + 1);
+	H5::DataSpace board_space(board_dimensions.size(), board_dimensions.data());
+	H5::DataSet board_dataset = m_file.createDataSet(group_name + "/Boards", H5::PredType::NATIVE_FLOAT, board_space);
+	board_dataset.write(boards.data(), H5::PredType::NATIVE_FLOAT); 	
+	
+	vector<unsigned long long int> policy_dimensions({n_moves + 1, Game::getPolicySize()});
+	H5::DataSpace policy_space(policy_dimensions.size(), policy_dimensions.data());
+	H5::DataSet policy_dataset = m_file.createDataSet(group_name + "/Policies", H5::PredType::NATIVE_FLOAT, policy_space);
+	policy_dataset.write(policies.data(), H5::PredType::NATIVE_FLOAT); 	
+	
+	vector<unsigned long long int> value_dimensions({n_moves + 1});
+	H5::DataSpace value_space(value_dimensions.size(), value_dimensions.data());
+	H5::DataSet value_dataset = m_file.createDataSet(group_name + "/Values", H5::PredType::NATIVE_FLOAT, value_space);
+	value_dataset.write(values.data(), H5::PredType::NATIVE_FLOAT); 	
+	m_lock.unlock();
 }
 
 template <class Game, class Evaluator, class SearchPool>
