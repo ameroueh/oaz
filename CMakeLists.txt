@@ -102,6 +102,11 @@ target_include_directories(connect_four_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_include_directories(connect_four_test PRIVATE ${Boost_INCLUDE_DIRS})
 set_target_properties(connect_four_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/connect_four")
 
+add_executable(tic_tac_toe_test test/tic_tac_toe/tic_tac_toe_test.cpp)
+target_include_directories(tic_tac_toe_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(tic_tac_toe_test PRIVATE ${Boost_INCLUDE_DIRS})
+set_target_properties(tic_tac_toe_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/tic_tac_toe")
+
 add_executable(mcts_test test/mcts/mcts_test.cpp)
 target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(mcts_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts")
@@ -215,6 +220,70 @@ target_include_directories(
 )
 set_target_properties(az_self_play PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 
+add_executable(az_self_play_tic_tac_toe bin/az_self_play_tic_tac_toe.cpp)
+target_include_directories(
+	az_self_play_tic_tac_toe 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+	${HDF5_INCLUDE_DIRS}
+)
+set_target_properties(az_self_play_tic_tac_toe PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+
+add_executable(az_self_play_connect_four bin/az_self_play_connect_four.cpp)
+target_include_directories(
+	az_self_play_connect_four 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+	${HDF5_INCLUDE_DIRS}
+)
+set_target_properties(az_self_play_connect_four PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+
+add_executable(az_evaluate bin/az_evaluate.cpp)
+target_include_directories(
+	az_evaluate 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+	${HDF5_INCLUDE_DIRS}
+)
+set_target_properties(az_evaluate PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+
+add_executable(az_evaluate_tic_tac_toe bin/az_evaluate_tic_tac_toe.cpp)
+target_include_directories(
+	az_evaluate_tic_tac_toe 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+	${HDF5_INCLUDE_DIRS}
+)
+set_target_properties(az_evaluate_tic_tac_toe PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+
+add_executable(az_evaluate_connect_four bin/az_evaluate_connect_four.cpp)
+target_include_directories(
+	az_evaluate_connect_four 
+	PRIVATE 
+	${PROJECT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+	${HDF5_INCLUDE_DIRS}
+)
+set_target_properties(az_evaluate_connect_four PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 
 add_executable(mcts_connect_four_test test/mcts/mcts_connect_four_test.cpp)
 
@@ -326,6 +395,10 @@ add_dependencies(connect_four_test gtest)
 add_dependencies(connect_four_test gmock)
 target_link_libraries(connect_four_test gtest_main gmock_main)
 
+add_dependencies(tic_tac_toe_test gtest)
+add_dependencies(tic_tac_toe_test gmock)
+target_link_libraries(tic_tac_toe_test gtest_main gmock_main)
+
 add_dependencies(connect_four_tensorflow_test gtest)
 add_dependencies(connect_four_tensorflow_test gmock)
 target_link_libraries(connect_four_tensorflow_test gtest_main gmock_main TensorFlow_DEP)
@@ -359,6 +432,13 @@ add_dependencies(az_training_test gmock)
 target_link_libraries(az_training_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES})
 
 target_link_libraries(az_self_play nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(az_evaluate nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES})
+
+target_link_libraries(az_self_play_tic_tac_toe nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(az_evaluate_tic_tac_toe nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES})
+
+target_link_libraries(az_self_play_connect_four nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(az_evaluate_connect_four nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP ${HDF5_CXX_LIBRARIES} ${Boost_LIBRARIES})
 
 add_dependencies(mcts_connect_four_test gtest)
 add_dependencies(mcts_connect_four_test gmock)
@@ -400,6 +480,11 @@ add_test(
 add_test(
 	NAME connect_four_test
 	COMMAND connect_four_test
+)
+
+add_test(
+	NAME tic_tac_toe_test
+	COMMAND tic_tac_toe_test
 )
 
 add_test(

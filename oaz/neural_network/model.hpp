@@ -20,11 +20,13 @@ namespace oaz::nn {
 				initialise();	
 			}
 
-			void Load(std::string model_path) {
+			void Load(std::string model_path, std::string value_node_name, std::string policy_node_name) {
 				GraphDef graph_def;
-				ReadBinaryProto(Env::Default(), model_path + "/tf_model.pb", &graph_def);
+				ReadBinaryProto(Env::Default(), model_path, &graph_def);
 				m_session->Create(graph_def);
 				
+				m_policy_node_name = policy_node_name;
+				m_value_node_name = value_node_name;
 				/* Tensor checkpoint_path_tensor(DT_STRING, TensorShape()); */
 				/* checkpoint_path_tensor.scalar<std::string>()() = model_path + "/model"; */
 				/* TF_CHECK_OK( */
@@ -36,6 +38,14 @@ namespace oaz::nn {
 				/* 	) */
 				/* ); */
 
+			}
+
+			std::string getPolicyNodeName() const {
+				return m_policy_node_name;
+			}
+			
+			std::string getValueNodeName() const {
+				return m_value_node_name;
 			}
 			
 			void Checkpoint(std::string model_path) {
@@ -81,6 +91,9 @@ namespace oaz::nn {
 
 			oaz::semaphore::SpinlockSemaphore m_run_semaphore;
 			UniqueSessionPointer m_session;
+
+			std::string m_policy_node_name;
+			std::string m_value_node_name;
 	};
 }
 #endif

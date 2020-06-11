@@ -140,6 +140,7 @@ namespace oaz::nn {
 				Notifier
 			);
 			void addNewBatch();
+			void forceEvaluation();
 
 			std::string getStatus() const;
 		private:
@@ -147,7 +148,6 @@ namespace oaz::nn {
 			using UniqueBatchPointer = std::unique_ptr<Batch>;
 			
 			void evaluateBatch(Batch*);
-			void forceEvaluation();
 
 			void monitor(std::future<void>);
 			

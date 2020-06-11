@@ -1,5 +1,6 @@
 import json
 import os
+import pathlib
 import shutil
 import sys
 
@@ -26,10 +27,15 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.losses import mean_squared_error
 from tensorflow.keras.backend import categorical_crossentropy, sigmoid
 from tensorflow.keras.regularizers import l2
+from keras.utils.generic_utils import get_custom_objects
 from tensorflow.python.framework.graph_util import (
     convert_variables_to_constants,
 )
 from tensorflow.train import write_graph
+
+
+def custom_activation(x):
+    return (K.sigmoid(x) * 2) - 1
 
 
 def resnet_layer(
@@ -190,19 +196,26 @@ def create_model():
     )
     dense4 = layer(dense3)
 
-    policy_logits = Dense(
-        units=7, kernel_regularizer=l2(1e-4), kernel_initializer="he_normal"
+    value = Dense(
+        units=1,
+        kernel_regularizer=l2(1e-4),
+        kernel_initializer="he_normal",
+        activation=custom_activation,
+        name="value",
+    )(dense4)
+    policy = Dense(
+        units=7,
+        kernel_regularizer=l2(1e-4),
+        kernel_initializer="he_normal",
+        activation="softmax",
+        name="policy",
     )(dense2)
-
-    value = 2 * tf.nn.sigmoid(Dense(units=1)(dense4)) - 1
-    value = tf.reshape(value, shape=[-1], name="value")
-    policy = tf.nn.softmax(policy_logits, name="policy")
 
     model = tf.keras.Model(inputs=input, outputs=[value, policy])
     model.compile(
         loss={
-            "tf_op_layer_policy": "categorical_crossentropy",
-            "tf_op_layer_value": "mean_squared_error",
+            "policy": "categorical_crossentropy",
+            "value": "mean_squared_error",
         },
         optimizer=tf.keras.optimizers.SGD(
             learning_rate=0.01, momentum=0.0, nesterov=False, name="SGD"
@@ -228,7 +241,31 @@ def load_dataset(input):
 
 
 def train_model(model, dataset):
-    pass
+
+    dataset_size = dataset["Boards"].shape[0]
+    train_select = numpy.random.choice(
+        a=[False, True], size=dataset_size, p=[0.2, 0.8]
+    )
+    validation_select = ~train_select
+
+    train_boards = dataset["Boards"][train_select]
+    train_policies = dataset["Policies"][train_select]
+    train_values = dataset["Values"][train_select]
+
+    validation_boards = dataset["Boards"][validation_select]
+    validation_policies = dataset["Policies"][validation_select]
+    validation_values = dataset["Values"][validation_select]
+
+    model.fit(
+        train_boards,
+        {"value": train_values, "policy": train_policies},
+        validation_data=(
+            validation_boards,
+            {"value": validation_values, "policy": validation_policies},
+        ),
+        batch_size=64,
+        epochs=3,
+    )
 
 
 @cli.command()
@@ -244,25 +281,33 @@ def create(output):
 @click.argument("dataset", type=click.Path(exists=True))
 def train(input, output, dataset):
     dataset = load_dataset(dataset)
-    model = load_model(input)
+    model = load_model(
+        input, custom_objects={"custom_activation": custom_activation}
+    )
     train_model(model, dataset)
-    pass
+    model.save(output)
 
 
 @cli.command()
 @click.argument("input", type=click.Path(exists=True))
 @click.argument("output", type=click.Path())
 def freeze(input, output):
+    output = pathlib.Path(output)
     with tf.Session() as session:
         K.set_session(session)
-        model = load_model(input)
-        frozen_graph = convert_variables_to_constants(
-            session,
-            session.graph.as_graph_def(),
-            [out.op.name for out in model.outputs],
+        model = load_model(
+            input, custom_objects={"custom_activation": custom_activation}
         )
-    write_graph(frozen_graph, "model", "tf_model.pb", as_text=False)
+        output_names = [out.op.name for out in model.outputs]
+        frozen_graph = convert_variables_to_constants(
+            session, session.graph.as_graph_def(), output_names
+        )
+        print(output_names)
+    write_graph(frozen_graph, str(output.parent), output.name, as_text=False)
 
+
+if __name__ == "__main__":
+    cli()
 
 # save_dir = sys.argv[1]
 # model_dir = os.path.join(save_dir, "model")
