@@ -2,6 +2,7 @@
 #include <iostream>
 #include <exception>
 #include <vector>
+#include <random>
 
 #include "stdint.h"
 
@@ -234,6 +235,10 @@ size_t Search<Game, Evaluator, Selector>::getNCompletions() const {
 
 template <class Game, class Evaluator, class Selector>
 void Search<Game, Evaluator, Selector>::initialise(const Game& game) {
+
+	std::random_device seeder;
+	m_generator.seed(seeder());
+	
 	
 	for(size_t index=0; index!=getBatchSize(); ++index) {
 		m_games[index] = game;

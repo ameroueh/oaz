@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <stack>
+#include <random>
 
 
 template <class Game, class Evaluator, class SearchPool>
@@ -27,7 +28,10 @@ oaz::az::SelfPlay<Game, Evaluator, SearchPool>::SelfPlay(
 }
 
 template <class Game, class Evaluator, class SearchPool>
-void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::initialise() {}
+void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::initialise() {
+	std::random_device seeder;
+	m_generator.seed(seeder());
+}
 
 template <class Game, class Evaluator, class SearchPool>
 void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::playGame(
@@ -76,7 +80,7 @@ void oaz::az::SelfPlay<Game, Evaluator, SearchPool>::playGame(
 	
 	boards[n_moves] = game.getBoard();	
 	for(size_t i=0; i!=Game::getPolicySize(); ++i)
-		policies[n_moves][i] = 1. / Game::width;
+		policies[n_moves][i] = 1. / Game::n_moves;
 
 	
 

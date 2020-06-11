@@ -44,14 +44,14 @@ using namespace oaz::mcts;
 
 static const size_t N_SIMULATIONS_PER_MOVE = 800;
 static const size_t SEARCH_BATCH_SIZE = 16;
-static const size_t N_GAMES = 1000;
+static const size_t N_GAMES = 50;
 static const size_t N_WORKERS = 20;
 
 namespace oaz::az {
 	
 	TEST (AZTrainingTest, MultiThreaded) {
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value/sub", "policy/Softmax");
 		
 		SharedEvaluatorPointer evaluator(new Evaluator(model, 32));
 		SharedSearchPoolPointer  search_pool(

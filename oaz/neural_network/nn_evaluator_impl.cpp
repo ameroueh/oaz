@@ -119,19 +119,19 @@ void NNEvaluator<Game, Notifier>::evaluateBatch(Batch* batch) {
 	m_n_evaluation_requests++;
 	m_model->Run(
 		{{"input:0", batch->getBatchTensor()}}, 
-		{"value", "policy"},
+		{m_model->getValueNodeName(), m_model->getPolicyNodeName()},
 		{},
 		&outputs
 	);
 	m_n_evaluations++;
 
- 	auto values_map = outputs[0].template tensor<float, 1>();
+ 	auto values_map = outputs[0].template tensor<float, 2>();
  	auto policies_map = outputs[1].template tensor<float, 2>();
 
 	for(size_t i=0; i != batch->getNElements(); ++i) {
 		std::memcpy(
 			batch->getValue(i), 
-			&values_map(i),
+			&values_map(i, 0),
 			1 * sizeof(float)
 		);
 

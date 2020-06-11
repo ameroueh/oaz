@@ -1,6 +1,6 @@
 #include "oaz/neural_network/model.hpp"
 #include "oaz/neural_network/nn_evaluator.hpp"
-#include "oaz/games/tic_tac_toe.hpp" 
+#include "oaz/games/connect_four.hpp" 
 #include "oaz/mcts/az_search.hpp" 
 #include "oaz/mcts/az_search_pool.hpp"
 #include "oaz/az/self_play.hpp"
@@ -16,8 +16,8 @@ using namespace std;
 using namespace oaz::mcts;
 using namespace oaz::games;
 
-using Game = TicTacToe;
-using Move = typename TicTacToe::Move;
+using Game = ConnectFour;
+using Move = typename Game::Move;
 using Node = SearchNode<Move>;
 using Model = oaz::nn::Model;
 using Evaluator = NNEvaluator<Game, SafeQueueNotifier>;

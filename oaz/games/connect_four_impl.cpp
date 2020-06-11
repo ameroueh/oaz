@@ -3,6 +3,7 @@
 #include "oaz/games/connect_four.hpp"
 #include "boost/multi_array.hpp"
 #include <algorithm>
+#include <string>
 
 
 using namespace oaz::games;
@@ -29,6 +30,11 @@ ConnectFour::ConnectFour(const ConnectFour& game):
 	/* 	for(int j=0; j!=height; ++j) */
 	/* 		for(int k=0; k!=n_players; ++k) */
 	/* 			m_board(i, j, k) = game.m_board(i, j, k); */
+}
+
+void ConnectFour::playFromString(std::string moves) {
+	for(char& c : moves)
+		playMove(c - '0');
 }
 
 void ConnectFour::setCurrentPlayer(size_t current_player) {
