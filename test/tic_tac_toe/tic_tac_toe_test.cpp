@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <string>
 
-#include "oaz/games/connect_four.hpp"
+#include "oaz/games/tic_tac_toe.hpp"
 
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
@@ -10,30 +10,30 @@
 using namespace oaz::games;
 using namespace testing;
 
-void playFromString(ConnectFour* game, std::string sMoves) {
+void playFromString(TicTacToe* game, std::string sMoves) {
 	for(char& c : sMoves)
 		game->playMove(c - '0');
 }
 
 TEST (InstantiationTest, Default) {
-	ConnectFour game;
+	TicTacToe game;
 }
 
 TEST (InstantiationTest, AvailableMoves) {
-	ConnectFour game;
-	ASSERT_THAT(*(game.availableMoves()), ElementsAre(0, 1, 2, 3, 4, 5, 6));
+	TicTacToe game;
+	ASSERT_THAT(*(game.availableMoves()), ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8));
 }
 
 
 TEST (ResetTest, Default) {
-	ConnectFour game;
+	TicTacToe game;
 	game.reset();
 }
 
 
 TEST (PlayTest, DoUndo) {
-	ConnectFour game;
-	ConnectFour game2;
+	TicTacToe game;
+	TicTacToe game2;
 
 	auto available_moves = *(game.availableMoves());
 	
@@ -46,77 +46,77 @@ TEST (PlayTest, DoUndo) {
 }
 
 TEST (PlayTest, VerticalVictory) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_TRUE(~game.Finished());
-	playFromString(&game, "0103040");
+	playFromString(&game, "03142");
 	ASSERT_TRUE(game.Finished());
 	ASSERT_EQ(1, game.score());
 }
 
 TEST (PlayTest, VerticalVictoryPlayer2) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_TRUE(~game.Finished());
-	playFromString(&game, "60103040");
+	playFromString(&game, "031465");
 	ASSERT_TRUE(game.Finished());
 	ASSERT_EQ(-1, game.score());
 }
 
 TEST (PlayTest, HorizontalVictory) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_TRUE(~game.Finished());
-	playFromString(&game, "051625364");
+	playFromString(&game, "01326");
 	ASSERT_TRUE(game.Finished());
 	ASSERT_EQ(1, game.score());
 }
 
 TEST (PlayTest, HorizontalVictoryPlayer2) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_TRUE(~game.Finished());
-	playFromString(&game, "6051625364");
+	playFromString(&game, "510467");
 	ASSERT_TRUE(game.Finished());
 	ASSERT_EQ(-1, game.score());
 }
 
 
 TEST (PlayTest, FirstDiagonalVictory) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_TRUE(~game.Finished());
-	playFromString(&game, "12234334544");
+	playFromString(&game, "01428");
 	ASSERT_TRUE(game.Finished());
 	ASSERT_EQ(1, game.score());
 }
 
 TEST (PlayTest, FirstDiagonalVictoryPlayer2) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_TRUE(~game.Finished());
-	playFromString(&game, "612234334544");
+	playFromString(&game, "301478");
 	ASSERT_TRUE(game.Finished());
 	ASSERT_EQ(-1, game.score());
 }
 
 
 TEST (PlayTest, SecondDiagonalVictory) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_TRUE(~game.Finished());
-	playFromString(&game, "54432332122");
+	playFromString(&game, "21456");
 	ASSERT_TRUE(game.Finished());
 	ASSERT_EQ(1, game.score());
 }
 
 TEST (PlayTest, SecondDiagonalVictoryPlayer2) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_TRUE(~game.Finished());
-	playFromString(&game, "654432332122");
+	playFromString(&game, "023416");
 	ASSERT_TRUE(game.Finished());
 	ASSERT_EQ(-1, game.score());
 }
 
 TEST (PlayTest, TieTest) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_TRUE(~game.Finished());
 	playFromString(
 		&game, 
-		"021302130213465640514455662233001144552636"
+		"036451287"
 	);
 	ASSERT_THAT(*(game.availableMoves()), ElementsAre());
 	ASSERT_TRUE(game.Finished());
@@ -124,27 +124,27 @@ TEST (PlayTest, TieTest) {
 }
 
 TEST (CopyTest, Default) {
-	ConnectFour game;
+	TicTacToe game;
 	playFromString(
 		&game, 
-		"021302130213465640514455662233001144552636"
+		"036451287"
 	);
-	ConnectFour game2(game);
+	TicTacToe game2(game);
 	ASSERT_TRUE(game == game2);
 }
 
 TEST (GetCurrentPlayer, Default) {
-	ConnectFour game;
+	TicTacToe game;
 	ASSERT_EQ(game.getCurrentPlayer(), 0);
 	game.playMove(0);
 	ASSERT_EQ(game.getCurrentPlayer(), 1);
 }
 
 TEST (Set, Default) {
-	ConnectFour game;
+	TicTacToe game;
 	playFromString(&game, "0123");
 	
-	ConnectFour game2;
+	TicTacToe game2;
 	game2.set(game);
 
 	ASSERT_TRUE(game == game2);	
