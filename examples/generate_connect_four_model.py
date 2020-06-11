@@ -38,16 +38,14 @@ with graph.as_default():
     )
     print(conv0_filters.shape)
     conv0 = tf.nn.conv2d(input, conv0_filters, 1, "SAME")
-    print(conv0.shape)
     max_pool0 = tf.nn.max_pool2d(
         conv0, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME"
     )
-    print(max_pool0.shape)
-    flat = tf.reshape(max_pool0, [-1, 12], name="flat")
+    flat = tf.reshape(max_pool0, [-1, 24], name="flat")
 
-    dense_value = tf.Variable([[1.0] for _ in range(12)], dtype=tf.float32)
+    dense_value = tf.Variable([[1.0] for _ in range(24)], dtype=tf.float32)
     dense_policy = tf.Variable(
-        [[1.0 for _ in range(7)] for _ in range(12)], dtype=tf.float32
+        [[1.0 for _ in range(7)] for _ in range(24)], dtype=tf.float32
     )
     value = tf.matmul(flat, dense_value)
     value = tf.reshape(value, shape=[-1], name="value")
@@ -72,8 +70,7 @@ with open(os.path.join(save_dir, "data.json"), "w") as f:
                     "value": output_data[0][i].tolist(),
                     "policy": output_data[1][i, :].tolist(),
                     "batch_size": 1,
-                }
-                for i in range(input_data.shape[0])
+                } for i in range(input_data.shape[0]
             ]
         )
     )
