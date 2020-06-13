@@ -86,6 +86,12 @@ Install the HDF5 development libraries:
 
  $ sudo apt-get install libhdf5-dev
 
+Install required Python dependencies:
+
+.. code-block:: bash
+
+ $ pip install click keras
+
 
 
 Build
@@ -100,8 +106,21 @@ Run
 
 to build the project.
 
-Tests
-+++++
+Example
++++++++
+
+To test the alpha zero training loop for Tic Tac Toe, do:
+
+.. code-block:: bash
+
+ $ cd build
+ $ make az_self_play_tic_tac_toe
+ $ cp ../../experiments/az_model_tic_tac_toe.py bin
+ $ cd bin
+ $ python az_model_tic_tac_toe.py train-agent
+
+Test suite
+++++++++++
 
 Run
 
