@@ -33,6 +33,18 @@ e.g. with Miniconda:
  $ conda create -n oaz python=3.6
  $ conda activate oaz
 
+Install compilation tools:
+
+.. code-block:: bash
+
+ $ sudo apt-get install gcc g++ cmake
+
+Install Boost:
+
+.. code-block:: bash
+
+ $ sudo apt-get install libboost-all-dev
+
 Download and install Bazel 0.26.1, for example
 on Linux:
 
@@ -45,7 +57,9 @@ on Linux:
 Build TensorFlow from source:
 
 .. code-block:: bash
- 
+ $ pip install six numpy wheel setuptools mock 'future>=0.17.1'
+ $ pip install keras_applications --no-deps
+ $ pip install keras_preprocessing --no-deps 
  $ cd oaz/extern/tensorflow
  $ ./configure
  $ bazel build //tensorflow/tools/pip_package:build_pip_package
