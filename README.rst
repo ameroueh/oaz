@@ -33,17 +33,11 @@ e.g. with Miniconda:
  $ conda create -n oaz python=3.6
  $ conda activate oaz
 
-Install compilation tools:
+Install GCC:
 
 .. code-block:: bash
 
- $ sudo apt-get install gcc g++ cmake
-
-Install Boost:
-
-.. code-block:: bash
-
- $ sudo apt-get install libboost-all-dev
+ $ sudo apt-get install gcc g++
 
 Download and install Bazel 0.26.1, for example
 on Linux:
@@ -74,6 +68,25 @@ You must also manually compile ``libtensorflow.so`` and ``libtensorflow_cc.so``:
  $ cd oaz/extern/tensorflow
  $ bazel build //tensorflow:libtensorflow.so
  $ bazel build //tensorflow:libtensorflow_cc.so
+
+Install cmake:
+.. code-block:: bash
+
+ $ sudo apt-get install cmake
+
+Install Boost:
+
+.. code-block:: bash
+
+ $ sudo apt-get install libboost-all-dev
+
+Install the HDF5 development libraries:
+
+.. code-block:: bash
+
+ $ sudo apt-get install libhdf5-dev
+
+
 
 Build
 +++++
