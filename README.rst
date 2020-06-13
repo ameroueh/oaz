@@ -20,6 +20,11 @@ Now initialize the submodules:
  $ git submodule init
  $ git submodule update
 
+.. code-block:: bash
+
+ $ cd oaz/extern/tensorflow
+ $ git apply ../../../patches/tensorflow.patch
+
 We recommend creating a Python environment for OAZ,
 e.g. with Miniconda:
 
@@ -43,7 +48,7 @@ Build TensorFlow from source:
  
  $ cd oaz/extern/tensorflow
  $ ./configure
- $ bazel build --config=opt //tensorflow/tools/pip_package:build_pip_package
+ $ bazel build //tensorflow/tools/pip_package:build_pip_package
  $ ./bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg
  $ cd /tmp/tensorflow_pkg
  $ pip install tensorflow-version-tags.whl
@@ -53,11 +58,8 @@ You must also manually compile ``libtensorflow.so`` and ``libtensorflow_cc.so``:
 .. code-block:: bash
 
  $ cd oaz/extern/tensorflow
- $ bazel build -c opt --copt=-mfpmath=both --copt=-msse4.2 --copt=-mavx //tensorflow:libtensorflow.so
- $ bazel build -c opt --copt=-mfpmath=both --copt=-msse4.2 --copt=-mavx //tensorflow:libtensorflow_cc.so
-
-Be sure to use optimisation flags appropriate for your machine in the above,
-for example you might want to add ``--copt=-mavx2`` on more recent CPUs.
+ $ bazel build //tensorflow:libtensorflow.so
+ $ bazel build //tensorflow:libtensorflow_cc.so
 
 Build
 +++++
