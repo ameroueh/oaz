@@ -9,7 +9,6 @@ namespace oaz::mcts {
 	template<class Node>
 	class UCTSelector {
 		public:
-			static constexpr float C_EXPLORATION = 1.4141;
 			size_t operator()(Node* node) {
 				size_t best_child_index = 0;
 				float best_score = 0;
@@ -34,7 +33,6 @@ namespace oaz::mcts {
 	template <class Node>
 	class AZSelector {
 		public:
-			static constexpr float C_EXPLORATION = 1.4141;
 			size_t operator()(Node* node) {
 				size_t best_child_index = 0;
 				float best_score = 0;

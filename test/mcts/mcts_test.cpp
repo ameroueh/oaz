@@ -1,6 +1,5 @@
 #include <random>
 
-#include "oaz/games/board.hpp"
 #include "oaz/games/connect_four.hpp"
 
 #include "oaz/mcts/search_node.hpp"
@@ -14,46 +13,45 @@ using namespace oaz::mcts;
 using namespace oaz::games;
 using namespace testing;
 
-using Board = ArrayBoard3D<float, 7, 6, 2>;
-using Game = ConnectFour<Board>;
-using Node = SearchNode<Game::move_t>;
+using Game = ConnectFour;
+using Node = SearchNode<Game::Move>;
 
 
 TEST (InstantiationTest, Default) {
-	 SearchNode<Game::move_t>();
+	 Node();
 }
 
 TEST (IsRootTest, Root) {
-	 SearchNode<Game::move_t> node;
-	 ASSERT_TRUE(node.isRoot());
+	Node node;
+	ASSERT_TRUE(node.isRoot());
 }
 
 TEST (IsRootTest, Child) {
-	 SearchNode<Game::move_t> node;
-	 SearchNode<Game::move_t> node2(0, &node, 1.);
+	 Node node;
+	 Node node2(0, &node, 1.);
 	 
 	 ASSERT_FALSE(node2.isRoot());
 }
 
 TEST (GetMoveTest, Child) {
-	 SearchNode<Game::move_t> node;
-	 SearchNode<Game::move_t> node2(0, &node, 1.);
+	 Node node;
+	 Node node2(0, &node, 1.);
 	 
 	 ASSERT_EQ(0, node2.getMove());
 }
 
 TEST (GetAccumulatedValue, Default) {
-	 SearchNode<Game::move_t> node;
+	 Node node;
 	 ASSERT_EQ(0., node.getAccumulatedValue());
 }
 
 TEST (GetNVisits, Default) {
-	 SearchNode<Game::move_t> node;
+	 Node node;
 	 ASSERT_EQ(0, node.getNVisits());
 }
 
 TEST (AddChild, Default) {
-	 SearchNode<Game::move_t> node;
+	 Node node;
 	 node.addChild(0, 1.);
 
 	 ASSERT_EQ(1, node.getNChildren());
@@ -62,7 +60,7 @@ TEST (AddChild, Default) {
 
 
 TEST (IsLeaf, Default) {
-	 SearchNode<Game::move_t> node;
+	 Node node;
 	 ASSERT_TRUE(node.isLeaf());
 
 	 node.addChild(0, 1.);
@@ -71,14 +69,14 @@ TEST (IsLeaf, Default) {
 }
 
 TEST (LockUnlock, Default) {
-	 SearchNode<Game::move_t> node;
+	 Node node;
 	 node.lock();
 	 node.unlock();
 
 }
 
 TEST (BlockUnblockForEvaluation, Default) {
-	SearchNode<Game::move_t> node;
+	Node node;
 	ASSERT_FALSE(node.IsBlockedForEvaluation());
 	node.blockForEvaluation();
 	ASSERT_TRUE(node.IsBlockedForEvaluation());
@@ -104,10 +102,12 @@ TEST (Selection, Default) {
 	 node.getChild(0)->incrementNVisits();
 	 node.addChild(1, 1.);
 	 node.getChild(1)->incrementNVisits();
-	 ASSERT_EQ(0, getBestChildIndex<Node>(&node, generator));
+
+	 UCTSelector<Node> selector;
+	 ASSERT_EQ(0, selector(&node));
 
 	 node.getChild(1)->addValue(1.);
-	 ASSERT_EQ(1, getBestChildIndex<Node>(&node, generator));
+	 ASSERT_EQ(1, selector(&node));
 }
 
 TEST (GetParent, Default) {

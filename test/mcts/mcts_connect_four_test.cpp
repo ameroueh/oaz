@@ -1,10 +1,9 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-#include "oaz/games/board.hpp"
 #include "oaz/games/connect_four.hpp"
 #include "oaz/random/random_evaluator.hpp"
-#include "oaz/mcts/search.hpp"
+#include "oaz/mcts/mcts_search.hpp"
 #include "oaz/mcts/search_node.hpp" 
 #include "oaz/mcts/selection.hpp"
 #include "oaz/mcts/search_node_serialisation.hpp"
@@ -17,68 +16,51 @@ using namespace std;
 using namespace oaz::mcts;
 using namespace oaz::games;
 
-using Board = ArrayBoard3D<float, 7, 6, 2>;
-using Game = ConnectFour<Board>;
-using Move = typename ConnectFour<Board>::move_t;
-using Node = SearchNode<Game::move_t>;
-using GamesContainer = vector<Game>;
-using Evaluator = RandomEvaluator<Game, GamesContainer>;
-using GameSearch = Search<Game, Evaluator>;
-
-void playFromString(Game* game, std::string sMoves) {
-	for(char& c : sMoves)
-		game->playMove(c - '0');
-}
+using Game = ConnectFour;
+using Move = typename Game::Move;
+using Node = SearchNode<Game::Move>;
+using Evaluator = RandomEvaluator<Game, oaz::mcts::SafeQueueNotifier>;
+using GameSearch = MCTSSearch<Game, Evaluator>;
+using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
 
 TEST (ForcedMoves, Scenario1) {
-	Board board;
-	GamesContainer games(1, Game(board));
-	Evaluator evaluator(&games);
-	
-	Board board2;
-	Game game(board2);
+	SharedEvaluatorPointer evaluator(new Evaluator());
+	Game game;
 
-	playFromString(&game, "5443233212"); // Expect best move to be 2
+	game.playFromString("5443233212"); // Expect best move to be 2
 
-	GameSearch search (1, game, &evaluator); 
+	GameSearch search (game, evaluator, 16, 10000); 
 
-	search.search(1000);
+	while(!search.done())
+		search.work();
 
 	ASSERT_EQ(search.getBestMove(), 2);
 }
 
 TEST (ForcedMoves, Scenario2) {
-	Board board;
-	GamesContainer games(1, Game(board));
-	Evaluator evaluator(&games);
+	SharedEvaluatorPointer evaluator(new Evaluator());
+	Game game;
 	
-	Board board2;
-	Game game(board2);
+	game.playFromString("4330011115"); // Expect best move to be 2
 
-	playFromString(&game, "4330011115"); // Expect best move to be 2
-
-	GameSearch search (1, game, &evaluator); 
+	GameSearch search (game, evaluator, 16, 10000); 
 	
-	search.search(10000);
+	while(!search.done())
+		search.work();
 	
 	ASSERT_EQ(search.getBestMove(), 2);
 }
 
 TEST (ForcedMoves, Scenario3) {
-	Board board;
-	GamesContainer games(1, Game(board));
-	Evaluator evaluator(&games);
+	SharedEvaluatorPointer evaluator(new Evaluator());
+	Game game;
 	
-	Board board2;
-	Game game(board2);
+	game.playFromString("433001111"); // Expect best move to be 2
 
-	playFromString(&game, "433001111"); // Expect best move to be 2
-
-	GameSearch search (1, game, &evaluator); 
-
-	game.playMove(2);
-
-	search.search(10000);
-
+	GameSearch search (game, evaluator, 16, 10000); 
+	
+	while(!search.done())
+		search.work();
+	
 	ASSERT_EQ(search.getBestMove(), 2);
 }

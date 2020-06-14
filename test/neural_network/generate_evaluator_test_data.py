@@ -6,12 +6,12 @@ import sys
 import numpy as np
 import tensorflow as tf
 
-save_dir = sys.argv[1]
-model_dir = os.path.join(save_dir, "model")
+from tensorflow.python.framework.graph_util import (
+    convert_variables_to_constants,
+)
+from tensorflow.train import write_graph
 
-if os.path.exists(model_dir):
-    print(f"Removing existing model directory {model_dir}")
-    shutil.rmtree(model_dir)
+save_dir = sys.argv[1]
 
 print(f"Using tensorflow version {tf.__version__}")
 
@@ -49,19 +49,22 @@ with graph.as_default():
     dense_policy = tf.Variable(
         [[1.0 for _ in range(7)] for _ in range(12)], dtype=tf.float32
     )
-    value = tf.matmul(flat, dense_value)
-    value = tf.reshape(value, shape=[-1], name="value")
+    value = tf.matmul(flat, dense_value, name="value")
     policy = tf.matmul(flat, dense_policy, name="policy")
 
 with tf.Session(graph=graph) as session:
     session.run(tf.global_variables_initializer())
     output_data = session.run([value, policy], feed_dict={input: input_data})
-    tf.saved_model.simple_save(
-        session,
-        os.path.join(save_dir, "model"),
-        inputs={"input": input},
-        outputs={"value": value, "policy": policy},
+    frozen_graph = convert_variables_to_constants(
+        session, session.graph.as_graph_def(), ["value", "policy"]
     )
+    write_graph(frozen_graph, save_dir, "frozen_model.pb", as_text=False)
+    # tf.saved_model.simple_save(
+    #     session,
+    #     os.path.join(save_dir, "model"),
+    #     inputs={"input": input},
+    #     outputs={"value": value, "policy": policy},
+    # )
 
 with open(os.path.join(save_dir, "data.json"), "w") as f:
     f.write(
@@ -69,7 +72,7 @@ with open(os.path.join(save_dir, "data.json"), "w") as f:
             [
                 {
                     "input": input_data[i, :].tolist(),
-                    "value": output_data[0][i].tolist(),
+                    "value": output_data[0][i].tolist()[0],
                     "policy": output_data[1][i, :].tolist(),
                     "batch_size": 1,
                 }
