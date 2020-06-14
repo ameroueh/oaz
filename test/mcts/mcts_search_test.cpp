@@ -30,11 +30,11 @@ using namespace oaz::mcts;
 using namespace oaz::games;
 
 using Game = ConnectFour;
-using Move = typename ConnectFour::Move;
+using Move = typename Game::Move;
 using Node = SearchNode<Game::Move>;
-
 using Evaluator = RandomEvaluator<Game, SafeQueueNotifier>;
 using GameSearch = MCTSSearch<Game, Evaluator>;
+
 template <class Node>
 bool checkSearchTree(Node* node) {
 	size_t n_visits = node->getNVisits();
@@ -90,15 +90,6 @@ namespace oaz::mcts {
 		
 		search.selectNode(0);
 		search.expandAndBackpropagateNode(0);
-	}
-	
-	TEST (WaitingForEvaluation, Default) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator());
-		Game game;
-		GameSearch search(game, shared_evaluator_ptr, 1, 1);
-		ASSERT_FALSE(search.waitingForEvaluation());
-		search.selectNode(0);
-		ASSERT_TRUE(search.waitingForEvaluation());
 	}
 	
 	TEST (Search, CheckSearchTree) {

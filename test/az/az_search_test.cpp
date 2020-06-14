@@ -74,7 +74,7 @@ void search_until_done(GameSearch* search, Evaluator* evaluator) {
 namespace oaz::mcts {
 	TEST (Instantiation, Default) {
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 
 		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 64));
 		Game game;
@@ -100,7 +100,7 @@ namespace oaz::mcts {
 
 	TEST (Search, CheckSearchTree) {
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 		
 		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 64));
 		
@@ -116,7 +116,7 @@ namespace oaz::mcts {
 	
 	TEST (MultithreadedSearch, CheckSearchTree) {
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 		
 		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 16));
 		Game game;
@@ -137,7 +137,7 @@ namespace oaz::mcts {
 	
 	TEST (MultithreadedSearch, WithNoiseCheckSearchTree) {
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 		
 		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 16));
 		Game game;

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <thread>
 
+#include "oaz/neural_network/model.hpp"
 #include "oaz/games/connect_four.hpp"
 #include "oaz/mcts/az_search.hpp"
 #include "oaz/mcts/az_search_pool.hpp"
@@ -20,24 +21,29 @@ using namespace tensorflow;
 using Game = ConnectFour;
 using Move = typename Game::Move;
 using Node = SearchNode<Move>;
+using Model = oaz::nn::Model;
 using Evaluator = NNEvaluator<Game, oaz::mcts::SafeQueueNotifier>;
 using GameSearch = AZSearch<Game, Evaluator>;
 using SearchPool = AZSearchPool<Game, Evaluator>;
 
+using SharedModelPointer = std::shared_ptr<Model>;
+using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
+using SharedSearchPoolPointer = std::shared_ptr<SearchPool>;
+
 static const size_t N_SEARCHES = 1;
 static const size_t SEARCH_BATCH_SIZE = 64;
-static const size_t N_ITERATIONS_PER_SEARCH = 1000000;
+static const size_t N_ITERATIONS_PER_SEARCH = 10000;
 static const size_t EVALUATOR_BATCH_SIZE = 64;
 
 void createAndPerformSearch(
-	std::shared_ptr<Evaluator> shared_evaluator_ptr, 
-	SearchPool* search_pool, 
+	SharedEvaluatorPointer evaluator,
+	SharedSearchPoolPointer search_pool,
 	size_t batch_size, 
 	size_t n_iterations) {
 		Game game;
 		GameSearch search(
 			game, 
-			shared_evaluator_ptr, 
+			evaluator, 
 			batch_size,
 			n_iterations
 		);
@@ -46,19 +52,26 @@ void createAndPerformSearch(
 
 int main() {
 	
-	std::shared_ptr<Evaluator> shared_evaluator_ptr(
-		new Evaluator(EVALUATOR_BATCH_SIZE)
+	SharedModelPointer model(new Model());
+	model->Load(
+		"frozen_model.pb",
+		"value",
+		"policy"
 	);
-	shared_evaluator_ptr->load_model("model");		
-	SearchPool search_pool(shared_evaluator_ptr, 8.);
+	SharedEvaluatorPointer evaluator(
+		new Evaluator(model, EVALUATOR_BATCH_SIZE)
+	);
+	SharedSearchPoolPointer search_pool(
+		new SearchPool(evaluator, 4)
+	);
 
 	std::vector<std::thread> t;
 	for(size_t i=0; i!=N_SEARCHES; ++i)
 		t.push_back(
 			std::thread(
 				&createAndPerformSearch, 
-				shared_evaluator_ptr,
-				&search_pool, 
+				evaluator,
+				search_pool, 
 				SEARCH_BATCH_SIZE, 
 				N_ITERATIONS_PER_SEARCH
 			)

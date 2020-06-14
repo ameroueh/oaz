@@ -2,6 +2,7 @@
 #include "gmock/gmock.h"
 
 #include "tensorflow/core/framework/tensor.h"
+#include "oaz/neural_network/model.hpp"
 #include "oaz/neural_network/nn_evaluator.hpp"
 #include "oaz/games/connect_four.hpp"
 #include "oaz/random/random_evaluator.hpp"
@@ -26,6 +27,11 @@ using Node = SearchNode<Game::Move>;
 using Evaluator = NNEvaluator<Game, oaz::mcts::SafeQueueNotifier>;
 using GameSearch = AZSearch<Game, Evaluator>;
 using SearchPool = AZSearchPool<Game, Evaluator>;
+
+using SharedModelPointer = std::shared_ptr<Model>;
+using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
+using SharedSearchPoolPointer = std::shared_ptr<SearchPool>;
+
 
 template <class Node>
 bool checkSearchTree(Node* node) {
@@ -55,63 +61,98 @@ bool checkSearchTree(Node* node) {
 	return overall_correct; 
 }
 
-void createAndPerformSearch(std::shared_ptr<Evaluator> shared_evaluator_ptr, SearchPool* search_pool, size_t n_iterations) {
+void createAndPerformSearch(SharedEvaluatorPointer evaluator, SearchPool* search_pool, size_t n_iterations) {
 		Game game;
-		GameSearch search(game, shared_evaluator_ptr, 16, n_iterations);
+		GameSearch search(game, evaluator, 4, n_iterations);
 		search_pool->performSearch(&search);
 		ASSERT_TRUE(checkSearchTree(search.getTreeRoot()));
 }
 
 namespace oaz::mcts {
 	TEST (Instantiation, Default) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(64));
-		shared_evaluator_ptr->load_model("model");
-		
-		SearchPool(shared_evaluator_ptr, 1.);
+		SharedModelPointer model(new Model());
+		model->Load(
+			"frozen_model.pb",
+			"value",
+			"policy"
+		);
+		SharedEvaluatorPointer evaluator(
+			new Evaluator(model, 64)
+		);
+		SearchPool search_pool(evaluator, 1);
 	}
 	
 	TEST (SingleSearch, Singlethreaded) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(64));
-		shared_evaluator_ptr->load_model("model");
+		SharedModelPointer model(new Model());
+		model->Load(
+			"frozen_model.pb",
+			"value",
+			"policy"
+		);
+		SharedEvaluatorPointer evaluator(
+			new Evaluator(model, 64)
+		);
+		SearchPool search_pool(evaluator, 1);
+		
 		Game game;
-		GameSearch search(game, shared_evaluator_ptr, 1, 100);
-		SearchPool search_pool(shared_evaluator_ptr, 1.);
+		GameSearch search(game, evaluator, 1, 100);
 		
 		search_pool.performSearch(&search);
 	}
 	
 	TEST (SingleSearch, Multithreaded) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(64));
-		shared_evaluator_ptr->load_model("model");
+		SharedModelPointer model(new Model());
+		model->Load(
+			"frozen_model.pb",
+			"value",
+			"policy"
+		);
+		SharedEvaluatorPointer evaluator(
+			new Evaluator(model, 64)
+		);
+		SearchPool search_pool(evaluator, 2);
+		
 		Game game;
-		GameSearch search(game, shared_evaluator_ptr, 16, 1000);
-		SearchPool search_pool(shared_evaluator_ptr, 2.);
+		GameSearch search(game, evaluator, 16, 1000);
 		
 		search_pool.performSearch(&search);
 	}
 	
 	TEST (Multisearch, Singlethreaded) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(64));
-		shared_evaluator_ptr->load_model("model");
-		SearchPool search_pool(shared_evaluator_ptr, 0.2);
-		
+		SharedModelPointer model(new Model());
+		model->Load(
+			"frozen_model.pb",
+			"value",
+			"policy"
+		);
+		SharedEvaluatorPointer evaluator(
+			new Evaluator(model, 2)
+		);
+		SearchPool search_pool(evaluator, 1);
 		
 		std::vector<std::thread> t;
 		for(size_t i=0; i!=2; ++i)
-			t.push_back(std::thread(createAndPerformSearch, shared_evaluator_ptr, &search_pool, 5000));
+			t.push_back(std::thread(createAndPerformSearch, evaluator, &search_pool, 100));
 		
 		for(size_t i=0; i!=2; ++i)
 			t[i].join();
 	}
 	
 	TEST (Multisearch, Multithreaded) {
-		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(64));
-		shared_evaluator_ptr->load_model("model");
-		SearchPool search_pool(shared_evaluator_ptr, 2.);
+		SharedModelPointer model(new Model());
+		model->Load(
+			"frozen_model.pb",
+			"value",
+			"policy"
+		);
+		SharedEvaluatorPointer evaluator(
+			new Evaluator(model, 4)
+		);
+		SearchPool search_pool(evaluator, 4);
 		
 		std::vector<std::thread> t;
 		for(size_t i=0; i!=2; ++i)
-			t.push_back(std::thread(createAndPerformSearch, shared_evaluator_ptr, &search_pool, 5000));
+			t.push_back(std::thread(createAndPerformSearch, evaluator, &search_pool, 100));
 		
 		for(size_t i=0; i!=2; ++i)
 			t[i].join();

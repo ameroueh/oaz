@@ -65,23 +65,23 @@ namespace oaz::nn {
 		for(int i=0; i!=dimensions[0]; ++i)
 			for(int j=0; j!=dimensions[1]; ++j) 
 				for(int k=0; k!=dimensions[2]; ++k) 
-					ASSERT_EQ(array[i][j][k], (batch.m_batch.template tensor<float, Game::NBoardDimensions + 1>()(0, i, j, k)));
+					ASSERT_FLOAT_EQ(array[i][j][k], (batch.m_batch.template tensor<float, Game::NBoardDimensions + 1>()(0, i, j, k)));
 	}
 
 	TEST (EvaluationBatch, AcquireIndex) {
 		EvaluationBatch<Game, DummyNotifier> batch(64);
 
 		size_t index = batch.acquireIndex();
-		ASSERT_EQ(index, 0);
+		ASSERT_FLOAT_EQ(index, 0);
 
 		index = batch.acquireIndex();
-		ASSERT_EQ(index, 1);
+		ASSERT_FLOAT_EQ(index, 1);
 	}
 
 	TEST (NNEvaluator, Instantiation) {
 		
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 
 		Evaluator evaluator(model, 64);
 	}
@@ -89,7 +89,7 @@ namespace oaz::nn {
 	TEST (NNEvaluator, requestEvaluation) {
 		
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 		
 		DummyNotifier notifier;
 		typename Game::Value value;
@@ -108,7 +108,7 @@ namespace oaz::nn {
 	TEST (NNEvaluator, forceEvaluation) {
 		
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 		
 		DummyNotifier notifier;
 		typename Game::Value value;
@@ -125,39 +125,11 @@ namespace oaz::nn {
 
 		evaluator.forceEvaluation();
 	}
-	
-	/* TEST (NNEvaluator, playMoves) { */
-		
-	/* 	SharedModelPointer model(new Model()); */
-	/* 	model->Load("model"); */
-		
-	/* 	DummyNotifier notifier; */
-	/* 	typename Game::Value value; */
-	/* 	typename Game::Policy policy; */
-
-	/* 	Evaluator evaluator(model, 64); */
-	/* 	Game game; */
-		
-	/* 	game.playMove(0); */
-	/* 	game.playMove(2); */
-	/* 	game.playMove(3); */
-
-	/* 	evaluator.requestEvaluation( */
-	/* 		&game, */
-	/* 		&value, */
-	/* 		&policy, */
-	/* 		notifier */
-	/* 	); */
-
-	/* 	evaluator.forceEvaluation(); */
-
-	/* 	std::cout << "Value is " << value << std::endl; */
-	/* } */
 
 	TEST (Inference, CheckResults) {
 		
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 		
 		Evaluator evaluator(model, 64);
 
@@ -172,7 +144,6 @@ namespace oaz::nn {
 			Game::Board& board = game.getBoard();
 			loadBoardFromJson<Game>(data[i]["input"], board);
 			
-			/* std::cout << "Value is at " << &values[i] << std::endl; */
 			evaluator.requestEvaluation(
 				&game,
 				&values[i],
@@ -181,15 +152,14 @@ namespace oaz::nn {
 			);
 			
 			evaluator.forceEvaluation();
-			ASSERT_EQ(values[i], data[i]["value"]);
-			/* ASSERT_TRUE(evaluator.getPolicy(0) == data[i]["policy"]); */
+			ASSERT_FLOAT_EQ(values[i], data[i]["value"]);
 		}
 	}
 	
 	TEST (Inference, DelayedEvaluation) {
 		
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 
 		size_t N_REQUESTS = 100;
 		size_t BATCH_SIZE = 16;
@@ -208,22 +178,19 @@ namespace oaz::nn {
 			Game::Board& board = games[i].getBoard();
 			loadBoardFromJson<Game>(data[i % DATA_SIZE]["input"], board);
 			
-			/* std::cout << "Value is at " << &values[i] << std::endl; */
 			evaluator.requestEvaluation(
 				&games[i],
 				&values[i],
 				&policies[i],
 				DummyNotifier()	
 			);
-			
-			/* ASSERT_TRUE(evaluator.getPolicy(0) == data[i]["policy"]); */
 		}
 
 		for(int i=0; i!= (N_REQUESTS / BATCH_SIZE) + 1; ++i)
 			evaluator.forceEvaluation();
 	
 		for(size_t i=0; i!= N_REQUESTS; ++i)
-			ASSERT_EQ(values[i], data[i % DATA_SIZE]["value"]);
+			ASSERT_FLOAT_EQ(values[i], data[i % DATA_SIZE]["value"]);
 	}
 
 	void makeEvaluationRequests(
@@ -259,7 +226,7 @@ namespace oaz::nn {
 		size_t N_THREADS = 2;
 		
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 
 		Evaluator evaluator(model, BATCH_SIZE);
 
@@ -301,7 +268,7 @@ namespace oaz::nn {
 			evaluator.forceEvaluation();
 		
 		for(size_t i=0; i!= N_REQUESTS; ++i)
-			ASSERT_EQ(values[i], data[i % DATA_SIZE]["value"]);
+			ASSERT_FLOAT_EQ(values[i], data[i % DATA_SIZE]["value"]);
 	}
 	
 	TEST (Inference, MultiThreadedRequestsAndEvaluations) {
@@ -311,7 +278,7 @@ namespace oaz::nn {
 		size_t N_THREADS = 2;
 		
 		SharedModelPointer model(new Model());
-		model->Load("model");
+		model->Load("frozen_model.pb", "value", "policy");
 
 		Evaluator evaluator(model, BATCH_SIZE);
 
@@ -353,6 +320,6 @@ namespace oaz::nn {
 		evaluator.forceEvaluation();
 		
 		for(size_t i=0; i!= N_REQUESTS; ++i)
-			ASSERT_EQ(values[i], data[i % DATA_SIZE]["value"]);
+			ASSERT_FLOAT_EQ(values[i], data[i % DATA_SIZE]["value"]);
 	}
 }

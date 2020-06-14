@@ -56,18 +56,6 @@ void Search<Game, Evaluator, Selector>::selectNode(size_t index) {
 			game.playMove(node->getMove());
 			setNode(index, node);
 
-		/* } else if (game.Finished()) { */
-			
-		/* 	node->incrementNVisits(); */
-		/* 	node->unlock(); */
-		/* 	float score = game.score(); */
-		/* 	float normalised_score = normaliseScore(score); */
-		/* 	node = backpropagateNode(node, game, normalised_score); */
-		/* 	setNode(index, node); */	
-		/* 	incrementNCompletions(); */
-		/* 	maybeSelect(index); */
-		/* 	break; */
-
 		} else if (node->IsBlockedForEvaluation() ) {
 			
 			pause(index);

@@ -6,12 +6,13 @@ import sys
 import numpy as np
 import tensorflow as tf
 
-save_dir = sys.argv[1]
-model_dir = os.path.join(save_dir, "model")
+from tensorflow.python.framework.graph_util import (
+    convert_variables_to_constants,
+)
+from tensorflow.train import write_graph
 
-if os.path.exists(model_dir):
-    print(f"Removing existing model directory {model_dir}")
-    shutil.rmtree(model_dir)
+
+save_dir = sys.argv[1]
 
 print(f"Using tensorflow version {tf.__version__}")
 
@@ -54,8 +55,7 @@ with graph.as_default():
     dense_policy = tf.Variable(
         [[1.0 for _ in range(7)] for _ in range(12)], dtype=tf.float32
     )
-    value = tf.matmul(flat, dense_value)
-    value = tf.reshape(value, shape=[-1], name="value")
+    value = tf.matmul(flat, dense_value, name="value")
     policy_logits = tf.matmul(flat, dense_policy, name="policy_logits")
     policy = tf.nn.softmax(policy_logits, name="policy")
     loss = tf.reduce_mean(
@@ -79,8 +79,12 @@ with graph.as_default():
         )
 
         print("Saving model")
-        saver.export_meta_graph(filename=os.path.join(model_dir, "graph.pb"))
-        saver.save(session, save_path=os.path.join(model_dir, "model"))
+        session.run(tf.global_variables_initializer())
+        output_data = session.run([value, policy], feed_dict={input: input_data})
+        frozen_graph = convert_variables_to_constants(
+            session, session.graph.as_graph_def(), ["value", "policy"]
+        )
+        write_graph(frozen_graph, save_dir, "frozen_model.pb", as_text=False)
 
 with open(os.path.join(save_dir, "data.json"), "w") as f:
     f.write(
