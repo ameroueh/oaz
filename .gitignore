@@ -33,3 +33,6 @@
 
 # Build diretory
 build/
+
+#VSCode
+.vscode
