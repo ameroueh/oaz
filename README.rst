@@ -23,7 +23,7 @@ Now initialize the submodules:
 .. code-block:: bash
 
  $ cd oaz/extern/tensorflow
- $ git apply ../../../patches/tensorflow.patch
+ $ git apply ../../patches/tensorflow.patch
 
 We recommend creating a Python environment for OAZ,
 e.g. with Miniconda:
@@ -90,7 +90,7 @@ Install required Python dependencies:
 
 .. code-block:: bash
 
- $ pip install click keras
+ $ pip install click keras==2.1.3
 
 
 
@@ -115,7 +115,7 @@ To test the alpha zero training loop for Tic Tac Toe, do:
 
  $ cd build
  $ make az_self_play_tic_tac_toe
- $ cp ../../experiments/az_model_tic_tac_toe.py bin
+ $ cp ../experiments/az_model_tic_tac_toe.py bin
  $ cd bin
  $ python az_model_tic_tac_toe.py train-agent
 
@@ -126,7 +126,7 @@ Run
 
 .. code-block:: bash
  
- $ cd oaz/test
+ $ cd oaz/build
  $ make 
 
 and then
