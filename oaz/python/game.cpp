@@ -28,7 +28,8 @@ BOOST_PYTHON_MODULE(az_connect_four) {
 		.def("undo_move", &Game::undoMove)
 		.def("current_player", &Game::getCurrentPlayer)
 		.def("finished", &Game::Finished)
-		.def("score", &Game::score);
+		.def("score", &Game::score)
+		.def("get_policy_size", &Game::getPolicySize);
 	
 	p::class_<Model, std::shared_ptr<Model>, boost::noncopyable>("Model", p::init<>() )
 		.def("create", &Model::create)
