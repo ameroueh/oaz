@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <map>
 #include <mutex>
+#include <memory>
 #include <unordered_set>
 
 #include "oaz/mcts/az_search.hpp"
@@ -34,11 +35,13 @@ namespace oaz::mcts {
 		// TO DO Should return instantiated search objects
 		public:
 			using Search = AZSearch<Game, Evaluator>;
+			using SharedSearchPointer = std::shared_ptr<Search>;
 			using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
 			using SharedSearchContextPointer = std::shared_ptr<SearchContext<Game, Evaluator>>;
 
 			AZSearchPool(SharedEvaluatorPointer, size_t); // OK
 			void performSearch(Search*); // OK
+			/* void performSearch(SharedSearchPointer); // OK */
 
 			std::string getStatus() const;
 
