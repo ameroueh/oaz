@@ -93,6 +93,7 @@ else()
     message(STATUS "Detecting TensorFlow info - done")
   endif()
 
+  message(STATUS "INFO is ${TF_INFORMATION_STRING}")
   string(REPLACE "\n" ";" TF_INFORMATION_LIST ${TF_INFORMATION_STRING})
   list(GET TF_INFORMATION_LIST 0 TF_DETECTED_VERSION)
   list(GET TF_INFORMATION_LIST 1 TF_DETECTED_ABI)

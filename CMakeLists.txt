@@ -24,7 +24,15 @@ set(TensorFlow_BAZEL_GENFILES ${PROJECT_SOURCE_DIR}/extern/tensorflow/bazel-genf
 
 ##############################
 # Define libraries
-find_package(Boost 1.67.0 REQUIRED COMPONENTS program_options)
+find_package(PythonLibs 3 REQUIRED)
+
+if(UNIX)
+	set(BOOST_PYTHON_LIB python-py36)
+else()
+	set(BOOST_PYTHONLIB python3)
+endif()
+
+find_package(Boost 1.67.0 REQUIRED COMPONENTS system python program_options)
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
@@ -53,6 +61,26 @@ add_custom_target(
 	COMMAND 
 	python3 ${PROJECT_SOURCE_DIR}/data/generate_connect_four_model.py ${PROJECT_BINARY_DIR}/test/az/
 )
+
+python_add_module(az_connect_four oaz/python/game.cpp)
+target_include_directories(
+	az_connect_four
+	PUBLIC
+	${PROJECT_SOURCE_DIR} 
+	${PYTHON_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS}
+	TensorFlow_DEP 
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_BAZEL_GENFILES}
+)
+target_link_libraries(
+	az_connect_four
+	${Boost_LIBRARIES}
+	${PYTHON_LIBRARIES}
+	TensorFlow_DEP
+)
+set_target_properties(az_connect_four PROPERTIES PREFIX "")
+set_target_properties(az_connect_four PROPERTIES LINKER_LANGUAGE C)
 
 add_executable(connect_four_example examples/connect_four_example.cpp)
 target_include_directories(

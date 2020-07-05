@@ -20,6 +20,10 @@ namespace oaz::nn {
 				initialise();	
 			}
 
+			static std::shared_ptr<Model> create() {
+				return std::shared_ptr<Model>(new Model);
+			}
+
 			void Load(std::string model_path, std::string value_node_name, std::string policy_node_name) {
 				GraphDef graph_def;
 				ReadBinaryProto(Env::Default(), model_path, &graph_def);

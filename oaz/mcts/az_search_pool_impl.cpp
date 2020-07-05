@@ -43,6 +43,10 @@ AZSearchPool<Game, Evaluator>::AZSearchPool(SharedEvaluatorPointer evaluator, si
 	}
 }
 
+/* template <class Game, class Evaluator> */
+/* void AZSearchPool<Game, Evaluator>::performSearch(SharedSearchPointer search) { */
+/* 	performSearch(search.get()); */
+/* } */
 
 template <class Game, class Evaluator>
 void AZSearchPool<Game, Evaluator>::performSearch(Search* search) {
