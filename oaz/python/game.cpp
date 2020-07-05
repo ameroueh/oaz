@@ -1,3 +1,4 @@
+#include "Python.h"
 #include <boost/python.hpp>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
@@ -19,16 +20,25 @@ using Search_ = oaz::mcts::AZSearch<Game, Evaluator>;
 using SearchPool = oaz::mcts::AZSearchPool<Game, Evaluator>;
 using Node = oaz::mcts::SearchNode<Game::Move>;
 
+void perform_search(SearchPool& pool, Search_* search) {
+	PyThreadState* save_state = PyEval_SaveThread();
+	pool.performSearch(search);
+	PyEval_RestoreThread(save_state);
+}
+
+
 BOOST_PYTHON_MODULE(az_connect_four) {
 
 	/* np::initialize(); */
+	PyEval_InitThreads();
 
 	p::class_<Game>("ConnectFour")
 		.def("play_move", &Game::playMove)
 		.def("undo_move", &Game::undoMove)
 		.def("current_player", &Game::getCurrentPlayer)
 		.def("finished", &Game::Finished)
-		.def("score", &Game::score);
+		.def("score", &Game::score)
+		.def("get_policy_size", &Game::getPolicySize);
 	
 	p::class_<Model, std::shared_ptr<Model>, boost::noncopyable>("Model", p::init<>() )
 		.def("create", &Model::create)
@@ -55,6 +65,6 @@ BOOST_PYTHON_MODULE(az_connect_four) {
 	.def("done", &Search_::done);
 	
 	p::class_<SearchPool, shared_ptr<SearchPool>, boost::noncopyable>("SearchPool", p::init<std::shared_ptr<Evaluator>, size_t>())
-		.def("perform_search", &SearchPool::performSearch);
+		.def("perform_search", &perform_search);
 
 }
