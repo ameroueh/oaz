@@ -2,7 +2,7 @@
 #include <boost/python.hpp>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
-/* #include <boost/python/numpy.hpp> */
+#include <boost/python/numpy.hpp>
 
 #include "oaz/games/connect_four.hpp"
 #include "oaz/neural_network/model.hpp"
@@ -11,7 +11,7 @@
 #include "oaz/mcts/az_search_pool.hpp"
 
 namespace p = boost::python;
-/* using namespace np = boost::python::numpy; */
+namespace np = boost::python::numpy;
 
 using Game = ConnectFour;
 using Model = oaz::nn::Model;
@@ -26,11 +26,21 @@ void perform_search(SearchPool& pool, Search_* search) {
 	PyEval_RestoreThread(save_state);
 }
 
+np::ndarray get_board(Game& game) {
+	return np::from_data(
+		&(game.getBoard()[0][0][0]),
+		np::dtype::get_builtin<float>(),
+		p::make_tuple(7, 6, 2),
+		p::make_tuple(sizeof(float), sizeof(float), sizeof(float)),
+		p::object()
+	);
+}
+
 
 BOOST_PYTHON_MODULE(az_connect_four) {
 
-	/* np::initialize(); */
 	PyEval_InitThreads();
+	np::initialize();
 
 	p::class_<Game>("ConnectFour")
 		.def("play_move", &Game::playMove)
@@ -38,7 +48,8 @@ BOOST_PYTHON_MODULE(az_connect_four) {
 		.def("current_player", &Game::getCurrentPlayer)
 		.def("finished", &Game::Finished)
 		.def("score", &Game::score)
-		.def("get_policy_size", &Game::getPolicySize);
+		.def("get_policy_size", &Game::getPolicySize)
+		.def("get_board", &get_board);
 	
 	p::class_<Model, std::shared_ptr<Model>, boost::noncopyable>("Model", p::init<>() )
 		.def("create", &Model::create)

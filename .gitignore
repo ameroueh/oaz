@@ -36,3 +36,8 @@ build/
 
 #VSCode
 .vscode
+
+# Python
+*.egg-info/
+dist/
+__pycache__/
