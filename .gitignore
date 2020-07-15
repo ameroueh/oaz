@@ -45,3 +45,4 @@ __pycache__/
 
 #Models
 models/
+bin/
