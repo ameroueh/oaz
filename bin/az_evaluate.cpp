@@ -82,11 +82,13 @@ int main(int argc, char* argv[])
 	size_t evaluator_batch_size = variables_map["evaluator-batch-size"].as<size_t>();
 	size_t search_batch_size = variables_map["search-batch-size"].as<size_t>();
 	
-	SharedModelPointer model(new Model());
-	model->Load(
-		variables_map["model-path"].as<std::string>(),
-		variables_map["value-op-name"].as<std::string>(),
-		variables_map["policy-op-name"].as<std::string>()
+	std::unique_ptr<tensorflow::Session> session(
+		createSessionAndLoadGraph(variables_map["model-path"].as<std::string>())
+	);
+	SharedModelPointer model(createModel(
+		session.get(), 
+		variables_map["value-op-name"].as<std::string>(), 
+		variables_map["policy-op-name"].as<std::string>())
 	);
 	
 	SharedEvaluatorPointer evaluator(new Evaluator(model, evaluator_batch_size));

@@ -79,17 +79,15 @@ namespace oaz::nn {
 	}
 
 	TEST (NNEvaluator, Instantiation) {
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
-
 		Evaluator evaluator(model, 64);
 	}
 
 	TEST (NNEvaluator, requestEvaluation) {
-		
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
 		DummyNotifier notifier;
 		typename Game::Value value;
@@ -106,9 +104,8 @@ namespace oaz::nn {
 	}
 
 	TEST (NNEvaluator, forceEvaluation) {
-		
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
 		DummyNotifier notifier;
 		typename Game::Value value;
@@ -127,9 +124,8 @@ namespace oaz::nn {
 	}
 
 	TEST (Inference, CheckResults) {
-		
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
 		Evaluator evaluator(model, 64);
 
@@ -157,10 +153,9 @@ namespace oaz::nn {
 	}
 	
 	TEST (Inference, DelayedEvaluation) {
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
-
 		size_t N_REQUESTS = 100;
 		size_t BATCH_SIZE = 16;
 		Evaluator evaluator(model, BATCH_SIZE);
@@ -225,9 +220,9 @@ namespace oaz::nn {
 		size_t BATCH_SIZE = 16;
 		size_t N_THREADS = 2;
 		
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
-
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
+		
 		Evaluator evaluator(model, BATCH_SIZE);
 
 		std::ifstream ifs("data.json");
@@ -277,9 +272,9 @@ namespace oaz::nn {
 		size_t BATCH_SIZE = 16;
 		size_t N_THREADS = 2;
 		
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
-
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
+		
 		Evaluator evaluator(model, BATCH_SIZE);
 
 		std::ifstream ifs("data.json");
