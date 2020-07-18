@@ -40,7 +40,7 @@ def main():
     LOGGER.info("created model")
     model.save("/home/simon/code/oaz-gpu/models/model_0")
     LOGGER.info("saved model")
-    freeze("/home/simon/code/oaz-gpu/models/model_1")
+    freeze("/home/simon/code/oaz-gpu/models/model_1.pb")
     LOGGER.info("frozen model")
 
 
