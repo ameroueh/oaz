@@ -1,3 +1,4 @@
+import tensorflow
 import threading
 import numpy as np
 
@@ -9,11 +10,6 @@ SEARCH_BATCH_SIZE = 8
 EVALUATOR_BATCH_SIZE = 64
 N_SEARCH_WORKERS = 8
 N_GAMES_PER_WORKER = 1000 // N_THREADS
-
-model = Model.create()
-model.load("model.pb", "value/sub", "policy/Softmax")
-evaluator = Evaluator(model, EVALUATOR_BATCH_SIZE)
-pool = SearchPool(evaluator, N_SEARCH_WORKERS)
 
 def self_play(game, pool, evaluator):
     for _ in range(N_GAMES_PER_WORKER):
@@ -40,13 +36,38 @@ def worker(id, pool, evaluator):
     game = ConnectFour()
     self_play(game, pool, evaluator)
 
-threads = [threading.Thread(
-    target=worker,
-    args=(i, pool, evaluator)
-) for i in range(N_THREADS)]
+def load_graph(file_name):
+    with tensorflow.gfile.GFile(file_name, 'rb') as f:
+           graph_def = tensorflow.GraphDef()
+           graph_def.ParseFromString(f.read())
 
-for t in threads:
-    t.start()
+    with tensorflow.Graph().as_default() as graph:
+        tensorflow.import_graph_def(graph_def, name="")
 
-for t in threads:
-    t.join()
+    return graph
+
+graph = load_graph('model.pb')
+print(graph)
+# print(graph.get_operation_by_name("import/policy/Softmax"))
+
+with tensorflow.Session(graph=graph) as session:
+    print(session.graph)
+    session.run(tensorflow.global_variables_initializer())
+    model = Model()
+    model.set_session(session._session)
+    model.set_value_node_name("value/sub")
+    model.set_policy_node_name("policy/Softmax")
+
+    evaluator = Evaluator(model, EVALUATOR_BATCH_SIZE)
+    pool = SearchPool(evaluator, N_SEARCH_WORKERS)
+
+    threads = [threading.Thread(
+        target=worker,
+        args=(i, pool, evaluator)
+    ) for i in range(N_THREADS)]
+
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()

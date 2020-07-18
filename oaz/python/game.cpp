@@ -4,11 +4,23 @@
 #include <boost/python/def.hpp>
 #include <boost/python/numpy.hpp>
 
+#include "swiglabels.swg"
+#include "swigrun.swg"
+#include "swigerrors.swg"
+#include "python/pythreads.swg"
+#include "python/pyhead.swg"
+#include "python/pyrun.swg"
+#include "runtime.swg"
+
+#include "tensorflow/c/c_api_internal.h"
+
 #include "oaz/games/connect_four.hpp"
 #include "oaz/neural_network/model.hpp"
 #include "oaz/neural_network/nn_evaluator.hpp"
 #include "oaz/mcts/az_search.hpp"
 #include "oaz/mcts/az_search_pool.hpp"
+
+#include <iostream>
 
 namespace p = boost::python;
 namespace np = boost::python::numpy;
@@ -18,7 +30,7 @@ using Model = oaz::nn::Model;
 using Evaluator = oaz::nn::NNEvaluator<Game, oaz::mcts::SafeQueueNotifier>;
 using Search_ = oaz::mcts::AZSearch<Game, Evaluator>;
 using SearchPool = oaz::mcts::AZSearchPool<Game, Evaluator>;
-using Node = oaz::mcts::SearchNode<Game::Move>;
+using Node_ = oaz::mcts::SearchNode<Game::Move>;
 
 void perform_search(SearchPool& pool, Search_* search) {
 	PyThreadState* save_state = PyEval_SaveThread();
@@ -34,6 +46,17 @@ np::ndarray get_board(Game& game) {
 		p::make_tuple(sizeof(float), sizeof(float), sizeof(float)),
 		p::object()
 	);
+}
+
+void set_session(Model& model, PyObject* obj) {
+	void* ptr = nullptr;
+	int result = SWIG_ConvertPtr(obj, &ptr, 0, 0);
+	TF_Session* session = static_cast<TF_Session*>(ptr);
+	/* std::cout << "Result " << result << std::endl; */
+	/* std::cout << "ptr " << ptr << std::endl; */
+	/* std::cout << "session " << session << std::endl; */
+	/* std::cout << "session->session " << session->session << std::endl; */
+	model.setSession(session->session);
 }
 
 
@@ -52,23 +75,23 @@ BOOST_PYTHON_MODULE(az_connect_four) {
 		.def("get_board", &get_board);
 	
 	p::class_<Model, std::shared_ptr<Model>, boost::noncopyable>("Model", p::init<>() )
-		.def("create", &Model::create)
-		.staticmethod("create")
-		.def("load", &Model::Load)
+		.def("set_session", &set_session)
 		.def("get_value_node_name", &Model::getValueNodeName)
-		.def("get_policy_node_name", &Model::getPolicyNodeName);
+		.def("get_policy_node_name", &Model::getPolicyNodeName)
+		.def("set_value_node_name", &Model::setValueNodeName)
+		.def("set_policy_node_name", &Model::setPolicyNodeName);
 	
 	p::class_<Evaluator, std::shared_ptr<Evaluator>, boost::noncopyable>("Evaluator", p::init<std::shared_ptr<Model>, size_t>());
 
-	p::class_<Node, boost::noncopyable>("Node", p::init<>())
-		.def("get_move", &Node::getMove)
-		.def("is_root", &Node::isRoot)
-		.def("is_leaf", &Node::isLeaf)
-		.def("get_n_children", &Node::getNChildren)
-		.def("get_n_visits", &Node::getNVisits)
-		.def("get_accumulated_value", &Node::getAccumulatedValue)
-		.def("get_child", &Node::getChild, p::return_value_policy<p::reference_existing_object>())
-		.def("get_parent", &Node::getParent, p::return_value_policy<p::reference_existing_object>());
+	p::class_<Node_, boost::noncopyable>("Node", p::init<>())
+		.def("get_move", &Node_::getMove)
+		.def("is_root", &Node_::isRoot)
+		.def("is_leaf", &Node_::isLeaf)
+		.def("get_n_children", &Node_::getNChildren)
+		.def("get_n_visits", &Node_::getNVisits)
+		.def("get_accumulated_value", &Node_::getAccumulatedValue)
+		.def("get_child", &Node_::getChild, p::return_value_policy<p::reference_existing_object>())
+		.def("get_parent", &Node_::getParent, p::return_value_policy<p::reference_existing_object>());
 
 
 	p::class_<Search_, std::shared_ptr<Search_>, boost::noncopyable>("Search", p::init<const Game&, std::shared_ptr<Evaluator>, size_t, size_t>())
