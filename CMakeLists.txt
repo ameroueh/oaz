@@ -36,6 +36,9 @@ find_package(Boost 1.67.0 REQUIRED COMPONENTS system python program_options nump
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
+find_package(SWIG REQUIRED COMPONENTS python)
+
+message(STATUS "Swig lib at ${SWIG_DIR}")
 
 ##############################
 # Flags
@@ -69,16 +72,31 @@ target_include_directories(
 	${PROJECT_SOURCE_DIR} 
 	${PYTHON_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS}
-	TensorFlow_DEP 
 	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_INCLUDE_DIR}
 	${TensorFlow_BAZEL_GENFILES}
+	${SWIG_DIR}
 )
+add_library(TensorFlow_DEP2 INTERFACE)
+target_include_directories(TensorFlow_DEP2 SYSTEM INTERFACE ${TensorFlow_SOURCE_DIR})
+target_include_directories(TensorFlow_DEP2 SYSTEM INTERFACE ${TensorFlow_INCLUDE_DIR})
+target_link_libraries(TensorFlow_DEP2 INTERFACE ${LINKER_ALLOW_MULDEFS} ${LINKER_WHOLE_ARCHIVE} ${TensorFlow_LIBRARY} ${LINKER_NO_WHOLE_ARCHIVE})
+
 target_link_libraries(
 	az_connect_four
 	${Boost_LIBRARIES}
 	${PYTHON_LIBRARIES}
-	TensorFlow_DEP
+	TensorFlow_DEP2
 )
+# target_link_libraries(
+# 	az_connect_four 
+# 	INTERFACE 
+# 	${LINKER_ALLOW_MULDEFS} 
+# 	${LINKER_WHOLE_ARCHIVE} 
+# 	${TensorFlow_LIBRARY} 
+# 	${LINKER_NO_WHOLE_ARCHIVE}
+# )
+message(STATUS "Tensorflow_LIBRARY is ${TensorFlow_LIBRARY}")
 set_target_properties(az_connect_four PROPERTIES PREFIX "")
 set_target_properties(az_connect_four PROPERTIES LINKER_LANGUAGE C)
 

@@ -73,34 +73,18 @@ void search_until_done(GameSearch* search, Evaluator* evaluator) {
 
 namespace oaz::mcts {
 	TEST (Instantiation, Default) {
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 
 		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 64));
 		Game game;
 		GameSearch(game, shared_evaluator_ptr, 1, 1);
 	}
 	
-	/* TEST (WaitingForEvaluation, Default) { */
-	/* 	SharedModelPointer model(new Model()); */
-	/* 	model->Load("model"); */
-		
-	/* 	std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 64)); */
-	/* 	Game game; */
-	/* 	GameSearch search(game, shared_evaluator_ptr, 1, 1); */
-		
-	/* 	ASSERT_FALSE(search.waitingForEvaluation()); */
-	/* 	search.selectNode(0); */
-	/* 	ASSERT_TRUE(search.waitingForEvaluation()); */
-	/* 	shared_evaluator_ptr->forceEvaluation(); */
-	/* 	ASSERT_FALSE(search.waitingForEvaluation()); */
-	/* } */
-	
-	
-
 	TEST (Search, CheckSearchTree) {
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
+		
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
 		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 64));
 		
@@ -115,8 +99,8 @@ namespace oaz::mcts {
 	}
 	
 	TEST (MultithreadedSearch, CheckSearchTree) {
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
 		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 16));
 		Game game;
@@ -136,8 +120,8 @@ namespace oaz::mcts {
 	}
 	
 	TEST (MultithreadedSearch, WithNoiseCheckSearchTree) {
-		SharedModelPointer model(new Model());
-		model->Load("frozen_model.pb", "value", "policy");
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
 		std::shared_ptr<Evaluator> shared_evaluator_ptr(new Evaluator(model, 16));
 		Game game;

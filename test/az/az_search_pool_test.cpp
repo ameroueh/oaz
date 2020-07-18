@@ -70,12 +70,8 @@ void createAndPerformSearch(SharedEvaluatorPointer evaluator, SearchPool* search
 
 namespace oaz::mcts {
 	TEST (Instantiation, Default) {
-		SharedModelPointer model(new Model());
-		model->Load(
-			"frozen_model.pb",
-			"value",
-			"policy"
-		);
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		SharedEvaluatorPointer evaluator(
 			new Evaluator(model, 64)
 		);
@@ -83,12 +79,8 @@ namespace oaz::mcts {
 	}
 	
 	TEST (SingleSearch, Singlethreaded) {
-		SharedModelPointer model(new Model());
-		model->Load(
-			"frozen_model.pb",
-			"value",
-			"policy"
-		);
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		SharedEvaluatorPointer evaluator(
 			new Evaluator(model, 64)
 		);
@@ -101,12 +93,8 @@ namespace oaz::mcts {
 	}
 	
 	TEST (SingleSearch, Multithreaded) {
-		SharedModelPointer model(new Model());
-		model->Load(
-			"frozen_model.pb",
-			"value",
-			"policy"
-		);
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		SharedEvaluatorPointer evaluator(
 			new Evaluator(model, 64)
 		);
@@ -119,12 +107,8 @@ namespace oaz::mcts {
 	}
 	
 	TEST (Multisearch, Singlethreaded) {
-		SharedModelPointer model(new Model());
-		model->Load(
-			"frozen_model.pb",
-			"value",
-			"policy"
-		);
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		SharedEvaluatorPointer evaluator(
 			new Evaluator(model, 2)
 		);
@@ -139,12 +123,8 @@ namespace oaz::mcts {
 	}
 	
 	TEST (Multisearch, Multithreaded) {
-		SharedModelPointer model(new Model());
-		model->Load(
-			"frozen_model.pb",
-			"value",
-			"policy"
-		);
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		SharedEvaluatorPointer evaluator(
 			new Evaluator(model, 4)
 		);
