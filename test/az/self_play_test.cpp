@@ -45,12 +45,8 @@ static const size_t N_WORKERS = 5;
 	
 namespace oaz::az {
 	TEST (Instantiation, Default) {
-		SharedModelPointer model(new Model());
-		model->Load(
-			"frozen_model.pb",
-			"value",
-			"policy"
-		);
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		SharedEvaluatorPointer evaluator(
 			new Evaluator(model, 64)
 		);
@@ -68,12 +64,8 @@ namespace oaz::az {
 	}
 	
 	TEST (PlayGames, Default) {
-		SharedModelPointer model(new Model());
-		model->Load(
-			"frozen_model.pb",
-			"value",
-			"policy"
-		);
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		SharedEvaluatorPointer evaluator(
 			new Evaluator(model, 64)
 		);
@@ -95,12 +87,8 @@ namespace oaz::az {
 	// Need to test sampleMove
 	
 	TEST (PlayGames, MultiThreaded) {
-		SharedModelPointer model(new Model());
-		model->Load(
-			"frozen_model.pb",
-			"value",
-			"policy"
-		);
+		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
+		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		SharedEvaluatorPointer evaluator(
 			new Evaluator(model, 64)
 		);
