@@ -16,34 +16,18 @@ namespace oaz::nn {
 
 	class Model {
 		public:
-			Model(): m_session(nullptr), m_run_semaphore(6) {
-				initialise();	
+			Model(): m_session(nullptr) {}
+		
+			void setSession(tensorflow::Session* session) {
+				m_session = session;
 			}
 
-			static std::shared_ptr<Model> create() {
-				return std::shared_ptr<Model>(new Model);
-			}
-
-			void Load(std::string model_path, std::string value_node_name, std::string policy_node_name) {
-				GraphDef graph_def;
-				ReadBinaryProto(Env::Default(), model_path, &graph_def);
-				TF_CHECK_OK(
-					m_session->Create(graph_def)
-				);
-				
+			void setPolicyNodeName(std::string policy_node_name) {
 				m_policy_node_name = policy_node_name;
+			}
+			
+			void setValueNodeName(std::string value_node_name) {
 				m_value_node_name = value_node_name;
-				/* Tensor checkpoint_path_tensor(DT_STRING, TensorShape()); */
-				/* checkpoint_path_tensor.scalar<std::string>()() = model_path + "/model"; */
-				/* TF_CHECK_OK( */
-				/* 	m_session->Run( */
-				/* 		{{graph_def.saver_def().filename_tensor_name(), checkpoint_path_tensor},}, */
-				/* 		{}, */
-				/* 		{graph_def.saver_def().restore_op_name()}, */
-				/* 		nullptr */
-				/* 	) */
-				/* ); */
-
 			}
 
 			std::string getPolicyNodeName() const {
@@ -53,20 +37,6 @@ namespace oaz::nn {
 			std::string getValueNodeName() const {
 				return m_value_node_name;
 			}
-			
-			void Checkpoint(std::string model_path) {
-				Tensor checkpoint_path_tensor(DT_STRING, TensorShape());
-				checkpoint_path_tensor.scalar<std::string>()() = model_path + "/model";
-				
-				TF_CHECK_OK(
-					m_session->Run(
-						{{"save/Const", checkpoint_path_tensor}},
-						{},
-						{"save/control_dependency"},
-						nullptr
-					)
-				);
-			}
 
 			void Run(
 				const std::vector<std::pair<std::string, Tensor> >& inputs,
@@ -74,8 +44,6 @@ namespace oaz::nn {
 				const std::vector<string>& target_node_names,
 				std::vector<Tensor>* outputs
 			) {
-				
-				m_run_semaphore.lock();
 				TF_CHECK_OK(
 					m_session->Run(
 						inputs,
@@ -84,22 +52,38 @@ namespace oaz::nn {
 						outputs
 					)
 				);
-				m_run_semaphore.unlock();
 			}
 		private:
-			using UniqueSessionPointer = std::unique_ptr<tensorflow::Session>;
-			void initialise() {
-				tensorflow::SessionOptions options;
-				tensorflow::Session* session;
-				TF_CHECK_OK(tensorflow::NewSession(options, &session));
-				m_session.reset(session);
-			}
-
-			oaz::semaphore::SpinlockSemaphore m_run_semaphore;
-			UniqueSessionPointer m_session;
-
+			tensorflow::Session* m_session;
 			std::string m_policy_node_name;
 			std::string m_value_node_name;
 	};
+
+	tensorflow::Session* createSession() {
+		tensorflow::SessionOptions options;
+		tensorflow::Session* session;
+		TF_CHECK_OK(tensorflow::NewSession(options, &session));
+		return session;
+	}
+
+	void loadGraph(tensorflow::Session* session, std::string path) {
+		GraphDef graph_def;
+		ReadBinaryProto(Env::Default(), path, &graph_def);
+		TF_CHECK_OK(session->Create(graph_def));
+	}
+
+	tensorflow::Session* createSessionAndLoadGraph(std::string path) {
+		tensorflow::Session* session(createSession());
+		loadGraph(session, path);
+		return session;
+	}
+
+	Model* createModel(tensorflow::Session* session, std::string value_node_name, std::string policy_node_name) {
+		Model* model(new Model());
+		model->setSession(session);
+		model->setValueNodeName("value");
+		model->setPolicyNodeName("policy");
+		return model;
+	}
 }
 #endif

@@ -51,13 +51,15 @@ void createAndPerformSearch(
 }
 
 int main() {
-	
-	SharedModelPointer model(new Model());
-	model->Load(
-		"frozen_model.pb",
+	std::unique_ptr<tensorflow::Session> session(
+		createSessionAndLoadGraph("frozen_model.pb")
+	);
+	SharedModelPointer model(createModel(
+		session.get(), 
 		"value",
 		"policy"
-	);
+	));
+	
 	SharedEvaluatorPointer evaluator(
 		new Evaluator(model, EVALUATOR_BATCH_SIZE)
 	);

@@ -71,12 +71,15 @@ int main(int argc, char* argv[])
 		return false;
 	}
 	
-	SharedModelPointer model(new Model());
-	model->Load(
-		variables_map["model-path"].as<std::string>(),
-		variables_map["value-op-name"].as<std::string>(),
-		variables_map["policy-op-name"].as<std::string>()
+	std::unique_ptr<tensorflow::Session> session(
+		createSessionAndLoadGraph(variables_map["model-path"].as<std::string>())
 	);
+	SharedModelPointer model(createModel(
+		session.get(), 
+		variables_map["value-op-name"].as<std::string>(), 
+		variables_map["policy-op-name"].as<std::string>())
+	);
+	
 	SharedEvaluatorPointer evaluator(new Evaluator(model, variables_map["evaluator-batch-size"].as<size_t>()));
 	SharedSearchPoolPointer  search_pool(
 		new SearchPool(evaluator, variables_map["n-search-workers"].as<size_t>())
