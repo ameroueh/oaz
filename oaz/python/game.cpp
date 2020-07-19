@@ -43,7 +43,7 @@ np::ndarray get_board(Game& game) {
 		&(game.getBoard()[0][0][0]),
 		np::dtype::get_builtin<float>(),
 		p::make_tuple(7, 6, 2),
-		p::make_tuple(sizeof(float), sizeof(float), sizeof(float)),
+		p::make_tuple(6*2*sizeof(float), 2*sizeof(float), sizeof(float)),
 		p::object()
 	);
 }
@@ -52,10 +52,6 @@ void set_session(Model& model, PyObject* obj) {
 	void* ptr = nullptr;
 	int result = SWIG_ConvertPtr(obj, &ptr, 0, 0);
 	TF_Session* session = static_cast<TF_Session*>(ptr);
-	/* std::cout << "Result " << result << std::endl; */
-	/* std::cout << "ptr " << ptr << std::endl; */
-	/* std::cout << "session " << session << std::endl; */
-	/* std::cout << "session->session " << session->session << std::endl; */
 	model.setSession(session->session);
 }
 
