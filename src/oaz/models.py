@@ -6,7 +6,7 @@ from tensorflow.keras.layers import (
     Dense,
     # BatchNormalization,
     Activation,
-    # Softmax,
+    Softmax,
     add,
 )
 
@@ -92,10 +92,26 @@ def create_model(depth=3):
 
     block_output = residual_block(inputs=x, strides=1, num_filters=64)
 
-    for _ in range(depth):
-        block_output = residual_block(
-            inputs=block_output, strides=1, num_filters=64
-        )
+    # for _ in range(depth):
+    #     block_output = residual_block(
+    #         inputs=block_output, strides=1, num_filters=64
+    #     )
+
+    block_1_output = residual_block(
+        inputs=block_output, strides=1, num_filters=64
+    )
+    block_2_output = residual_block(
+        inputs=block_1_output, strides=1, num_filters=64
+    )
+    block_3_output = residual_block(
+        inputs=block_2_output, strides=1, num_filters=64
+    )
+    block_4_output = residual_block(
+        inputs=block_3_output, strides=1, num_filters=64
+    )
+    block_5_output = residual_block(
+        inputs=block_4_output, strides=1, num_filters=64
+    )
 
     value_conv_output = Conv2D(
         1,
@@ -105,8 +121,7 @@ def create_model(depth=3):
         kernel_initializer="he_normal",
         kernel_regularizer=l2(1e-4),
         activation="relu",
-    )(block_output)
-
+    )(block_5_output)
     value = Dense(
         units=1,
         kernel_regularizer=l2(1e-4),
@@ -123,7 +138,7 @@ def create_model(depth=3):
         kernel_initializer="he_normal",
         kernel_regularizer=l2(1e-4),
         activation="relu",
-    )(block_output)
+    )(block_5_output)
     policy = Dense(
         units=7,
         kernel_regularizer=l2(1e-4),
@@ -131,8 +146,8 @@ def create_model(depth=3):
         activation="softmax",
         name="policy",
     )(Flatten()(policy_conv_output))
-
-    model = tf.keras.Model(inputs=input, outputs=[value, policy])
+    # policy = Softmax(name="policy")(_policy + 1e-12)
+    model = tf.keras.Model(inputs=input, outputs=[policy, value])
     model.compile(
         loss={
             "policy": "categorical_crossentropy",
@@ -140,4 +155,5 @@ def create_model(depth=3):
         },
         optimizer=tf.keras.optimizers.SGD(learning_rate=0.1),
     )
+    # model.run_eagerly = True
     return model
