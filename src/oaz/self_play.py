@@ -4,7 +4,9 @@
 import logging
 from pathlib import Path
 from threading import Thread
+from typing import Tuple, List, Dict
 
+import numpy as np
 from az_connect_four.az_connect_four import (
     ConnectFour,
     Evaluator,
@@ -56,11 +58,18 @@ class SelfPlay:
         self.evaluator = Evaluator(self.c_model, self.evaluator_batch_size)
         self.pool = SearchPool(self.evaluator, self.n_search_worker)
 
-    def self_play(self, session):
+    def self_play(self, session) -> Dict:
 
         self.c_model.set_session(session._session)
+
+        all_datasets = [
+            {"Boards": [], "Values": [], "Policies": []}
+            for _ in range(self.n_threads)
+        ]
+        # self._worker_self_play(all_datasets, 0)
+
         threads = [
-            Thread(target=self._worker_self_play, args=(i,))
+            Thread(target=self._worker_self_play, args=(all_datasets, i))
             for i in range(self.n_threads)
         ]
         for t in threads:
@@ -69,36 +78,87 @@ class SelfPlay:
         for t in threads:
             t.join()
 
-    def _worker_self_play(self, id):
+        all_boards = []
+        all_values = []
+        all_policies = []
+        for dataset in all_datasets:
+            all_boards.append(dataset["Boards"])
+            all_values.extend(dataset["Values"])
+            all_policies.extend(dataset["Policies"])
+
+        final_dataset = {
+            "Boards": np.vstack(all_boards),
+            "Values": np.array(all_values),
+            "Policies": np.vstack(all_policies),
+        }
+
+        return final_dataset
+
+    def _worker_self_play(self, dataset, id):
         LOGGER.info(f"Starting thread {id}")
-        self._self_play()
+        self._self_play(dataset[id])
 
-    def _self_play(self):
-        game = ConnectFour()
+    def _self_play(self, dataset):
+
         self.iteration += 1
+
+        all_boards = []
+        all_scores = []
+        all_policies = []
         for _ in range(self.n_games_per_worker):
+            boards, scores, policies = self._play_one_game()
+            all_boards.extend(boards)
+            all_scores.extend(scores)
+            all_policies.extend(policies)
 
-            all_games = []
-            while not game.finished():
-                search = Search(
-                    game,
-                    self.evaluator,
-                    self.search_batch_size,
-                    self.n_simulations_per_move,
-                )
-                self.pool.perform_search(search)
-                root = search.get_tree_root()
+        dataset["Boards"].extend(all_boards)
+        dataset["Values"].extend(all_scores)
+        dataset["Policies"].extend(all_policies)
 
-                best_visit_count = -1
-                best_child = None
-                for i in range(root.get_n_children()):
-                    child = root.get_child(i)
-                    if child.get_n_visits() > best_visit_count:
-                        best_visit_count = child.get_n_visits()
-                        best_child = child
+    def _play_one_game(self) -> Tuple[List, List, List]:
 
-                move = best_child.get_move()
-                LOGGER.info(f"Playing move {move}")
-                game.play_move(move)
-                all_games.append(game.get_board())
-            LOGGER.info("Game is finished!")
+        boards = []
+        policies = []
+        game = ConnectFour()
+
+        # I think there's a bug with ConnectFour implementation
+        # ConnectFour().get_policy_size() throws an Argument error
+        policy_size = ConnectFour.get_policy_size()
+
+        while not game.finished():
+
+            search = Search(
+                game,
+                self.evaluator,
+                self.search_batch_size,
+                self.n_simulations_per_move,
+            )
+            self.pool.perform_search(search)
+            root = search.get_tree_root()
+
+            best_visit_count = -1
+            best_child = None
+            policy = np.empty(shape=policy_size)
+            for i in range(root.get_n_children()):
+
+                child = root.get_child(i)
+                move = child.get_move()
+                n_visits = child.get_n_visits()
+                policy[move] = n_visits
+
+                if n_visits > best_visit_count:
+                    best_visit_count = n_visits
+                    best_child = child
+
+            # There's an off-by-one error in the Search's n_sim_per_move
+            policy = policy / (self.n_simulations_per_move - 1)
+            policies.append(policy)
+            move = best_child.get_move()
+            # LOGGER.info(f"Playing move {move}")
+
+            game.play_move(move)
+            boards.append(game.get_board().copy())
+
+        # LOGGER.info("Game is finished!")
+        scores = [game.score()] * len(boards)
+        return boards, scores, policies
