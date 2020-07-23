@@ -40,7 +40,6 @@ class SelfPlay:
         self.search_batch_size = search_batch_size
         self.n_games_per_worker = n_games_per_worker
         self.n_simulations_per_move = n_simulations_per_move
-        self.iteration = 0
         self.n_search_worker = n_search_worker
         self.n_threads = n_threads
         self.evaluator_batch_size = evaluator_batch_size
@@ -66,7 +65,6 @@ class SelfPlay:
             {"Boards": [], "Values": [], "Policies": []}
             for _ in range(self.n_threads)
         ]
-        # self._worker_self_play(all_datasets, 0)
 
         threads = [
             Thread(target=self._worker_self_play, args=(all_datasets, i))
@@ -77,6 +75,9 @@ class SelfPlay:
 
         for t in threads:
             t.join()
+
+        # Debugging: skip the threading:
+        # self._worker_self_play(all_datasets, 0)
 
         all_boards = []
         all_values = []
@@ -99,8 +100,6 @@ class SelfPlay:
         self._self_play(dataset[id])
 
     def _self_play(self, dataset):
-
-        self.iteration += 1
 
         all_boards = []
         all_scores = []
@@ -138,7 +137,7 @@ class SelfPlay:
 
             best_visit_count = -1
             best_child = None
-            policy = np.empty(shape=policy_size)
+            policy = np.zeros(shape=policy_size)
             for i in range(root.get_n_children()):
 
                 child = root.get_child(i)
