@@ -89,18 +89,20 @@ def main(args):
             LOGGER.info(f"Training cycle {i}")
 
             self_play_controller = SelfPlay(
-                # search_batch_size=8,
-                # n_games_per_worker=1000 // 64,
-                # n_simulations_per_move=200,
-                # n_search_worker=8,
-                # n_threads=64,
-                # evaluator_batch_size=64,
+                # BEAST MODE
                 search_batch_size=4,
-                n_games_per_worker=10,
-                n_simulations_per_move=20,
+                n_games_per_worker=200 // 32,
+                n_simulations_per_move=200,
                 n_search_worker=4,
-                n_threads=4,
-                evaluator_batch_size=4,
+                n_threads=32,
+                evaluator_batch_size=32,
+                # DEBUG MODE
+                # search_batch_size=4,
+                # n_games_per_worker=10,
+                # n_simulations_per_move=20,
+                # n_search_worker=4,
+                # n_threads=4,
+                # evaluator_batch_size=4,
             )
             # awkard way to pass a session, maybe
             dataset = self_play_controller.self_play(session)
