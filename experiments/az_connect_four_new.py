@@ -1,14 +1,11 @@
-import logging
-from pathlib import Path
 import argparse
+import logging
+import sys
 
 import numpy as np
 import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
-from tensorflow.compat.v1.graph_util import convert_variables_to_constants
 from tensorflow.keras.models import load_model
-from tensorflow.train import write_graph
-
 
 from oaz.models import create_model
 from oaz.self_play import SelfPlay
@@ -19,25 +16,6 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-
-N_TRAIN_CYCLES = 2
-
-# def freeze(output_path):
-#     output_path = Path(output_path)
-#     # import pdb
-
-#     # pdb.set_trace()
-#     with tf.Session() as session:
-#         K.set_session(session)
-#         model = load_model("/home/simon/code/oaz-gpu/models/model_0")
-#         output_names = [out.op.name for out in model.outputs]
-#         LOGGER.info(output_names)
-#         frozen_graph = convert_variables_to_constants(
-#             session, session.graph.as_graph_def(), output_names
-#         )
-#     write_graph(
-#         frozen_graph, str(output_path.parent), output_path.name, as_text=False
-#     )
 
 
 def train_model(model, dataset, session):
@@ -58,14 +36,6 @@ def train_model(model, dataset, session):
     validation_policies = dataset["Policies"][validation_select]
     validation_values = dataset["Values"][validation_select]
 
-    # import pdb
-
-    # pdb.set_trace()
-
-    # early_stopping = EarlyStopping(
-    #     monitor="val_loss", mode="min", verbose=1, patience=5
-    # )
-
     model.fit(
         train_boards,
         {"value": train_values, "policy": train_policies},
@@ -80,37 +50,63 @@ def train_model(model, dataset, session):
     )
 
 
+def train_cycle(session, model, n_gen):
+    for i in range(args.n_gen):
+        LOGGER.info(f"Training cycle {i}")
+
+        self_play_controller = SelfPlay(
+            # BEAST MODE
+            search_batch_size=4,
+            n_games_per_worker=1000 // 64,
+            n_simulations_per_move=200,
+            n_search_worker=4,
+            n_threads=32,
+            evaluator_batch_size=32,
+            # DEBUG MODE
+            # search_batch_size=4,
+            # n_games_per_worker=10,
+            # n_simulations_per_move=20,
+            # n_search_worker=4,
+            # n_threads=4,
+            # evaluator_batch_size=4,
+        )
+        # awkard way to pass a session, maybe
+        dataset = self_play_controller.self_play(session)
+
+        train_model(model, dataset, session)
+
+
 def main(args):
-    model = create_model(depth=3)
 
     with tf.Session() as session:
-        session.run(tf.global_variables_initializer())
-        for i in range(args.n_gen):
-            LOGGER.info(f"Training cycle {i}")
 
-            self_play_controller = SelfPlay(
-                # BEAST MODE
-                search_batch_size=4,
-                n_games_per_worker=200 // 32,
-                n_simulations_per_move=200,
-                n_search_worker=4,
-                n_threads=32,
-                evaluator_batch_size=32,
-                # DEBUG MODE
-                # search_batch_size=4,
-                # n_games_per_worker=10,
-                # n_simulations_per_move=20,
-                # n_search_worker=4,
-                # n_threads=4,
-                # evaluator_batch_size=4,
-            )
-            # awkard way to pass a session, maybe
-            dataset = self_play_controller.self_play(session)
+        if args.load_path:
+            model = load_model(args.load_path)
+        else:
+            model = create_model(depth=3)
+            session.run(tf.global_variables_initializer())
 
-            train_model(model, dataset, session)
+        try:
+            train_cycle(session, model, args.n_gen)
 
-        LOGGER.info(f"Saving model at {args.save_path}")
-        model.save(args.save_path)
+            LOGGER.info(f"Saving model at {args.save_path}")
+            model.save(args.save_path)
+
+        except KeyboardInterrupt:
+            while True:
+                print(
+                    "\nKeyboard interrupt detected. Would you like to save the "
+                    "current model? y/n"
+                )
+                ans = input()
+                if ans in ["y", "Y", "yes"]:
+                    print(f"Saving model at {args.save_path}")
+                    model.save(args.save_path)
+                    sys.ext()
+                elif ans in ["n", "N", "no"]:
+                    sys.exit()
+                else:
+                    print("Invalid input, try again")
 
 
 if __name__ == "__main__":
@@ -119,6 +115,13 @@ if __name__ == "__main__":
         "--save_path",
         required=True,
         help="path to which the model will be saved.",
+    )
+    parser.add_argument(
+        "--load_path",
+        required=False,
+        help="path to from which to load the model. By default, this is None "
+        "which means the script will create a model from scratch.",
+        default=None,
     )
     parser.add_argument(
         "--n_gen",
