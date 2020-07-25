@@ -10,12 +10,19 @@ from tensorflow.keras.models import load_model
 from oaz.models import create_model
 from oaz.self_play import SelfPlay
 
+from oaz.connect_four_utils import (
+    create_benchmark_dataset,
+    get_benchmark_metrics,
+)
+
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s",
     level=logging.INFO,
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+BENCHMARK_PATH = "../data/benchmark/Test_L1_R1"
 
 
 def train_model(model, dataset, session):
@@ -50,7 +57,25 @@ def train_model(model, dataset, session):
     )
 
 
+def evaluate_model(boards, values, model, session):
+
+    K.set_session(session)
+
+    _, value_predictions = model.predict(boards)
+    cross_entropy, accuracy = get_benchmark_metrics(values, value_predictions)
+    LOGGER.info(
+        "\n=========================\n"
+        f"CROSS ENTROPY: {cross_entropy} ACCURACY {accuracy}"
+        "\n=========================\n"
+    )
+
+
 def train_cycle(session, model, n_gen):
+
+    benchmark_boards, benchmark_values = create_benchmark_dataset(
+        BENCHMARK_PATH
+    )
+
     for i in range(args.n_gen):
         LOGGER.info(f"Training cycle {i}")
 
@@ -74,6 +99,7 @@ def train_cycle(session, model, n_gen):
         dataset = self_play_controller.self_play(session)
 
         train_model(model, dataset, session)
+        evaluate_model(benchmark_boards, benchmark_values, model, session)
 
 
 def main(args):
@@ -95,8 +121,8 @@ def main(args):
         except KeyboardInterrupt:
             while True:
                 print(
-                    "\nKeyboard interrupt detected. Would you like to save the "
-                    "current model? y/n"
+                    "\nKeyboard interrupt detected. Would you like to save "
+                    "the current model? y/n"
                 )
                 ans = input()
                 if ans in ["y", "Y", "yes"]:
@@ -125,6 +151,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--n_gen",
+        type=int,
         default=5,
         help="Number of generations for which to train. Default is 5",
     )
