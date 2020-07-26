@@ -23,4 +23,22 @@ class OazBot(Bot):
     def play(self, board: np.ndarray) -> int:
         _board = board[np.newaxis, ...]
         policy, _ = self.model.predict(_board)
-        return np.argmax(policy)
+        return int(np.argmax(policy))
+
+
+class ConnectFourBot:
+    def _get_available_moves(self, board: np.ndarray) -> np.ndarray:
+        last_row = board[:, 5, :].sum(axis=-1)
+        return np.squeeze(np.argwhere(last_row == 0))
+
+
+class RandomConnectFourBot(Bot, ConnectFourBot):
+    def play(self, board: np.ndarray) -> int:
+        available_moves = self._get_available_moves(board)
+        return int(np.random.choice(available_moves))
+
+
+class LeftmostConnectFourBot(Bot, ConnectFourBot):
+    def play(self, board: np.ndarray) -> int:
+        available_moves = self._get_available_moves(board)
+        return int(available_moves[0])

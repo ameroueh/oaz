@@ -1,8 +1,9 @@
 from unittest.mock import Mock
 
 import numpy as np
+from az_connect_four.az_connect_four import ConnectFour
 
-from oaz.bots import OazBot
+from oaz.bots import OazBot, RandomConnectFourBot, LeftmostConnectFourBot
 
 EMPTY_BOARD = np.zeros((7, 6, 2))
 CALLED_EMPTY_BOARD = EMPTY_BOARD[np.newaxis, :]
@@ -44,3 +45,27 @@ def test_OazBot_play():
 
     for arg, expected in zip(call_args_list, EXPECTED_CALLED_BOARDS):
         np.testing.assert_array_equal(arg[0][0], expected)
+
+
+def testRandomConnectFourBot():
+    bot = RandomConnectFourBot()
+
+    # test the game doesn't crash
+    for _ in range(10):
+        game = ConnectFour()
+        while not game.finished():
+            board = game.get_board()
+            move = bot.play(board)
+            game.play_move(move)
+
+
+def testLeftmostConnectFourBot():
+    bot = RandomConnectFourBot()
+
+    # test the game doesn't crash
+    for _ in range(10):
+        game = ConnectFour()
+        while not game.finished():
+            board = game.get_board()
+            move = bot.play(board)
+            game.play_move(move)
