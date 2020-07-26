@@ -16,20 +16,32 @@ class Bot(ABC):
         return cls(model=model)
 
 
-class OazBot(Bot):
+class ConnectFourBot:
+    def _get_available_moves(self, board: np.ndarray) -> np.ndarray:
+        last_row = board[:, 5, :].sum(axis=-1)
+        available_moves = np.squeeze(np.argwhere(last_row == 0))
+        return available_moves
+
+
+# Not super happy with this pattern... would be nice to be able to define an
+# OazBot that is not game specific, but somehow need to inject knowledge about
+# the board to limit moves to be only legal ones
+
+
+class OazConnectFourBot(Bot, ConnectFourBot):
     def __init__(self, model):
         self.model = model
 
     def play(self, board: np.ndarray) -> int:
         _board = board[np.newaxis, ...]
         policy, _ = self.model.predict(_board)
+
+        available_moves = self._get_available_moves(board)
+        move_mask = np.zeros(7)
+        move_mask[available_moves] = 1.0
+        policy = np.squeeze(policy) * move_mask
+
         return int(np.argmax(policy))
-
-
-class ConnectFourBot:
-    def _get_available_moves(self, board: np.ndarray) -> np.ndarray:
-        last_row = board[:, 5, :].sum(axis=-1)
-        return np.squeeze(np.argwhere(last_row == 0))
 
 
 class RandomConnectFourBot(Bot, ConnectFourBot):

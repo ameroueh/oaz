@@ -1,11 +1,12 @@
 import numpy as np
 from typing import List, Iterable, Tuple
-from collections import OrderedDict
+
 from itertools import combinations
+from tqdm.auto import tqdm
 
 
 class Participant:
-    def __init__(self, bot, name: str, original_elo: int = 100):
+    def __init__(self, bot, name: str, original_elo: int = 400):
         self.bot = bot
         self.name = name
         self.original_elo = original_elo
@@ -20,10 +21,8 @@ class Tournament:
         self, participants: Iterable[Participant], n_games: int = 10
     ) -> List[Participant]:
 
-        # _participants = OrderedDict
         for index, participant in enumerate(participants):
             participant.index = index
-            # _participants[participants.name] = participants
 
         n_participants = len(participants)
         win_loss_matrix = np.zeros(shape=(n_participants, n_participants))
@@ -40,12 +39,13 @@ class Tournament:
             ] = losses_a
 
         self.compute_new_elos(participants, win_loss_matrix)
+        return win_loss_matrix
 
     def compute_new_elos(self, participants, win_loss_matrix):
         for index, participant in enumerate(participants):
 
             wins = win_loss_matrix[index, :].sum()
-            losses = win_loss_matrix[:index].sum()
+            losses = win_loss_matrix[:, index].sum()
 
             other_elos = 0
             for other_index, other_participant in enumerate(participants):
@@ -67,7 +67,9 @@ class Tournament:
         wins_a = 0
         losses_a = 0
         draws = 0
-        for _ in range(n_games):
+
+        print(f"{participant_a.name} vs {participant_b.name}")
+        for _ in tqdm(range(n_games), desc="Games", leave=False):
 
             # Playing two games in reverse
             score = self.play_one_game((participant_a, participant_b))
@@ -93,7 +95,6 @@ class Tournament:
         turn = 0
         while not game.finished():
             player_idx = turn % 2
-
             board = game.get_board()
             move = participants[player_idx].bot.play(board)
             game.play_move(move)

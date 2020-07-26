@@ -3,7 +3,11 @@ from unittest.mock import Mock
 import numpy as np
 from az_connect_four.az_connect_four import ConnectFour
 
-from oaz.bots import OazBot, RandomConnectFourBot, LeftmostConnectFourBot
+from oaz.bots import (
+    OazConnectFourBot,
+    RandomConnectFourBot,
+    LeftmostConnectFourBot,
+)
 
 EMPTY_BOARD = np.zeros((7, 6, 2))
 CALLED_EMPTY_BOARD = EMPTY_BOARD[np.newaxis, :]
@@ -31,7 +35,7 @@ def test_OazBot_play():
     model = Mock()
     predict_returns = [(EMPTY_POLICY, 0.0), (POLICY_1, 0.0), (POLICY_2, 0.0)]
     model.predict.side_effect = predict_returns
-    bot = OazBot(model)
+    bot = OazConnectFourBot(model)
 
     empty_action = bot.play(EMPTY_BOARD)
     action_1 = bot.play(BOARD_1)
@@ -60,7 +64,7 @@ def testRandomConnectFourBot():
 
 
 def testLeftmostConnectFourBot():
-    bot = RandomConnectFourBot()
+    bot = LeftmostConnectFourBot()
 
     # test the game doesn't crash
     for _ in range(10):
