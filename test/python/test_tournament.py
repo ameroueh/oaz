@@ -12,9 +12,12 @@ LEFTO = Participant(bot_left, name="LEFTO")
 
 def test_Tournament():
     c4t = Tournament(ConnectFour)
-    c4t.start_tournament([RANDO, LEFTO], n_games=N_GAMES)
+    wlm = c4t.start_tournament([RANDO, LEFTO], n_games=N_GAMES)
     # Pretty bad test for no
-    RANDO.elo > LEFTO.elo
+    LEFTO.elo > RANDO.elo
+
+    # Play each game twice reversing seats
+    assert wlm[0, 1] + wlm[1, 0] == 2 * N_GAMES
 
 
 def test_Tournament_play_one_game():
