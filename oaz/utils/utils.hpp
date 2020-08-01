@@ -6,7 +6,7 @@
 
 template <class Game>
 void loadBoardFromJson(const nlohmann::json& data, typename Game::Board& board) {
-	std::vector<long long int> dimensions(Game::getBoardDimensions());
+	auto dimensions = Game::Board::Dimensions();
 	for(int i=0; i!=dimensions[0]; ++i)
 		for(int j=0; j!=dimensions[1]; ++j) 
 			for(int k=0; k!=dimensions[2]; ++k) 
