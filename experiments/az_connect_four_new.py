@@ -43,6 +43,8 @@ def train_model(model, dataset, session):
     validation_policies = dataset["Policies"][validation_select]
     validation_values = dataset["Values"][validation_select]
 
+    # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
+
     model.fit(
         train_boards,
         {"value": train_values, "policy": train_policies},
@@ -51,7 +53,7 @@ def train_model(model, dataset, session):
             {"value": validation_values, "policy": validation_policies},
         ),
         batch_size=64,
-        epochs=1,
+        epochs=5,
         verbose=1,
         # callbacks=[early_stopping],
     )
@@ -81,12 +83,12 @@ def train_cycle(session, model, n_gen):
 
         self_play_controller = SelfPlay(
             # BEAST MODE
-            search_batch_size=4,
+            search_batch_size=8,
             n_games_per_worker=1000 // 64,
             n_simulations_per_move=200,
             n_search_worker=4,
-            n_threads=32,
-            evaluator_batch_size=32,
+            n_threads=64,
+            evaluator_batch_size=64,
             # DEBUG MODE
             # search_batch_size=4,
             # n_games_per_worker=10,
@@ -109,7 +111,7 @@ def main(args):
         if args.load_path:
             model = load_model(args.load_path)
         else:
-            model = create_model(depth=3)
+            model = create_model(depth=5)
             session.run(tf.global_variables_initializer())
 
         try:
