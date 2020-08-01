@@ -17,7 +17,6 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/numpy.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include "swiglabels.swg"
 #include "swigrun.swg"
@@ -34,6 +33,7 @@
 #include "oaz/neural_network/nn_evaluator.hpp"
 #include "oaz/mcts/az_search.hpp"
 #include "oaz/mcts/az_search_pool.hpp"
+#include "oaz/python/array_utils.hpp"
 
 #include <iostream>
 
@@ -63,7 +63,7 @@ p::list available_moves(Game& game) {
 }
 
 np::ndarray get_board(Game& game) {
-	return ToNumpy(game.getBoard());
+	return oaz::python::ToNumpy(game.getBoard());
 }
 
 void set_session(Model& model, PyObject* obj) {

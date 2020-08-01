@@ -118,6 +118,7 @@ void Search<Game, Evaluator, Selector>::expandNode(Node* node, Game& game, Polic
 		addDirichletNoise(policy);
 
 	auto available_moves = game.availableMoves();
+
 	for(auto move : *available_moves) {
 		float prior = policy[move];
 		node->addChild(move, prior);
@@ -167,17 +168,6 @@ Game& Search<Game, Evaluator, Selector>::getGame(size_t index) {
 	return m_games[index];
 }
 
-/* template <class Game, class Evaluator, class Selector> */
-/* typename Game::Value& Search<Game, Evaluator, Selector>::getValue(size_t index) { */
-/* 	return m_values[index]; */
-/* } */
-
-/* template <class Game, class Evaluator, class Selector> */
-/* typename Game::Policy& Search<Game, Evaluator, Selector>::getPolicy(size_t index) { */
-/* 	return m_policies[index]; */
-/* } */
-
-
 template <class Game, class Evaluator, class Selector>
 void Search<Game, Evaluator, Selector>::expandAndBackpropagateNode(size_t index) {
 	
@@ -187,14 +177,12 @@ void Search<Game, Evaluator, Selector>::expandAndBackpropagateNode(size_t index)
 	Node* node = getNode(index);
 	Game& game = getGame(index);
 
-	/* std::cout << "WAIT" << std::endl; */
 	node->lock();
 	if (!game.Finished())
 		expandNode(node, game, policy);
 	unpause(node);
 	node->unblockForEvaluation();
 	node->unlock();
-	/* std::cout << "DONE" << std::endl; */
 
 	Node* new_node = backpropagateNode(node, game, normalised_score);
 
@@ -210,7 +198,6 @@ bool Search<Game, Evaluator, Selector>::done() const {
 
 template <class Game, class Evaluator, class Selector>
 void Search<Game, Evaluator, Selector>::incrementNCompletions() {
-	/* std::cout << "increment" << std::endl; */
 	m_completion_lock.lock();
 	++m_n_completions;
 	m_completion_lock.unlock();
