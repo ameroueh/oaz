@@ -7,10 +7,10 @@ import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 from tensorflow.keras.models import load_model
 
-from oaz.models import create_model
-from oaz.self_play import SelfPlay
+from pyoaz.models import create_connect_four_model
+from pyoaz.self_play import SelfPlay
 
-from oaz.connect_four_utils import (
+from pyoaz.connect_four_utils import (
     create_benchmark_dataset,
     get_benchmark_metrics,
 )
@@ -22,6 +22,8 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+
+# TODO fix this horrible relatvie path
 BENCHMARK_PATH = "../data/benchmark/Test_L1_R1"
 
 
@@ -72,7 +74,7 @@ def evaluate_model(boards, values, model, session):
     )
 
 
-def train_cycle(session, model, n_gen):
+def train_cycle(session, model, n_gen, debug_mode=False):
 
     benchmark_boards, benchmark_values = create_benchmark_dataset(
         BENCHMARK_PATH
@@ -80,23 +82,28 @@ def train_cycle(session, model, n_gen):
 
     for i in range(args.n_gen):
         LOGGER.info(f"Training cycle {i}")
+        if debug_mode:
+            self_play_controller = SelfPlay(
+                game="connect_four",
+                search_batch_size=4,
+                n_games_per_worker=10,
+                n_simulations_per_move=20,
+                n_search_worker=4,
+                n_threads=4,
+                evaluator_batch_size=4,
+            )
 
-        self_play_controller = SelfPlay(
-            # BEAST MODE
-            search_batch_size=8,
-            n_games_per_worker=1000 // 64,
-            n_simulations_per_move=200,
-            n_search_worker=4,
-            n_threads=64,
-            evaluator_batch_size=64,
-            # DEBUG MODE
-            # search_batch_size=4,
-            # n_games_per_worker=10,
-            # n_simulations_per_move=20,
-            # n_search_worker=4,
-            # n_threads=4,
-            # evaluator_batch_size=4,
-        )
+        else:
+            self_play_controller = SelfPlay(
+                game="connect_four",
+                search_batch_size=8,
+                n_games_per_worker=1000 // 64,
+                n_simulations_per_move=200,
+                n_search_worker=4,
+                n_threads=64,
+                evaluator_batch_size=64,
+            )
+
         # awkard way to pass a session, maybe
         dataset = self_play_controller.self_play(session)
 
@@ -111,11 +118,11 @@ def main(args):
         if args.load_path:
             model = load_model(args.load_path)
         else:
-            model = create_model(depth=5)
+            model = create_connect_four_model(depth=5)
             session.run(tf.global_variables_initializer())
 
         try:
-            train_cycle(session, model, args.n_gen)
+            train_cycle(session, model, args.n_gen, debug_mode=args.debug_mode)
 
             LOGGER.info(f"Saving model at {args.save_path}")
             model.save(args.save_path)
@@ -156,6 +163,9 @@ if __name__ == "__main__":
         type=int,
         default=5,
         help="Number of generations for which to train. Default is 5",
+    )
+    parser.add_argument(
+        "--debug_mode", type=bool, default=False,
     )
     args = parser.parse_args()
     main(args)
