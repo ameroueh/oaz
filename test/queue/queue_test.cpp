@@ -60,11 +60,11 @@ TEST (ConcurrentUse, Default) {
 	first.join();
 	second.join();
 	
+	ASSERT_EQ(2*n, q.size());
+	
 	std::thread first_remove(emptyQueue, &q);
 	std::thread second_remove(emptyQueue, &q);
 
-	ASSERT_EQ(2*n, q.size());
-	
 	first_remove.join();
 	second_remove.join();
 
