@@ -115,6 +115,6 @@ def create_model(depth=3):
             "policy": "categorical_crossentropy",
             "value": "mean_squared_error",
         },
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+        optimizer=tf.keras.optimizers.SGD(learning_rate=0.1, clipnorm=2.0),
     )
     return model
