@@ -82,18 +82,18 @@ class SelfPlay:
         ]
 
         # Threading Mode:
-        # threads = [
-        #     Thread(target=self._worker_self_play, args=(all_datasets, i))
-        #     for i in range(self.n_threads)
-        # ]
-        # for t in threads:
-        #     t.start()
+        threads = [
+            Thread(target=self._worker_self_play, args=(all_datasets, i))
+            for i in range(self.n_threads)
+        ]
+        for t in threads:
+            t.start()
 
-        # for t in threads:
-        #     t.join()
+        for t in threads:
+            t.join()
 
         # Debugging: skip the threading:
-        self._worker_self_play(all_datasets, 0)
+        # self._worker_self_play(all_datasets, 0)
 
         all_boards = []
         all_values = []
@@ -134,35 +134,25 @@ class SelfPlay:
 
         boards = []
         policies = []
-        LOGGER.info("Making game...")
         game = self.game()
-        LOGGER.info("Made game.")
         policy_size = len(game.available_moves)
-        LOGGER.info(f"Policy size {policy_size}")
         while not game.finished:
-            LOGGER.info(f"searching")
             search = self.game_module.Search(
                 game,
                 self.evaluator,
                 self.search_batch_size,
                 self.n_simulations_per_move,
             )
-            LOGGER.info(f"perform search pool")
             self.pool.perform_search(search)
-            LOGGER.info(f"getting root")
             root = search.get_root()
 
             best_visit_count = -1
             best_child = None
             policy = np.zeros(shape=policy_size)
-            for i in range(root.get_n_children()):
-                LOGGER.info(f"children {i}")
+            for i in range(root.n_children):
                 child = root.get_child(i)
-                LOGGER.info(f"got child ")
-                move = child.get_move()
-                LOGGER.info(f"got move ")
-                n_visits = child.get_n_visits()
-                LOGGER.info(f"got n_visits ")
+                move = child.move
+                n_visits = child.n_visits
                 policy[move] = n_visits
 
                 if n_visits > best_visit_count:
@@ -172,10 +162,9 @@ class SelfPlay:
             # There's an off-by-one error in the Search's n_sim_per_move
             policy = policy / (self.n_simulations_per_move - 1)
             policies.append(policy)
-            move = best_child.get_move()
+            move = best_child.move
             # LOGGER.info(f"Playing move {move}")
-            LOGGER.info(f"Playing move {move} ")
-            LOGGER.info(f"availalbe move {game.available_moves} ")
+            # LOGGER.info(f"availalbe move {game.available_moves} ")
 
             game.play_move(move)
             boards.append(game.board.copy())

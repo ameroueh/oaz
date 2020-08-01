@@ -16,11 +16,11 @@ class Bot(ABC):
         return cls(model=model)
 
 
-class ConnectFourBot:
-    def _get_available_moves(self, board: np.ndarray) -> np.ndarray:
-        last_row = board[:, 5, :].sum(axis=-1)
-        available_moves = np.squeeze(np.argwhere(last_row == 0))
-        return available_moves
+# class ConnectFourBot:
+#     def _get_available_moves(self, board: np.ndarray) -> np.ndarray:
+#         last_row = board[:, 5, :].sum(axis=-1)
+#         available_moves = np.squeeze(np.argwhere(last_row == 0))
+#         return available_moves
 
 
 # Not super happy with this pattern... would be nice to be able to define an
@@ -28,29 +28,24 @@ class ConnectFourBot:
 # the board to limit moves to be only legal ones
 
 
-class OazConnectFourBot(Bot, ConnectFourBot):
+class OazBot(Bot):
     def __init__(self, model):
         self.model = model
 
-    def play(self, board: np.ndarray) -> int:
+    def play(self, board: np.ndarray, available_moves: np.ndarray) -> int:
         _board = board[np.newaxis, ...]
         policy, _ = self.model.predict(_board)
 
-        available_moves = self._get_available_moves(board)
-        move_mask = np.zeros(7)
-        move_mask[available_moves] = 1.0
-        policy = np.squeeze(policy) * move_mask
-
+        # Hack to make sure we never pick disallowed moves
+        policy[available_moves] += 1.0
         return int(np.argmax(policy))
 
 
-class RandomConnectFourBot(Bot, ConnectFourBot):
-    def play(self, board: np.ndarray) -> int:
-        available_moves = self._get_available_moves(board)
+class RandomBot(Bot):
+    def play(self, board: np.ndarray, available_moves: np.ndarray) -> int:
         return int(np.random.choice(available_moves))
 
 
-class LeftmostConnectFourBot(Bot, ConnectFourBot):
-    def play(self, board: np.ndarray) -> int:
-        available_moves = self._get_available_moves(board)
+class LeftmostBot(Bot):
+    def play(self, board: np.ndarray, available_moves: np.ndarray) -> int:
         return int(available_moves[0])

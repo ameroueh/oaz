@@ -1,16 +1,19 @@
-import numpy as np
-from typing import List, Iterable, Tuple
-
+from dataclasses import dataclass
 from itertools import combinations
+from typing import Iterable, List, Tuple
+
+import numpy as np
+from pyoaz.bots import Bot
 from tqdm.auto import tqdm
 
 
+@dataclass
 class Participant:
-    def __init__(self, bot, name: str, original_elo: int = 400):
-        self.bot = bot
-        self.name = name
-        self.original_elo = original_elo
-        self.elo = original_elo
+    # def __init__(self, bot, name: str, original_elo: int = 400):
+    bot: Bot
+    name: str
+    original_elo: int = 400
+    elo: int = original_elo
 
 
 class Tournament:
@@ -52,7 +55,7 @@ class Tournament:
                 if other_index != index:
                     other_elos += other_participant.original_elo
 
-            new_elo = (other_elos + 400 * (wins - losses)) / (wins + losses)
+            new_elo = other_elos + (400 * (wins - losses)) / (wins + losses)
             participant.elo = new_elo
 
     def _make_pairings(self, participants):
@@ -93,19 +96,12 @@ class Tournament:
     def play_one_game(self, participants: Tuple[Participant]):
         game = self.game()
         turn = 0
-        while not game.finished():
+        while not game.finished:
             player_idx = turn % 2
-            board = game.get_board()
-            move = participants[player_idx].bot.play(board)
+            board = game.board.copy()
+            available_moves = game.available_moves
+            move = participants[player_idx].bot.play(board, available_moves)
             game.play_move(move)
             turn += 1
 
-        return game.score()
-
-
-# p_1 = Participant(bot="a", name="A")
-# p_2 = Participant(bot="b", name="B")
-# p_3 = Participant(bot="c", name="C")
-
-# Tournament("game").start_tournament([p_1, p_2, p_3])
-
+        return game.score
