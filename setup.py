@@ -2,8 +2,22 @@ import os
 import pathlib
 
 from distutils.file_util import copy_file
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext as build_ext_orig
+
+
+GAMES = [
+        {
+            'name': 'connect_four',
+            'target': 'pyoaz_connect_four_core',
+            'extension_file_name': 'pyoaz_connect_four_core.so'
+        },
+        {
+            'name': 'tic_tac_toe',
+            'target': 'pyoaz_tic_tac_toe_core',
+            'extension_file_name': 'pyoaz_tic_tac_toe_core.so'
+        }
+]
 
 class CMakeExtension(Extension):
     def __init__(self, name):
@@ -16,8 +30,6 @@ class build_ext(build_ext_orig):
         super().run()
 
     def build_cmake(self, ext):
-        print('debug')
-        print(print(', '.join("%s: %s" % item for item in vars(self).items())))
         cwd = pathlib.Path().absolute()
 
         build_temp = pathlib.Path(self.build_temp)
@@ -27,31 +39,25 @@ class build_ext(build_ext_orig):
         extdir.mkdir(parents=True, exist_ok=True)
 
         config = 'Debug' if self.debug else 'Release'
-
-        cmake_args = [
-            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + str(extdir.parent.absolute()),
-            '-DCMAKE_BUILD_TYPE=' + config
-        ]
-
-        build_args = [
-            '--target', 'az_connect_four'
-        ]
-
+        
         os.chdir(str(build_temp))
-        self.spawn(['cmake', str(cwd)])
-        if not self.dry_run:
-            self.spawn(['cmake', '--build', '.'] + build_args)
-            copy_file(
-                src='az_connect_four.so', 
-                dst=cwd / build_lib / 'az_connect_four' / 'az_connect_four.so'
-            )
+        for game in GAMES:
+
+            self.spawn(['cmake', str(cwd)])
+            if not self.dry_run:
+                self.spawn(['cmake'] + ['--build', '.', '--target', game['target']])
+                copy_file(
+                    src=game['extension_file_name'], 
+                    dst=cwd / build_lib / 'pyoaz' / 'games' / game['name'] / game['extension_file_name']
+                )
+
         os.chdir(str(cwd))
 
 setup(
-    name='az_connect_four',
+    name='pyoaz',
     version='0.1',
-    packages=['az_connect_four'],
-    ext_modules=[CMakeExtension('az_connect_four')],
+    packages=find_packages(),
+    ext_modules=[CMakeExtension('pyoaz')],
     cmdclass={
         'build_ext': build_ext
     }
