@@ -33,13 +33,7 @@ class build_ext(build_ext_orig):
 
     def build_cmake(self, ext):
         cwd = pathlib.Path(__file__).parent.absolute()
-        # print("sfsadfd", pathlib.Path(".").resolve())
-        # print(
-        #     "sfsadfd",
-        #     pathlib.Path(".")
-        #     .resolve()
-        #     .relative_to("/home/simon/code/notebooks"),
-        # )
+
         build_temp = cwd / self.build_temp
         build_lib = cwd / self.build_lib
         build_temp.mkdir(parents=True, exist_ok=True)
@@ -54,7 +48,7 @@ class build_ext(build_ext_orig):
             self.spawn(["cmake", str(cwd)])
             if not self.dry_run:
                 self.spawn(
-                    ["cmake"] + ["--build", ".", "--target", game["target"]]
+                    ["cmake"] + ["--build", ".", "--target", game["target"],]
                 )
                 copy_file(
                     src=game["extension_file_name"],
