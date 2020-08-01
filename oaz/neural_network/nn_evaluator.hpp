@@ -37,13 +37,8 @@ namespace oaz::nn {
 				m_values(boost::extents[size]),
 				m_policies(boost::extents[size]),
 				m_notifiers(boost::extents[size]) {
-					std::vector<long long int> dimensions = Game::getBoardDimensions();
-					m_element_size_bytes = std::accumulate(
-						dimensions.begin(), 
-						dimensions.end(), 
-						1,
-						std::multiplies<long long int>()
-					) * sizeof(float);
+
+					auto dimensions = Game::Board::Dimensions();
 					
 					std::vector<long long int> tensor_dimensions = {(long long int) size};
 					tensor_dimensions.insert(tensor_dimensions.end(), dimensions.begin(), dimensions.end());
@@ -59,8 +54,8 @@ namespace oaz::nn {
 				typename Game::Value* value,
 				typename Game::Policy* policy,
 				Notifier notifier) {
-				float* destination = &m_batch.template tensor<float, Game::NBoardDimensions + 1>()(index, 0, 0, 0);
-				std::memcpy(destination, source, m_element_size_bytes);
+				float* destination = m_batch.template tensor<float, Game::Board::NumDimensions() + 1>().data() + index * Game::Board::NumElements();
+				std::memcpy(destination, source, Game::Board::SizeBytes());
 				m_values[index] = value;
 				m_policies[index] = policy;
 				m_notifiers[index] = notifier;
@@ -121,7 +116,6 @@ namespace oaz::nn {
 			boost::multi_array<typename Game::Policy*, 1> m_policies;
 			size_t m_current_index;
 			size_t m_size;
-			size_t m_element_size_bytes;
 			std::atomic<size_t> m_n_reads;
 
 	};

@@ -75,7 +75,7 @@ void NNEvaluator<Game, Notifier>::requestEvaluation(
 			
 			current_batch->readElementFromMemory(
 				index,
-				&(game->getBoard()[0][0][0]),
+				game->getBoard().origin(),
 				value,
 				policy,
 				notifier
@@ -138,8 +138,7 @@ void NNEvaluator<Game, Notifier>::evaluateBatch(Batch* batch) {
 		std::memcpy(
 			batch->getPolicy(i), 
 			&policies_map(i, 0),
-			Game::getPolicySize() * sizeof(float)
-				
+			Game::Policy::SizeBytes()
 		);
 
 		batch->getNotifier(i)();

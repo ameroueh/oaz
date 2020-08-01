@@ -61,11 +61,11 @@ namespace oaz::nn {
 			notifier
 		);
 		
-		vector<long long int> dimensions(Game::getBoardDimensions());
+		auto dimensions = Game::Board::Dimensions();
 		for(int i=0; i!=dimensions[0]; ++i)
 			for(int j=0; j!=dimensions[1]; ++j) 
 				for(int k=0; k!=dimensions[2]; ++k) 
-					ASSERT_FLOAT_EQ(array[i][j][k], (batch.m_batch.template tensor<float, Game::NBoardDimensions + 1>()(0, i, j, k)));
+					ASSERT_FLOAT_EQ(array[i][j][k], (batch.m_batch.template tensor<float, Game::Board::NumDimensions() + 1>()(0, i, j, k)));
 	}
 
 	TEST (EvaluationBatch, AcquireIndex) {

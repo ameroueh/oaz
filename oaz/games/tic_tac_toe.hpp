@@ -5,7 +5,7 @@
 #include <string>
 
 #include "stdint.h"
-#include "boost/multi_array.hpp"
+#include "oaz/array/array.hpp"
 
 
 namespace oaz::games {
@@ -13,25 +13,16 @@ namespace oaz::games {
 		public:
 			using Move = uint32_t;
 			using Value = float;
-			using Policy = std::array<float, 9>;
+			using Policy = oaz::array::Array<9>;
 			using Tile = float;
-			using Board = boost::multi_array<float, 3>;
+			using Board = oaz::array::Array<3, 3, 2>;
 			
 			static constexpr Tile EMPTY_TOKEN = 0.;
 			static constexpr Tile BASE_TOKEN = 1.;
 			
-			static const size_t width = 3;
-			static const size_t height = 3;
 			static const size_t n_moves = 9;
 			static const size_t n_players = 2;
 			static const size_t max_n_moves = 9;
-			static const size_t NBoardDimensions = 3;
-
-			static std::vector<long long int> getBoardDimensions() {return {3, 3, 2};}
-			static std::vector<unsigned long long> getBoardDimensionsUnsigned() {return {3, 3, 2};}
-			static size_t getPolicySize() {
-				return 9;
-			}
 
 			TicTacToe();
 			TicTacToe(const TicTacToe&);
