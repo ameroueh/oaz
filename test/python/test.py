@@ -24,7 +24,9 @@ def self_play(game, pool, evaluator):
             search = Search(
                 game, evaluator, SEARCH_BATCH_SIZE, N_SIMULATIONS_PER_MOVE
             )
+            print("About to perform search!")
             pool.perform_search(search)
+            print("It didn't crash!")
             root = search.get_tree_root()
             move_counts = [0 for i in range(ConnectFour.get_policy_size())]
 
