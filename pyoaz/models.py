@@ -53,9 +53,20 @@ def residual_block(
     return x
 
 
-def create_model(depth=3):
-    input = tf.keras.Input(shape=(7, 6, 2), name="input")
+def create_connect_four_model(depth=3):
+    return create_alpha_zero_model(
+        depth=depth, input_shape=(7, 6, 2), policy_output_size=7
+    )
 
+
+def create_tic_tac_toe_model(depth=3,):
+    return create_alpha_zero_model(
+        depth=depth, input_shape=(3, 3, 2), policy_output_size=9
+    )
+
+
+def create_alpha_zero_model(depth, input_shape, policy_output_size):
+    input = tf.keras.Input(shape=input_shape, name="input")
     conv = Conv2D(
         64,
         kernel_size=3,
@@ -102,7 +113,7 @@ def create_model(depth=3):
         activation="relu",
     )(block_output)
     policy = Dense(
-        units=7,
+        units=policy_output_size,
         kernel_regularizer=l2(1e-4),
         kernel_initializer="he_normal",
         activation="softmax",
