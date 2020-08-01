@@ -6,16 +6,13 @@
 #include <iostream>
 #include <string>
 
-
 using namespace oaz::games;
-
 
 TicTacToe::TicTacToe(): 
 	m_current_player(0), 
 	m_score(0),
 	m_game_won(false),
-	m_available_moves(0), 
-	m_board(boost::extents[width][height][n_players]) {
+	m_available_moves(0) {
 		initialise();
 }
 
@@ -30,7 +27,6 @@ TicTacToe::TicTacToe(const TicTacToe& game):
 
 void TicTacToe::playFromString(std::string moves) {
 	for(char& c : moves) {
-		std::cout << "Playing move " << c << std::endl;
 		playMove(c - '0');
 	}
 }
@@ -55,9 +51,9 @@ void TicTacToe::reset() {
 }
 
 void TicTacToe::resetBoard() {
-	for(size_t i=0; i != width; ++i)
-		for(size_t j=0; j != height; ++j)
-			for(size_t k=0; k != n_players; ++k)
+	for(size_t i=0; i != Board::Dimensions()[0]; ++i)
+		for(size_t j=0; j != Board::Dimensions()[1]; ++j)
+			for(size_t k=0; k != Board::Dimensions()[2]; ++k)
 				m_board[i][j][k] = EMPTY_TOKEN;
 }
 
@@ -81,8 +77,8 @@ void TicTacToe::undoMove(Move move) {
 void TicTacToe::refreshAvailableMoves() {
 	m_available_moves.resize(0);
 
-	for(size_t j = 0; j!= height; ++j)
-		for(size_t i=0; i!=width; ++i)
+	for(size_t j = 0; j!= Board::Dimensions()[1]; ++j)
+		for(size_t i=0; i!=Board::Dimensions()[0]; ++i)
 			if(m_board[i][j][0] != BASE_TOKEN && m_board[i][j][1] != BASE_TOKEN)
 				m_available_moves.push_back(3*j + i);
 }
@@ -101,7 +97,7 @@ void TicTacToe::maybeDeclareVictory(Move move) {
 	
 bool TicTacToe::checkVerticalVictory(size_t i, size_t player) {
 	size_t counter = 0;
-	for(size_t k = 0; k < height; ++k) {
+	for(size_t k = 0; k < Board::Dimensions()[1]; ++k) {
 		if (m_board[i][k][player] != BASE_TOKEN)
 			break;
 		++counter;
@@ -111,7 +107,7 @@ bool TicTacToe::checkVerticalVictory(size_t i, size_t player) {
 
 bool TicTacToe::checkHorizontalVictory(size_t j, size_t player) {
 	size_t counter = 0;
-	for(size_t k = 0; k < width; ++k) {
+	for(size_t k = 0; k < Board::Dimensions()[0]; ++k) {
 		if (m_board[k][j][player] != BASE_TOKEN)
 			break;
 		++counter;
@@ -180,16 +176,11 @@ float TicTacToe::score() const {
 size_t TicTacToe::currentPlayer() const {return m_current_player; }
 
 bool TicTacToe::operator==(const TicTacToe& rhs) {
-	bool boards_equal = true;
-	for (size_t i=0; i!= width; ++i) 
-		for (size_t j=0; j!=height; j++)
-			for (size_t k=0; k!=n_players; k++)
-				boards_equal &= (m_board[i][j][k] == rhs.m_board[i][j][k]);
 	return (m_score == rhs.m_score)
 	&& (m_game_won == rhs.m_game_won)
 	&& (getCurrentPlayer() == rhs.getCurrentPlayer())
 	&& (m_available_moves == rhs.m_available_moves)
-	&& boards_equal;
+	&& (m_board == rhs.m_board);
 }
 
 size_t TicTacToe::getCurrentPlayer() const {
@@ -201,8 +192,5 @@ void TicTacToe::set(const TicTacToe& game) {
 	m_score = game.m_score;
 	m_game_won = game.m_game_won;
 	m_available_moves = game.m_available_moves;
-	for (size_t i=0; i!= width; ++i) 
-		for (size_t j=0; j!=height; j++)
-			for (size_t k=0; k!=n_players; k++)
-				m_board[i][j][k] = game.m_board[i][j][k];
+	m_board = game.m_board;
 }
