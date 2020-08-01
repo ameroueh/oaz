@@ -1,10 +1,10 @@
-from oaz.bots import RandomConnectFourBot, LeftmostConnectFourBot
-from az_connect_four.az_connect_four import ConnectFour
-from oaz.tournament import Participant, Tournament
+from pyoaz.bots import LeftmostBot, RandomBot
+from pyoaz.games.connect_four import ConnectFour
+from pyoaz.tournament import Participant, Tournament
 
 N_GAMES = 200
-bot_random = RandomConnectFourBot()
-bot_left = LeftmostConnectFourBot()
+bot_random = RandomBot()
+bot_left = LeftmostBot()
 
 RANDO = Participant(bot_random, name="rando")
 LEFTO = Participant(bot_left, name="LEFTO")
@@ -13,7 +13,7 @@ LEFTO = Participant(bot_left, name="LEFTO")
 def test_Tournament():
     c4t = Tournament(ConnectFour)
     wlm = c4t.start_tournament([RANDO, LEFTO], n_games=N_GAMES)
-    # Pretty bad test for no
+    # Pretty bad test for now
     LEFTO.elo > RANDO.elo
 
     # Play each game twice reversing seats

@@ -1,13 +1,9 @@
 from unittest.mock import Mock
 
 import numpy as np
-from az_connect_four.az_connect_four import ConnectFour
-
-from oaz.bots import (
-    OazConnectFourBot,
-    RandomConnectFourBot,
-    LeftmostConnectFourBot,
-)
+import pytest
+from pyoaz.bots import LeftmostBot, OazBot, RandomBot
+from pyoaz.games.connect_four import ConnectFour
 
 EMPTY_BOARD = np.zeros((7, 6, 2))
 CALLED_EMPTY_BOARD = EMPTY_BOARD[np.newaxis, :]
@@ -20,7 +16,7 @@ BOARD_2 = BOARD_1.copy()
 BOARD_2[1, 0, 1] = 1
 CALLED_BOARD_2 = BOARD_2[np.newaxis, :]
 
-EXPECTED_CALLED_BOARDS = [CALLED_EMPTY_BOARD, CALLED_BOARD_1, CALLED_BOARD_2]
+# EXPECTED_CALLED_BOARDS = [CALLED_EMPTY_BOARD, CALLED_BOARD_1, CALLED_BOARD_2]
 
 EMPTY_POLICY = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 POLICY_1 = np.array([0.5, 0.3, 0.2, 0.0, 0.0, 0.0, 0.0])
@@ -31,45 +27,52 @@ EXPECTED_ACTION_1 = 0
 EXPECTED_ACTION_2 = 1
 
 
-def test_OazBot_play():
+@pytest.mark.parametrize(
+    "predict_return, board, expected_action, called_board",
+    [
+        (
+            (EMPTY_POLICY, 0.0),
+            EMPTY_BOARD,
+            EXPECTED_EMPTY_ACTION,
+            CALLED_EMPTY_BOARD,
+        ),
+        ((POLICY_1, 0.0), BOARD_1, EXPECTED_ACTION_1, CALLED_BOARD_1),
+        ((POLICY_2, 0.0), BOARD_2, EXPECTED_ACTION_2, CALLED_BOARD_2),
+    ],
+)
+def test_OazBot_play(predict_return, board, expected_action, called_board):
     model = Mock()
-    predict_returns = [(EMPTY_POLICY, 0.0), (POLICY_1, 0.0), (POLICY_2, 0.0)]
-    model.predict.side_effect = predict_returns
-    bot = OazConnectFourBot(model)
+    model.predict = Mock(return_value=predict_return)
+    bot = OazBot(model)
 
-    empty_action = bot.play(EMPTY_BOARD)
-    action_1 = bot.play(BOARD_1)
-    action_2 = bot.play(BOARD_2)
+    action = bot.play(board, available_moves=np.arange(7))
+    assert action == expected_action
 
-    assert empty_action == EXPECTED_EMPTY_ACTION
-    assert action_1 == EXPECTED_ACTION_1
-    assert action_2 == EXPECTED_ACTION_2
-
-    call_args_list = model.predict.call_args_list
-
-    for arg, expected in zip(call_args_list, EXPECTED_CALLED_BOARDS):
-        np.testing.assert_array_equal(arg[0][0], expected)
+    call_args = model.predict.call_args
+    np.testing.assert_array_equal(call_args[0][0], called_board)
 
 
-def testRandomConnectFourBot():
-    bot = RandomConnectFourBot()
+def testRandomBot():
+    bot = RandomBot()
 
     # test the game doesn't crash
     for _ in range(10):
         game = ConnectFour()
-        while not game.finished():
-            board = game.get_board()
-            move = bot.play(board)
+        while not game.finished:
+            board = game.board
+            available_moves = game.available_moves
+            move = bot.play(board, available_moves)
             game.play_move(move)
 
 
-def testLeftmostConnectFourBot():
-    bot = LeftmostConnectFourBot()
+def testLeftmostBot():
+    bot = LeftmostBot()
 
     # test the game doesn't crash
     for _ in range(10):
         game = ConnectFour()
-        while not game.finished():
-            board = game.get_board()
-            move = bot.play(board)
+        while not game.finished:
+            board = game.board
+            available_moves = game.available_moves
+            move = bot.play(board, available_moves)
             game.play_move(move)

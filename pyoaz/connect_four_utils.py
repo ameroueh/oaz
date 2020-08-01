@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import numpy as np
-from az_connect_four.az_connect_four import ConnectFour
+from pyoaz.games.connect_four import ConnectFour
 
 
 def create_benchmark_dataset(
@@ -31,7 +31,7 @@ def create_benchmark_dataset(
         if only_won_positions and value == 0.0:
             continue
 
-        boards.append(game.get_board().copy())
+        boards.append(game.board.copy())
         values.append(value)
 
     boards = np.stack(boards, axis=0)
