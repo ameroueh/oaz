@@ -136,7 +136,7 @@ void NNEvaluator<Game, Notifier>::evaluateBatch(Batch* batch) {
 		);
 
 		std::memcpy(
-			batch->getPolicy(i), 
+			batch->getPolicy(i)->origin(), 
 			&policies_map(i, 0),
 			Game::Policy::SizeBytes()
 		);

@@ -25,19 +25,18 @@ def self_play(game, pool, evaluator):
                 game, evaluator, SEARCH_BATCH_SIZE, N_SIMULATIONS_PER_MOVE
             )
             pool.perform_search(search)
-            root = search.get_tree_root()
-            move_counts = [0 for i in range(ConnectFour.get_policy_size())]
+            root = search.get_root()
+            move_counts = [0 for i in range(7)]
 
             best_visit_count = -1
             best_child = None
-            for i in range(root.get_n_children()):
+            for i in range(root.n_children):
                 child = root.get_child(i)
-                if child.get_n_visits() > best_visit_count:
-                    best_visit_count = child.get_n_visits()
+                if child.n_visits > best_visit_count:
+                    best_visit_count = child.n_visits
                     best_child = child
 
-            move = best_child.get_move()
-            print(f"Playing move {move}")
+            move = best_child.move
             game.play_move(move)
 
 
