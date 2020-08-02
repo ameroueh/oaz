@@ -2,7 +2,7 @@
 #include "gmock/gmock.h"
 
 #include "oaz/games/connect_four.hpp"
-#include "oaz/random/random_evaluator.hpp"
+#include "oaz/simulation/simulation_evaluator.hpp"
 #include "oaz/queue/queue.hpp"
 
 #include <thread>
@@ -16,7 +16,7 @@ class DummyNotifier {
 };
 
 using Game = ConnectFour;
-using Evaluator = RandomEvaluator<Game, DummyNotifier>;
+using Evaluator = SimulationEvaluator<Game, DummyNotifier>;
 
 void playFromString(Game& game, std::string sMoves) {
 	for(char& c : sMoves)
@@ -26,43 +26,6 @@ void playFromString(Game& game, std::string sMoves) {
 TEST (Instantiation, Default) {
 	Evaluator evaluator;
 }
-
-/* TEST (AcquireResource, Default) { */
-/* 	Board board; */
-/* 	GamesContainer games(1, Game(board)); */
-/* 	Evaluator evaluator(&games); */
-	
-/* 	Queue completion_queue; */
-/* 	size_t evaluator_index = evaluator.acquireResource(0, &completion_queue); */
-	
-/* 	ASSERT_EQ(evaluator_index, 0); */
-/* 	ASSERT_THROW(evaluator.acquireResource(1, &completion_queue), NoResourceAvailableException); */
-/* } */
-
-/* TEST (AcquireAndReleaseResource, Default) { */
-/* 	Board board; */
-/* 	GamesContainer games(1, Game(board)); */
-/* 	Evaluator evaluator(&games); */
-	
-/* 	Queue completion_queue; */
-/* 	size_t evaluator_index = evaluator.acquireResource(0, &completion_queue); */
-/* 	evaluator.releaseResource(evaluator_index); */
-/* 	evaluator_index = evaluator.acquireResource(0, &completion_queue); */
-/* } */
-
-/* TEST (GetGame, Default) { */
-/* 	Board board; */
-/* 	GamesContainer games(1, Game(board)); */
-/* 	Evaluator evaluator(&games); */
-	
-/* 	Queue completion_queue; */
-/* 	size_t evaluator_index = evaluator.acquireResource(0, &completion_queue); */
-	
-/* 	Game& game2 = evaluator.getGame(evaluator_index); */
-
-/* 	ASSERT_TRUE(games[0] == game2); */
-/* 	ASSERT_EQ(&games[0], &game2); */
-/* } */
 
 TEST (RequestEvaluation, Default) {
 	Evaluator evaluator;

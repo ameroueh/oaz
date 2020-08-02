@@ -5,7 +5,6 @@
 #include "oaz/neural_network/model.hpp"
 #include "oaz/neural_network/nn_evaluator.hpp"
 #include "oaz/games/connect_four.hpp"
-#include "oaz/random/random_evaluator.hpp"
 #include "oaz/mcts/az_search.hpp"
 #include "oaz/mcts/az_search_pool.hpp"
 #include "oaz/mcts/search_node.hpp" 

@@ -109,7 +109,7 @@ BOOST_PYTHON_MODULE( MODULE_NAME ) {
 		.def("get_parent", &Node_::getParent, p::return_value_policy<p::reference_existing_object>());
 
 
-	p::class_<Search_, std::shared_ptr<Search_>, boost::noncopyable>("Search", p::init<const Game&, std::shared_ptr<Evaluator>, size_t, size_t>())
+	p::class_<Search_, std::shared_ptr<Search_>, boost::noncopyable>("Search", p::init<const Game&, std::shared_ptr<Evaluator>, size_t, size_t, float, float>())
 	.def("get_root", &Search_::getTreeRoot, p::return_value_policy<p::reference_existing_object>())
 	.add_property("done", &Search_::done);
 	
