@@ -7,21 +7,23 @@ from setuptools.command.build_ext import build_ext as build_ext_orig
 
 
 GAMES = [
-        {
-            'name': 'connect_four',
-            'target': 'pyoaz_connect_four_core',
-            'extension_file_name': 'pyoaz_connect_four_core.so'
-        },
-        {
-            'name': 'tic_tac_toe',
-            'target': 'pyoaz_tic_tac_toe_core',
-            'extension_file_name': 'pyoaz_tic_tac_toe_core.so'
-        }
+    {
+        "name": "connect_four",
+        "target": "pyoaz_connect_four_core",
+        "extension_file_name": "pyoaz_connect_four_core.so",
+    },
+    {
+        "name": "tic_tac_toe",
+        "target": "pyoaz_tic_tac_toe_core",
+        "extension_file_name": "pyoaz_tic_tac_toe_core.so",
+    },
 ]
+
 
 class CMakeExtension(Extension):
     def __init__(self, name):
         super().__init__(name, sources=[])
+
 
 class build_ext(build_ext_orig):
     def run(self):
@@ -30,34 +32,40 @@ class build_ext(build_ext_orig):
         super().run()
 
     def build_cmake(self, ext):
-        cwd = pathlib.Path().absolute()
+        cwd = pathlib.Path(__file__).parent.absolute()
 
-        build_temp = pathlib.Path(self.build_temp)
-        build_lib = pathlib.Path(self.build_lib)
+        build_temp = cwd / self.build_temp
+        build_lib = cwd / self.build_lib
         build_temp.mkdir(parents=True, exist_ok=True)
-        extdir = pathlib.Path(self.get_ext_fullpath(ext.name))
+        extdir = cwd / self.get_ext_fullpath(ext.name)
         extdir.mkdir(parents=True, exist_ok=True)
 
-        config = 'Debug' if self.debug else 'Release'
-        
+        config = "Debug" if self.debug else "Release"
+
         os.chdir(str(build_temp))
         self.spawn(['cmake', str(cwd)])
         for game in GAMES:
             if not self.dry_run:
-                self.spawn(['cmake'] + ['--build', '.', '--target', game['target']])
+                self.spawn(
+                    ["cmake"] + ["--build", ".", "--target", game["target"],]
+                )
                 copy_file(
-                    src=game['extension_file_name'], 
-                    dst=cwd / build_lib / 'pyoaz' / 'games' / game['name'] / game['extension_file_name']
+                    src=game["extension_file_name"],
+                    dst=cwd
+                    / build_lib
+                    / "pyoaz"
+                    / "games"
+                    / game["name"]
+                    / game["extension_file_name"],
                 )
 
         os.chdir(str(cwd))
 
+
 setup(
-    name='pyoaz',
-    version='0.1',
+    name="pyoaz",
+    version="0.1",
     packages=find_packages(),
-    ext_modules=[CMakeExtension('pyoaz')],
-    cmdclass={
-        'build_ext': build_ext
-    }
+    ext_modules=[CMakeExtension("pyoaz")],
+    cmdclass={"build_ext": build_ext},
 )
