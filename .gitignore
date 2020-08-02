@@ -41,3 +41,8 @@ build/
 *.egg-info/
 dist/
 __pycache__/
+
+
+#Models
+models/
+bin/
