@@ -14,7 +14,7 @@
 
 
 #include "oaz/games/connect_four.hpp"
-#include "oaz/random/random_evaluator.hpp"
+#include "oaz/simulation/simulation_evaluator.hpp"
 #include "oaz/mcts/mcts_search.hpp"
 #include "oaz/mcts/search_node.hpp" 
 #include "oaz/mcts/selection.hpp"
@@ -32,7 +32,7 @@ using namespace oaz::games;
 using Game = ConnectFour;
 using Move = typename Game::Move;
 using Node = SearchNode<Game::Move>;
-using Evaluator = RandomEvaluator<Game, SafeQueueNotifier>;
+using Evaluator = SimulationEvaluator<Game, SafeQueueNotifier>;
 using GameSearch = MCTSSearch<Game, Evaluator>;
 
 template <class Node>
