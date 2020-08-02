@@ -43,9 +43,8 @@ class build_ext(build_ext_orig):
         config = "Debug" if self.debug else "Release"
 
         os.chdir(str(build_temp))
+        self.spawn(['cmake', str(cwd)])
         for game in GAMES:
-
-            self.spawn(["cmake", str(cwd)])
             if not self.dry_run:
                 self.spawn(
                     ["cmake"] + ["--build", ".", "--target", game["target"],]
