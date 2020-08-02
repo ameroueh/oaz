@@ -192,16 +192,16 @@ set_target_properties(
 	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts"
 )
 
-add_executable(random_evaluator_test test/random/random_evaluator_test.cpp)
+add_executable(simulation_evaluator_test test/simulation/simulation_evaluator_test.cpp)
 target_include_directories(
-	random_evaluator_test 
+	simulation_evaluator_test 
 	PRIVATE 
 	${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS}
 )
 set_target_properties(
-	random_evaluator_test 
+	simulation_evaluator_test 
 	PROPERTIES 
-	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/random"
+	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/simulation"
 )
 
 add_executable(mutex_test test/mutex/mutex_test.cpp)
@@ -262,9 +262,9 @@ add_dependencies(mcts_test gtest)
 add_dependencies(mcts_test gmock)
 target_link_libraries(mcts_test gtest_main gmock_main)
 
-add_dependencies(random_evaluator_test gtest)
-add_dependencies(random_evaluator_test gmock)
-target_link_libraries(random_evaluator_test gtest_main gmock_main Threads::Threads)
+add_dependencies(simulation_evaluator_test gtest)
+add_dependencies(simulation_evaluator_test gmock)
+target_link_libraries(simulation_evaluator_test gtest_main gmock_main Threads::Threads)
 
 add_dependencies(mcts_search_test gtest)
 add_dependencies(mcts_search_test gmock)
@@ -320,8 +320,8 @@ add_test(
 )
 
 add_test(
-	NAME random_evaluator_test
-	COMMAND random_evaluator_test
+	NAME simulation_evaluator_test
+	COMMAND simulation_evaluator_test
 )
 
 add_test(
