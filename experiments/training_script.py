@@ -3,6 +3,7 @@ import logging
 import sys
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 from tensorflow.keras.models import load_model
@@ -13,6 +14,13 @@ from pyoaz.self_play import SelfPlay
 from pyoaz.connect_four_utils import (
     create_benchmark_dataset,
     get_benchmark_metrics,
+)
+
+# TODO conditional import
+from pyoaz.games.tic_tac_toe.utils import (
+    benchmark,
+    load_boards_values,
+    get_ground_truth,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -28,7 +36,7 @@ logging.basicConfig(
 # TODO more model agnostic way of loading model
 # TODO model agnostic way of loading and evaluating benchmark dataset
 
-# BENCHMARK_PATH = "../data/benchmark/Test_L1_R1"
+BENCHMARK_PATH = "../data/tic_tac_toe/gt_dataset.pkl"
 
 
 def train_model(model, dataset, session):
@@ -36,6 +44,7 @@ def train_model(model, dataset, session):
     K.set_session(session)
 
     dataset_size = dataset["Boards"].shape[0]
+    print("Dataset size", dataset_size)
     train_select = np.random.choice(
         a=[False, True], size=dataset_size, p=[0.2, 0.8]
     )
@@ -65,24 +74,30 @@ def train_model(model, dataset, session):
     )
 
 
-# def evaluate_model(boards, values, model, session):
+def evaluate_model(boards, values, model, session, dataset):
 
-#     K.set_session(session)
+    df = pd.read_csv(
+        "../data/tic_tac_toe/tic_tac_toe_table.csv", index_col=False
+    )
+    rep_df = pd.read_csv(
+        "../data/tic_tac_toe/tic_tac_toe_reps.csv", index_col=False
+    )
+    gt = get_ground_truth(dataset["Boards"], df, rep_df)
+    accuracy = (dataset["Values"] == gt).mean()
+    K.set_session(session)
 
-#     _, value_predictions = model.predict(boards)
-#     cross_entropy, accuracy = get_benchmark_metrics(values, value_predictions)
-#     LOGGER.info(
-#         "\n=========================\n"
-#         f"CROSS ENTROPY: {cross_entropy} ACCURACY {accuracy}"
-#         "\n=========================\n"
-#     )
+    _, value_predictions = model.predict(boards)
+    mse = benchmark(values, value_predictions)
+    LOGGER.info(
+        "\n=========================\n"
+        f"MSE: {mse} ACCURACY: {accuracy}"
+        "\n=========================\n"
+    )
 
 
 def train_cycle(session, model, n_gen, debug_mode=False):
 
-    # benchmark_boards, benchmark_values = create_benchmark_dataset(
-    #     BENCHMARK_PATH
-    # )
+    benchmark_boards, benchmark_values = load_boards_values(BENCHMARK_PATH)
 
     for i in range(args.n_gen):
         LOGGER.info(f"Training cycle {i}")
@@ -101,18 +116,20 @@ def train_cycle(session, model, n_gen, debug_mode=False):
             self_play_controller = SelfPlay(
                 game=args.game,
                 search_batch_size=8,
-                n_games_per_worker=1000 // 64,
+                n_games_per_worker=20,  # 1000 // 64,
                 n_simulations_per_move=200,
                 n_search_worker=4,
                 n_threads=64,
-                evaluator_batch_size=64,
+                evaluator_batch_size=16,
             )
 
         # awkard way to pass a session, maybe
         dataset = self_play_controller.self_play(session)
 
         train_model(model, dataset, session)
-        # evaluate_model(benchmark_boards, benchmark_values, model, session)
+        evaluate_model(
+            benchmark_boards, benchmark_values, model, session, dataset
+        )
 
 
 def main(args):
@@ -131,6 +148,14 @@ def main(args):
             raise NotImplementedError(
                 "'game' must be connect_four or tic_tac_toe"
             )
+
+        model.compile(
+            loss={
+                "policy": "categorical_crossentropy",
+                "value": "mean_squared_error",
+            },
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.01),
+        )
 
         try:
             train_cycle(session, model, args.n_gen, debug_mode=args.debug_mode)

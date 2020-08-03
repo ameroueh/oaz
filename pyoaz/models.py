@@ -121,11 +121,5 @@ def create_alpha_zero_model(depth, input_shape, policy_output_size):
     )(Flatten()(policy_conv_output))
     # policy = Softmax(name="policy")(_policy + 1e-12)
     model = tf.keras.Model(inputs=input, outputs=[policy, value])
-    model.compile(
-        loss={
-            "policy": "categorical_crossentropy",
-            "value": "mean_squared_error",
-        },
-        optimizer=tf.keras.optimizers.SGD(learning_rate=0.1, clipnorm=2.0),
-    )
+
     return model

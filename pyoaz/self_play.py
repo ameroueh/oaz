@@ -3,13 +3,11 @@
 """
 
 import importlib
-
 import logging
 from threading import Thread
-from typing import Tuple, List, Dict
+from typing import Dict, List, Tuple
 
 import numpy as np
-
 
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(
@@ -142,6 +140,8 @@ class SelfPlay:
                 self.evaluator,
                 self.search_batch_size,
                 self.n_simulations_per_move,
+                0.25,
+                1.0,
             )
             self.pool.perform_search(search)
             root = search.get_root()
