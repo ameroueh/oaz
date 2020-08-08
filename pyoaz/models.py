@@ -61,14 +61,19 @@ def create_connect_four_model(depth=3):
 
 def create_tic_tac_toe_model(depth=3,):
     return create_alpha_zero_model(
-        depth=depth, input_shape=(3, 3, 2), policy_output_size=9
+        depth=depth,
+        input_shape=(3, 3, 2),
+        policy_output_size=9,
+        num_filters=32,
     )
 
 
-def create_alpha_zero_model(depth, input_shape, policy_output_size):
+def create_alpha_zero_model(
+    depth, input_shape, policy_output_size, num_filters=64
+):
     input = tf.keras.Input(shape=input_shape, name="input")
     conv = Conv2D(
-        64,
+        num_filters,
         kernel_size=3,
         strides=1,
         padding="same",
@@ -79,11 +84,11 @@ def create_alpha_zero_model(depth, input_shape, policy_output_size):
 
     x = conv(input)
 
-    block_output = residual_block(inputs=x, strides=1, num_filters=64)
+    block_output = residual_block(inputs=x, strides=1, num_filters=num_filters)
 
     for _ in range(depth):
         block_output = residual_block(
-            inputs=block_output, strides=1, num_filters=64
+            inputs=block_output, strides=1, num_filters=num_filters
         )
 
     value_conv_output = Conv2D(
@@ -104,7 +109,7 @@ def create_alpha_zero_model(depth, input_shape, policy_output_size):
     )(Flatten()(value_conv_output))
 
     policy_conv_output = Conv2D(
-        32,
+        num_filters // 2,
         kernel_size=3,
         strides=1,
         padding="same",

@@ -10,11 +10,11 @@ from typing import Dict, List, Tuple
 import numpy as np
 
 LOGGER = logging.getLogger(__name__)
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(message)s",
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+# logging.basicConfig(
+#     format="%(asctime)s %(levelname)-8s %(message)s",
+#     level=logging.INFO,
+#     datefmt="%Y-%m-%d %H:%M:%S",
+# )
 
 
 class SelfPlay:
@@ -27,6 +27,8 @@ class SelfPlay:
         n_search_worker: int = 4,
         n_threads: int = 32,
         evaluator_batch_size: int = 32,
+        epsilon: float = 0.25,
+        alpha: float = 1.0,
     ):
         # TODO should this take an already made c_model????
 
@@ -37,6 +39,8 @@ class SelfPlay:
         self.n_search_worker = n_search_worker
         self.n_threads = n_threads
         self.evaluator_batch_size = evaluator_batch_size
+        self.epsilon = epsilon
+        self.alpha = alpha
         self._import_game_module(game)
         self._create_model()
 
@@ -110,7 +114,7 @@ class SelfPlay:
         return final_dataset
 
     def _worker_self_play(self, dataset, id):
-        LOGGER.info(f"Starting thread {id}")
+        LOGGER.debug(f"Starting thread {id}")
         self._self_play(dataset[id])
 
     def _self_play(self, dataset):
@@ -134,21 +138,37 @@ class SelfPlay:
         policies = []
         game = self.game()
         policy_size = len(game.available_moves)
+
+        # Sometimes act randomly for the first few moves
+        if np.random.uniform() < 0.1:
+            LOGGER.debug("random")
+            move = int(np.random.choice(game.available_moves))
+            game.play_move(move)
+            if np.random.uniform() < 0.1:
+                LOGGER.debug("random 2")
+                move = int(np.random.choice(game.available_moves))
+                game.play_move(move)
+                if np.random.uniform() < 0.1:
+                    LOGGER.debug("random 3")
+                    move = int(np.random.choice(game.available_moves))
+                    game.play_move(move)
+
         while not game.finished:
+
             search = self.game_module.Search(
                 game,
                 self.evaluator,
                 self.search_batch_size,
                 self.n_simulations_per_move,
-                0.25,
-                1.0,
+                self.epsilon,
+                self.alpha,
             )
             self.pool.perform_search(search)
             root = search.get_root()
 
             best_visit_count = -1
             best_child = None
-            policy = np.zeros(shape=policy_size)
+            policy = np.zeros(shape=policy_size, dtype=np.float32)
             for i in range(root.n_children):
                 child = root.get_child(i)
                 move = child.move
@@ -163,11 +183,17 @@ class SelfPlay:
             policy = policy / (self.n_simulations_per_move - 1)
             policies.append(policy)
             move = best_child.move
+
             # LOGGER.info(f"Playing move {move}")
             # LOGGER.info(f"availalbe move {game.available_moves} ")
 
-            game.play_move(move)
             boards.append(game.board.copy())
+            game.play_move(move)
+
+        boards.append(game.board.copy())
+        policy = np.ones(shape=policy_size, dtype=np.float32)
+        policy = policy / policy.sum()
+        policies.append()
 
         # LOGGER.info("Game is finished!")
         scores = [game.score] * len(boards)
