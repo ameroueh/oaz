@@ -193,7 +193,7 @@ class SelfPlay:
         boards.append(game.board.copy())
         policy = np.ones(shape=policy_size, dtype=np.float32)
         policy = policy / policy.sum()
-        policies.append()
+        policies.append(policy)
 
         # LOGGER.info("Game is finished!")
         scores = [game.score] * len(boards)
