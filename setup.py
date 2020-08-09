@@ -17,6 +17,11 @@ GAMES = [
         "target": "pyoaz_tic_tac_toe_core",
         "extension_file_name": "pyoaz_tic_tac_toe_core.so",
     },
+    {
+        "name": "bandits",
+        "target": "pyoaz_bandits_core",
+        "extension_file_name": "pyoaz_bandits_core.so",
+    },
 ]
 
 
