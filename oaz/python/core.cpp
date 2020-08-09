@@ -111,7 +111,8 @@ BOOST_PYTHON_MODULE( MODULE_NAME ) {
 
 	p::class_<Search_, std::shared_ptr<Search_>, boost::noncopyable>("Search", p::init<const Game&, std::shared_ptr<Evaluator>, size_t, size_t, float, float>())
 	.def("get_root", &Search_::getTreeRoot, p::return_value_policy<p::reference_existing_object>())
-	.add_property("done", &Search_::done);
+	.add_property("done", &Search_::done)
+	.def("seed_rng", &Search_::seedRNG);
 	
 	p::class_<SearchPool, shared_ptr<SearchPool>, boost::noncopyable>("SearchPool", p::init<std::shared_ptr<Evaluator>, size_t>())
 		.def("perform_search", &perform_search);

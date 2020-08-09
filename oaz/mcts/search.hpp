@@ -49,6 +49,7 @@ namespace oaz::mcts {
 			bool done() const;
 			bool work();
 			bool waitingForEvaluation();
+			void seedRNG(size_t);
 
 			Move getBestMove();
 			void getVisitCounts(Policy&);

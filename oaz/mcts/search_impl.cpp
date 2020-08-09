@@ -83,6 +83,12 @@ typename Game::Value& Search<Game, Evaluator, Selector>::getValue(size_t index) 
 }
 
 template <class Game, class Evaluator, class Selector>
+void Search<Game, Evaluator, Selector>::seedRNG(size_t seed) {
+	m_generator.seed(seed);	
+}
+
+
+template <class Game, class Evaluator, class Selector>
 typename Game::Policy& Search<Game, Evaluator, Selector>::getPolicy(size_t index) {
 	return m_policies[index];
 }
