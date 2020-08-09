@@ -32,10 +32,9 @@ else()
 	set(BOOST_PYTHONLIB python3)
 endif()
 
-find_package(Boost 1.67.0 REQUIRED COMPONENTS system python program_options numpy)
+find_package(Boost 1.67.0 REQUIRED COMPONENTS python36 numpy36)
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
-find_package(HDF5 REQUIRED COMPONENTS C CXX)
 find_package(SWIG REQUIRED COMPONENTS python)
 
 message(STATUS "Swig lib at ${SWIG_DIR}")
@@ -112,6 +111,32 @@ target_compile_definitions(
 	-DGAME_CLASS_NAME=TicTacToe
 	-DGAME_HEADER=oaz/games/tic_tac_toe.hpp
 	-DMODULE_NAME=pyoaz_tic_tac_toe_core
+)
+
+python_add_module(pyoaz_bandits_core oaz/python/core.cpp)
+target_include_directories(
+	pyoaz_bandits_core
+	PUBLIC
+	${PROJECT_SOURCE_DIR} 
+	${PYTHON_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS}
+	${TensorFlow_SOURCE_DIR} 
+	${TensorFlow_INCLUDE_DIR}
+	${TensorFlow_BAZEL_GENFILES}
+	${SWIG_DIR}
+)
+target_link_libraries(
+	pyoaz_bandits_core
+	${Boost_LIBRARIES}
+	${PYTHON_LIBRARIES}
+	TensorFlow_DEP2
+)
+target_compile_definitions(
+	pyoaz_bandits_core
+	PRIVATE
+	-DGAME_CLASS_NAME=Bandits
+	-DGAME_HEADER=oaz/games/bandits.hpp
+	-DMODULE_NAME=pyoaz_bandits_core
 )
 
 
