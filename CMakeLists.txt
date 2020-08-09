@@ -54,7 +54,7 @@ TensorFlow_REQUIRE_SOURCE()
 add_custom_target(
 	generate_az_search_model
 	COMMAND 
-	python3 ${PROJECT_SOURCE_DIR}/data/generate_connect_four_model.py ${PROJECT_BINARY_DIR}/test/az/
+	python3 ${PROJECT_SOURCE_DIR}/data/generate_bandits_model.py ${PROJECT_BINARY_DIR}/test/az/
 )
 
 python_add_module(pyoaz_connect_four_core oaz/python/core.cpp)
@@ -149,6 +149,11 @@ add_executable(tic_tac_toe_test test/tic_tac_toe/tic_tac_toe_test.cpp)
 target_include_directories(tic_tac_toe_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_include_directories(tic_tac_toe_test PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 set_target_properties(tic_tac_toe_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/tic_tac_toe")
+
+add_executable(bandits_test test/bandits/bandits_test.cpp)
+target_include_directories(bandits_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(bandits_test PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
+set_target_properties(bandits_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/bandits")
 
 add_executable(mcts_test test/mcts/mcts_test.cpp)
 target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR})
@@ -283,6 +288,17 @@ target_link_libraries(
 	${PYTHON_LIBRARIES}
 )
 
+add_dependencies(bandits_test gtest)
+add_dependencies(bandits_test gmock)
+target_link_libraries(
+	bandits_test 
+	gtest_main 
+	gmock_main
+	${Boost_LIBRARIES}
+	${PYTHON_LIBRARIES}
+)
+
+
 add_dependencies(mcts_test gtest)
 add_dependencies(mcts_test gmock)
 target_link_libraries(mcts_test gtest_main gmock_main)
@@ -338,6 +354,12 @@ add_test(
 	NAME tic_tac_toe_test
 	COMMAND tic_tac_toe_test
 )
+
+add_test(
+	NAME bandits_test
+	COMMAND bandits_test
+)
+
 
 add_test(
 	NAME mcts_test

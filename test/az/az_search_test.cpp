@@ -6,7 +6,8 @@
 
 #include "tensorflow/core/framework/tensor.h"
 #include "oaz/neural_network/nn_evaluator.hpp"
-#include "oaz/games/connect_four.hpp"
+/* #include "oaz/games/connect_four.hpp" */
+#include "oaz/games/bandits.hpp"
 #include "oaz/mcts/az_search.hpp"
 #include "oaz/mcts/search_node.hpp" 
 #include "oaz/mcts/selection.hpp"
@@ -21,7 +22,7 @@ using namespace std;
 using namespace oaz::mcts;
 using namespace oaz::games;
 
-using Game = ConnectFour;
+using Game = Bandits;
 using Move = typename Game::Move;
 using Node = SearchNode<Move>;
 using Model = oaz::nn::Model;
