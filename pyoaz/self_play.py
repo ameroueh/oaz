@@ -74,7 +74,7 @@ class SelfPlay:
             self.evaluator, self.n_search_worker
         )
 
-    def self_play(self, session) -> Dict:
+    def self_play(self, session, debug=False) -> Dict:
 
         self.c_model.set_session(session._session)
 
@@ -83,6 +83,17 @@ class SelfPlay:
             for _ in range(self.n_threads)
         ]
 
+        if debug:
+            LOGGER.debug("DEBUG MODE")
+            # Debugging: skip the threading:
+            self._worker_self_play(all_datasets, 0)
+
+            all_datasets[0]["Boards"] = np.array(all_datasets[0]["Boards"])
+            all_datasets[0]["Values"] = np.array(all_datasets[0]["Values"])
+            all_datasets[0]["Policies"] = np.array(all_datasets[0]["Policies"])
+            return all_datasets[0]
+
+        LOGGER.debug("THREADING MODE")
         # Threading Mode:
         threads = [
             Thread(target=self._worker_self_play, args=(all_datasets, i))
@@ -93,9 +104,6 @@ class SelfPlay:
 
         for t in threads:
             t.join()
-
-        # Debugging: skip the threading:
-        # self._worker_self_play(all_datasets, 0)
 
         all_boards = []
         all_values = []
@@ -140,18 +148,18 @@ class SelfPlay:
         policy_size = len(game.available_moves)
 
         # Sometimes act randomly for the first few moves
-        if np.random.uniform() < 0.1:
-            LOGGER.debug("random")
-            move = int(np.random.choice(game.available_moves))
-            game.play_move(move)
-            if np.random.uniform() < 0.1:
-                LOGGER.debug("random 2")
-                move = int(np.random.choice(game.available_moves))
-                game.play_move(move)
-                if np.random.uniform() < 0.1:
-                    LOGGER.debug("random 3")
-                    move = int(np.random.choice(game.available_moves))
-                    game.play_move(move)
+        # if np.random.uniform() < 0.1:
+        #     LOGGER.debug("random")
+        #     move = int(np.random.choice(game.available_moves))
+        #     game.play_move(move)
+        #     if np.random.uniform() < 0.1:
+        #         LOGGER.debug("random 2")
+        #         move = int(np.random.choice(game.available_moves))
+        #         game.play_move(move)
+        #         if np.random.uniform() < 0.1:
+        #             LOGGER.debug("random 3")
+        #             move = int(np.random.choice(game.available_moves))
+        #             game.play_move(move)
 
         while not game.finished:
 
@@ -166,8 +174,8 @@ class SelfPlay:
             self.pool.perform_search(search)
             root = search.get_root()
 
-            best_visit_count = -1
-            best_child = None
+            # best_visit_count = -1
+            # best_child = None
             policy = np.zeros(shape=policy_size, dtype=np.float32)
             for i in range(root.n_children):
                 child = root.get_child(i)
@@ -175,14 +183,20 @@ class SelfPlay:
                 n_visits = child.n_visits
                 policy[move] = n_visits
 
-                if n_visits > best_visit_count:
-                    best_visit_count = n_visits
-                    best_child = child
+                # if n_visits > best_visit_count:
+                # best_visit_count = n_visits
+                # best_child = child
 
             # There's an off-by-one error in the Search's n_sim_per_move
             policy = policy / (self.n_simulations_per_move - 1)
             policies.append(policy)
-            move = best_child.move
+
+            # import pdb
+
+            # pdb.set_trace()
+
+            move = int(np.random.choice(np.arange(policy_size), p=policy))
+            # move = best_child.move
 
             # LOGGER.info(f"Playing move {move}")
             # LOGGER.info(f"availalbe move {game.available_moves} ")

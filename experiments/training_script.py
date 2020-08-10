@@ -28,14 +28,25 @@ from tensorflow.keras.models import load_model
 
 
 LOGGER = logging.getLogger(__name__)
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(message)s",
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 
 
-def play_tournament(game, model, n_games=100):
+def set_logging(debug_mode=False):
+    if debug_mode:
+
+        logging.basicConfig(
+            format="%(asctime)s %(levelname)-8s %(message)s",
+            level=logging.DEBUG,
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    else:
+        logging.basicConfig(
+            format="%(asctime)s %(levelname)-8s %(message)s",
+            level=logging.INFO,
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+
+
+def play_tournament(game, model, n_games=200):
 
     oazbot = Participant(OazBot(model), name="oaz")
     left_bot = Participant(LeftmostBot(), name="left")
@@ -131,9 +142,9 @@ def train_cycle(model, n_gen, hist, game, save_path, debug_mode=False):
         if debug_mode:
             self_play_controller = SelfPlay(
                 game=args.game,
-                search_batch_size=4,
-                n_games_per_worker=10,
-                n_simulations_per_move=10,
+                search_batch_size=2,
+                n_games_per_worker=128,
+                n_simulations_per_move=16,
                 n_search_worker=4,
                 n_threads=4,
                 evaluator_batch_size=4,
@@ -145,13 +156,13 @@ def train_cycle(model, n_gen, hist, game, save_path, debug_mode=False):
             self_play_controller = SelfPlay(
                 game=args.game,
                 search_batch_size=2,
-                n_games_per_worker=1000 // 128,
-                n_simulations_per_move=20,
-                n_search_worker=4,
-                n_threads=32,
-                evaluator_batch_size=32,
+                n_games_per_worker=1000 // 64,
+                n_simulations_per_move=200,
+                n_search_worker=2,
+                n_threads=64,
+                evaluator_batch_size=8,
                 epsilon=0.25,
-                alpha=3.0,
+                alpha=1.0,
             )
 
         # awkard way to pass a session, maybe
@@ -175,25 +186,17 @@ def train_cycle(model, n_gen, hist, game, save_path, debug_mode=False):
         hist["draws"].append(draws)
 
         print(f"WINS {wins} LOSSES {losses} DRAWS {draws}")
-        print("==============================================================")
-        print("==============================================================")
-        print()
 
         joblib.dump(dataset, save_path / f"dataset_{i}.joblib")
 
 
 def _save_plots(save_path, hist):
     plt.plot(hist["mse"], label="MSE")
+    plt.plot(hist["accuracy"], label="Accuracy")
     plt.plot(hist["self_play_mse"], label="Self Play MSE")
-    plt.legend()
-    plot_path = save_path / "_mses.png"
-    plt.savefig(plot_path)
-
-    plt.figure()
-
     plt.plot(hist["self_play_accuracy"], label="Self Play Accuracy")
     plt.legend()
-    plot_path = save_path / "_accuracy.png"
+    plot_path = save_path / "_plot.png"
     plt.savefig(plot_path)
 
     plt.figure()
@@ -207,6 +210,8 @@ def _save_plots(save_path, hist):
 
 
 def main(args):
+
+    set_logging(debug_mode=args.debug_mode)
 
     if args.load_path:
         model = load_model(args.load_path)
