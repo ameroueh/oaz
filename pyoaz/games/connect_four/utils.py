@@ -1,7 +1,20 @@
+from pathlib import Path
 from typing import Tuple
 
 import numpy as np
 from pyoaz.games.connect_four import ConnectFour
+
+CONNECT_FOUR_PATH = Path("/home/simon/code/oaz-gpu/pyoaz/games/connect_four/")
+
+
+def get_gt_values(boards):
+    return None
+
+
+def load_benchmark():
+    boards = np.load(CONNECT_FOUR_PATH / "benchmark_boards.npy")
+    values = np.load(CONNECT_FOUR_PATH / "benchmark_values.npy")
+    return boards, values
 
 
 def create_benchmark_dataset(
@@ -43,14 +56,15 @@ def get_benchmark_metrics(
     values: np.ndarray, value_predictions: np.ndarray
 ) -> Tuple[float, float]:
 
-    values_norm = (values + 1) / 2
-    value_predictions_norm = (value_predictions + 1) / 2
-    cross_entropy = values_norm * np.log(value_predictions_norm + 1e-12) + (
-        1 - values_norm
-    ) * np.log(1 - value_predictions_norm + 1e-12)
-    cross_entropy = -np.mean(cross_entropy)
+    # values_norm = (values + 1) / 2
+    # value_predictions_norm = (value_predictions + 1) / 2
+    # cross_entropy = values_norm * np.log(value_predictions_norm + 1e-12) + (
+    #     1 - values_norm
+    # ) * np.log(1 - value_predictions_norm + 1e-12)
+    # cross_entropy = -np.mean(cross_entropy)
+    mse = np.mean((values - value_predictions) ** 2)
 
     bool_value_prediction = np.where(value_predictions > 0.0, 1, -1)
     accuracy = (bool_value_prediction == values).mean()
 
-    return cross_entropy, accuracy
+    return mse, accuracy

@@ -10,17 +10,8 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 from pyoaz.bots import LeftmostBot, RandomBot, OazBot
-from pyoaz.connect_four_utils import (
-    create_benchmark_dataset,
-    get_benchmark_metrics,
-)
 
-# TODO conditional import
-from pyoaz.games.tic_tac_toe.utils import (
-    benchmark,
-    get_ground_truth,
-    load_boards_values,
-)
+
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.tournament import Participant, Tournament
@@ -46,7 +37,7 @@ def set_logging(debug_mode=False):
         )
 
 
-def play_tournament(game, model, n_games=200):
+def play_tournament(game, model, n_games=100):
 
     oazbot = Participant(OazBot(model), name="oaz")
     left_bot = Participant(LeftmostBot(), name="left")
@@ -59,14 +50,10 @@ def play_tournament(game, model, n_games=200):
 
     oaz_wins, oaz_losses = win_loss[0, :].sum(), win_loss[:, 0].sum()
     draws = 2 * n_games * 3 - oaz_wins - oaz_losses
+
+    LOGGER.info(f"WINS: {oaz_wins} LOSSES: {oaz_losses} DRAWS: {draws}")
+
     return oaz_wins, oaz_losses, draws
-
-
-# TODO fix this horrible relatvie path
-# TODO more model agnostic way of loading model
-# TODO model agnostic way of loading and evaluating benchmark dataset
-
-BENCHMARK_PATH = "../data/tic_tac_toe/gt_dataset.pkl"
 
 
 def train_model(model, dataset):
@@ -102,41 +89,38 @@ def train_model(model, dataset):
     )
 
 
-def evaluate_model(boards, values, model, dataset):
-    # TODO this is horrible and not game agnostic
-    df = pd.read_csv(
-        "../data/tic_tac_toe/tic_tac_toe_table.csv", index_col=False
-    )
-    rep_df = pd.read_csv(
-        "../data/tic_tac_toe/tic_tac_toe_reps.csv", index_col=False
-    )
-    gt = get_ground_truth(dataset["Boards"], df, rep_df)
-
-    self_play_accuracy = (dataset["Values"] == gt).mean()
-    self_play_mse = ((dataset["Values"] - gt) ** 2).mean()
-
+def benchmark_model(benchmark_boards, benchmark_values, model):
+    _, pred_values = model.predict(benchmark_boards)
+    mse = ((pred_values - benchmark_values) ** 2).mean()
     LOGGER.info(
         "\n=========================\n"
-        f"Self-Play MSE: {self_play_mse} Self-Play ACCURACY: {self_play_accuracy}"
+        f"BENCHMARK MSE : {mse}"
         "\n=========================\n"
     )
+    return mse
 
-    _, value_predictions = model.predict(boards)
-    mse = benchmark(values, value_predictions)
-    accuracy = (value_predictions == values).mean()
 
-    LOGGER.info(
-        "\n=========================\n"
-        f"MSE: {mse} ACCURACY: {accuracy}"
-        "\n=========================\n"
-    )
+def evaluate_self_play_dataset(boards, values):
 
-    return self_play_mse, self_play_accuracy, mse, accuracy
+    gt_values = get_gt_values(boards)
+    if gt_values is not None:
+        self_play_accuracy = (values == gt_values).mean()
+        self_play_mse = ((values - gt_values) ** 2).mean()
+
+        LOGGER.info(
+            "\n=========================\n"
+            f"Self-Play MSE: {self_play_mse} "
+            f"Self-Play ACCURACY: {self_play_accuracy}"
+            "\n=========================\n"
+        )
+        return self_play_mse, self_play_accuracy
+    return None, None
 
 
 def train_cycle(model, n_gen, hist, game, save_path, debug_mode=False):
 
-    benchmark_boards, benchmark_values = load_boards_values(BENCHMARK_PATH)
+    benchmark_boards, benchmark_values = load_benchmark()
+
     for i in range(args.n_gen):
         LOGGER.info(f"Training cycle {i}")
         if debug_mode:
@@ -165,81 +149,54 @@ def train_cycle(model, n_gen, hist, game, save_path, debug_mode=False):
                 alpha=1.0,
             )
 
-        # awkard way to pass a session, maybe
         session = K.get_session()
         dataset = self_play_controller.self_play(session)
 
         train_model(model, dataset)
-        self_play_mse, self_play_accuracy, mse, accuracy = evaluate_model(
-            benchmark_boards, benchmark_values, model, dataset
-        )
 
+        self_play_mse, self_play_accuracy = evaluate_self_play_dataset(
+            dataset["Boards"], dataset["Values"]
+        )
         hist["self_play_mse"].append(self_play_mse)
         hist["self_play_accuracy"].append(self_play_accuracy)
 
+        mse = benchmark_model(benchmark_boards, benchmark_values, model)
         hist["mse"].append(mse)
-        hist["accuracy"].append(accuracy)
 
         wins, losses, draws = play_tournament(game, model)
         hist["wins"].append(wins)
         hist["losses"].append(losses)
         hist["draws"].append(draws)
 
-        print(f"WINS {wins} LOSSES {losses} DRAWS {draws}")
-
-        joblib.dump(dataset, save_path / f"dataset_{i}.joblib")
-
-
-def _save_plots(save_path, hist):
-    plt.plot(hist["mse"], label="MSE")
-    plt.plot(hist["accuracy"], label="Accuracy")
-    plt.plot(hist["self_play_mse"], label="Self Play MSE")
-    plt.plot(hist["self_play_accuracy"], label="Self Play Accuracy")
-    plt.legend()
-    plot_path = save_path / "_plot.png"
-    plt.savefig(plot_path)
-
-    plt.figure()
-
-    plt.plot(hist["wins"], label="wins")
-    plt.plot(hist["losses"], label="losses")
-    plt.plot(hist["draws"], label="draws")
-    plt.legend()
-    plot_path = save_path / "_wlm.png"
-    plt.savefig(plot_path)
+        # joblib.dump(dataset, save_path / f"dataset_{i}.joblib")
 
 
 def main(args):
 
     set_logging(debug_mode=args.debug_mode)
 
-    if args.load_path:
-        model = load_model(args.load_path)
-    elif args.game == "connect_four":
+    if args.game == "connect_four":
         model = create_connect_four_model(depth=5)
-        from pyoaz.games.connect_four import ConnectFour
-
         game = ConnectFour
+
     elif args.game == "tic_tac_toe":
         model = create_tic_tac_toe_model(depth=3)
-        from pyoaz.games.tic_tac_toe import TicTacToe
-
         game = TicTacToe
-    else:
-        raise NotImplementedError("'game' must be connect_four or tic_tac_toe")
+
+    if args.load_path:
+        model = load_model(args.load_path)
 
     model.compile(
         loss={
             "policy": "categorical_crossentropy",
             "value": "mean_squared_error",
         },
-        optimizer=tf.keras.optimizers.SGD(learning_rate=0.1),
+        optimizer=tf.keras.optimizers.SGD(learning_rate=0.01),
         # optimizer=tf.keras.optimizers.Adadelta(
         #     learning_rate=0.1, rho=0.95, epsilon=1e-07, name="Adadelta"
         # ),
     )
     hist = {
-        "accuracy": [],
         "mse": [],
         "self_play_mse": [],
         "self_play_accuracy": [],
@@ -282,6 +239,24 @@ def main(args):
                 print("Invalid input, try again")
 
 
+def _save_plots(save_path, hist):
+    plt.plot(hist["mse"], label="MSE")
+    plt.plot(hist["self_play_mse"], label="Self Play MSE")
+    plt.plot(hist["self_play_accuracy"], label="Self Play Accuracy")
+    plt.legend()
+    plot_path = save_path / "_plot.png"
+    plt.savefig(plot_path)
+
+    plt.figure()
+
+    plt.plot(hist["wins"], label="wins")
+    plt.plot(hist["losses"], label="losses")
+    plt.plot(hist["draws"], label="draws")
+    plt.legend()
+    plot_path = save_path / "_wlm.png"
+    plt.savefig(plot_path)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -313,4 +288,22 @@ if __name__ == "__main__":
         "tic_tac_toe",
     )
     args = parser.parse_args()
+
+    if args.game == "connect_four":
+        from pyoaz.games.connect_four import (
+            load_benchmark,
+            get_gt_values,
+            ConnectFour,
+        )
+
+    elif args.game == "tic_tac_toe":
+        from pyoaz.games.tic_tac_toe import (
+            load_benchmark,
+            get_gt_values,
+            TicTacToe,
+        )
+
+    else:
+        raise NotImplementedError("'game' must be connect_four or tic_tac_toe")
+
     main(args)
