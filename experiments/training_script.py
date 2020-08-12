@@ -16,6 +16,7 @@ from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.tournament import Participant, Tournament
 from tensorflow.keras.models import load_model
+from pyoaz.games.tic_tac_toe import boards_to_bin
 
 
 LOGGER = logging.getLogger(__name__)
@@ -35,6 +36,28 @@ def set_logging(debug_mode=False):
             level=logging.INFO,
             datefmt="%Y-%m-%d %H:%M:%S",
         )
+
+
+def load_benchmark(benchmark_path):
+    boards = np.load(benchmark_path / "benchmark_boards.npy")
+    values = np.load(benchmark_path / "benchmark_values.npy")
+    return boards, values
+
+
+def get_gt_values(benchmark_path, boards):
+    tic_tac_toe_df = pd.read_csv(
+        benchmark_path / "tic_tac_toe_table.csv", index_col=False
+    )
+    rep_df = pd.read_csv(
+        benchmark_path / "tic_tac_toe_reps.csv", index_col=False
+    )
+    boards_list = boards_to_bin(boards)
+    board_df = pd.DataFrame(boards_list, columns=["board_rep"])
+    board_df = pd.merge(board_df, rep_df, on="board_rep", how="left")
+    values = pd.merge(board_df, tic_tac_toe_df, on="board_num", how="left")[
+        "reward"
+    ].values
+    return values
 
 
 def play_tournament(game, model, n_games=100):
@@ -100,26 +123,29 @@ def benchmark_model(benchmark_boards, benchmark_values, model):
     return mse
 
 
-def evaluate_self_play_dataset(boards, values):
+def evaluate_self_play_dataset(benchmark_path, boards, values):
+    try:
+        gt_values = get_gt_values(benchmark_path, boards)
+        if gt_values is not None:
+            self_play_accuracy = (values == gt_values).mean()
+            self_play_mse = ((values - gt_values) ** 2).mean()
 
-    gt_values = get_gt_values(boards)
-    if gt_values is not None:
-        self_play_accuracy = (values == gt_values).mean()
-        self_play_mse = ((values - gt_values) ** 2).mean()
-
-        LOGGER.info(
-            "\n=========================\n"
-            f"Self-Play MSE: {self_play_mse} "
-            f"Self-Play ACCURACY: {self_play_accuracy}"
-            "\n=========================\n"
-        )
-        return self_play_mse, self_play_accuracy
-    return None, None
+            LOGGER.info(
+                "\n=========================\n"
+                f"Self-Play MSE: {self_play_mse} "
+                f"Self-Play ACCURACY: {self_play_accuracy}"
+                "\n=========================\n"
+            )
+            return self_play_mse, self_play_accuracy
+    except FileNotFoundError:
+        return None, None
 
 
-def train_cycle(model, n_gen, hist, game, save_path, debug_mode=False):
+def train_cycle(
+    model, n_gen, hist, game, save_path, benchmark_path, debug_mode=False
+):
 
-    benchmark_boards, benchmark_values = load_benchmark()
+    benchmark_boards, benchmark_values = load_benchmark(benchmark_path)
 
     for i in range(args.n_gen):
         LOGGER.info(f"Training cycle {i}")
@@ -127,7 +153,7 @@ def train_cycle(model, n_gen, hist, game, save_path, debug_mode=False):
             self_play_controller = SelfPlay(
                 game=args.game,
                 search_batch_size=2,
-                n_games_per_worker=128,
+                n_games_per_worker=3,
                 n_simulations_per_move=16,
                 n_search_worker=4,
                 n_threads=4,
@@ -155,7 +181,7 @@ def train_cycle(model, n_gen, hist, game, save_path, debug_mode=False):
         train_model(model, dataset)
 
         self_play_mse, self_play_accuracy = evaluate_self_play_dataset(
-            dataset["Boards"], dataset["Values"]
+            benchmark_path, dataset["Boards"], dataset["Values"]
         )
         hist["self_play_mse"].append(self_play_mse)
         hist["self_play_accuracy"].append(self_play_accuracy)
@@ -176,15 +202,21 @@ def main(args):
     set_logging(debug_mode=args.debug_mode)
 
     if args.game == "connect_four":
+        from pyoaz.games.connect_four import ConnectFour
+
         model = create_connect_four_model(depth=5)
         game = ConnectFour
 
     elif args.game == "tic_tac_toe":
+        from pyoaz.games.tic_tac_toe import TicTacToe
+
         model = create_tic_tac_toe_model(depth=3)
         game = TicTacToe
 
     if args.load_path:
         model = load_model(args.load_path)
+
+    benchmark_path = Path("./benchmark") / args.game
 
     model.compile(
         loss={
@@ -214,6 +246,7 @@ def main(args):
             hist,
             game,
             save_path,
+            benchmark_path,
             debug_mode=args.debug_mode,
         )
 
@@ -288,22 +321,5 @@ if __name__ == "__main__":
         "tic_tac_toe",
     )
     args = parser.parse_args()
-
-    if args.game == "connect_four":
-        from pyoaz.games.connect_four import (
-            load_benchmark,
-            get_gt_values,
-            ConnectFour,
-        )
-
-    elif args.game == "tic_tac_toe":
-        from pyoaz.games.tic_tac_toe import (
-            load_benchmark,
-            get_gt_values,
-            TicTacToe,
-        )
-
-    else:
-        raise NotImplementedError("'game' must be connect_four or tic_tac_toe")
 
     main(args)

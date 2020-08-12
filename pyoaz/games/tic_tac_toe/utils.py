@@ -4,15 +4,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-TIC_TAC_TOE_PATH = Path("/home/simon/code/oaz-gpu/pyoaz/games/tic_tac_toe/")
 
-
-def get_gt_values(boards):
+def get_gt_values(benchmark_path, boards):
     tic_tac_toe_df = pd.read_csv(
-        TIC_TAC_TOE_PATH / "tic_tac_toe_table.csv", index_col=False
+        benchmark_path / "tic_tac_toe_table.csv", index_col=False
     )
     rep_df = pd.read_csv(
-        TIC_TAC_TOE_PATH / "tic_tac_toe_reps.csv", index_col=False
+        benchmark_path / "tic_tac_toe_reps.csv", index_col=False
     )
     boards_list = boards_to_bin(boards)
     board_df = pd.DataFrame(boards_list, columns=["board_rep"])
@@ -21,12 +19,6 @@ def get_gt_values(boards):
         "reward"
     ].values
     return values
-
-
-def load_benchmark():
-    boards = np.load(TIC_TAC_TOE_PATH / "benchmark_boards.npy")
-    values = np.load(TIC_TAC_TOE_PATH / "benchmark_values.npy")
-    return boards, values
 
 
 def load_boards_values(dataset_path):
