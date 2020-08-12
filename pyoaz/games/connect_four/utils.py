@@ -1,20 +1,7 @@
-from pathlib import Path
 from typing import Tuple
 
 import numpy as np
 from pyoaz.games.connect_four import ConnectFour
-
-CONNECT_FOUR_PATH = Path("/home/simon/code/oaz-gpu/pyoaz/games/connect_four/")
-
-
-def get_gt_values(boards):
-    return None
-
-
-def load_benchmark():
-    boards = np.load(CONNECT_FOUR_PATH / "benchmark_boards.npy")
-    values = np.load(CONNECT_FOUR_PATH / "benchmark_values.npy")
-    return boards, values
 
 
 def create_benchmark_dataset(
