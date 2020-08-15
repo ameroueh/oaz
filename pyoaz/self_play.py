@@ -97,7 +97,10 @@ class SelfPlay:
         LOGGER.debug("THREADING MODE")
         # Threading Mode:
 
-        with tqdm(total=self.n_threads * self.n_games_per_worker, desc="Self-play games") as pbar:
+        with tqdm(
+            total=self.n_threads * self.n_games_per_worker,
+            desc="Self-play games",
+        ) as pbar:
             threads = [
                 Thread(
                     target=self._worker_self_play,

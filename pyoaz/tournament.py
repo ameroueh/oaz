@@ -11,6 +11,7 @@ from tqdm.auto import tqdm
 
 LOGGER = logging.getLogger(__name__)
 
+
 @dataclass
 class Participant:
     # def __init__(self, bot, name: str, original_elo: int = 400):
