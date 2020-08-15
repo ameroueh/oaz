@@ -1,0 +1,24 @@
+game = "tic_tac_toe"
+n_generations = 100
+
+[model]
+n_resnet_blocks = 3 
+
+[save]
+save_path = "tic_tac_toe_model"
+
+[benchmark]
+benchmark_path = "benchmark/tic_tac_toe"
+
+[learning]
+learning_rate = 0.005
+
+[self_play]
+search_batch_size = 2
+n_games_per_worker = 10
+n_simulations_per_move = 10
+n_threads = 10
+n_search_workers = 4
+evaluator_batch_size = 10 
+epsilon = 0.25
+alpha = 1.0
