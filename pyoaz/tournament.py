@@ -1,3 +1,5 @@
+import logging
+
 from dataclasses import dataclass
 from itertools import combinations
 from typing import Iterable, List, Tuple
@@ -6,6 +8,8 @@ import numpy as np
 from pyoaz.bots import Bot
 from tqdm.auto import tqdm
 
+
+LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class Participant:
@@ -71,7 +75,7 @@ class Tournament:
         losses_a = 0
         draws = 0
 
-        print(f"{participant_a.name} vs {participant_b.name}")
+        LOGGER.info(f"{participant_a.name} vs {participant_b.name}")
         for _ in tqdm(range(n_games), desc="Games", leave=False):
 
             # Playing two games in reverse
