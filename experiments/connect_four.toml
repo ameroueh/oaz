@@ -6,6 +6,8 @@ n_resnet_blocks = 10
 
 [save]
 save_path = "connect_four_model"
+checkpoint_path = "connect_four_checkpoints"
+checkpoint_every = 5
 
 [benchmark]
 benchmark_path = "benchmark/connect_four"

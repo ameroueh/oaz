@@ -150,11 +150,19 @@ def evaluate_self_play_dataset(benchmark_path, boards, values):
 def train_cycle(
     model, configuration, hist, debug_mode=False
 ):
+    try:
+        checkpoint_path = Path(configuration["save"]["checkpoint_path"])
+        checkpoint = True
+        checkpoint_path.mkdir(exist_ok=True)
+    except KeyError:
+        checkpoint = False
 
     benchmark_path = Path(configuration["benchmark"]["benchmark_path"])
     benchmark_boards, benchmark_values = load_benchmark(benchmark_path)
 
     game = get_game_class(configuration["game"])
+
+
 
     for i in range(configuration["n_generations"]):
         LOGGER.info(f"Training cycle {i}")
@@ -202,8 +210,10 @@ def train_cycle(
         hist["wins"].append(wins)
         hist["losses"].append(losses)
         hist["draws"].append(draws)
-
-        # joblib.dump(dataset, save_path / f"dataset_{i}.joblib")
+        
+        if checkpoint and (i % configuration["save"]["checkpoint_every"]) == 0:
+            LOGGER.info(f"Checkpointing model generation {i}")
+            model.save(str(checkpoint_path / f"model-checkpoint-generation-{i}.pb"))
 
 
 def create_model(configuration):
