@@ -6,6 +6,7 @@ import importlib
 import logging
 from threading import Thread
 from typing import Dict, List, Tuple
+from tqdm import tqdm
 
 import numpy as np
 
@@ -86,7 +87,7 @@ class SelfPlay:
         if debug:
             LOGGER.debug("DEBUG MODE")
             # Debugging: skip the threading:
-            self._worker_self_play(all_datasets, 0)
+            self._worker_self_play(all_datasets, 0, None)
 
             all_datasets[0]["Boards"] = np.array(all_datasets[0]["Boards"])
             all_datasets[0]["Values"] = np.array(all_datasets[0]["Values"])
@@ -95,15 +96,20 @@ class SelfPlay:
 
         LOGGER.debug("THREADING MODE")
         # Threading Mode:
-        threads = [
-            Thread(target=self._worker_self_play, args=(all_datasets, i))
-            for i in range(self.n_threads)
-        ]
-        for t in threads:
-            t.start()
 
-        for t in threads:
-            t.join()
+        with tqdm(total=self.n_threads * self.n_games_per_worker) as pbar:
+            threads = [
+                Thread(
+                    target=self._worker_self_play,
+                    args=(all_datasets, i, pbar.update),
+                )
+                for i in range(self.n_threads)
+            ]
+            for t in threads:
+                t.start()
+
+            for t in threads:
+                t.join()
 
         all_boards = []
         all_values = []
@@ -121,11 +127,11 @@ class SelfPlay:
 
         return final_dataset
 
-    def _worker_self_play(self, dataset, id):
+    def _worker_self_play(self, dataset, id, update_progress=None):
         LOGGER.debug(f"Starting thread {id}")
-        self._self_play(dataset[id])
+        self._self_play(dataset[id], update_progress)
 
-    def _self_play(self, dataset):
+    def _self_play(self, dataset, update_progress=None):
 
         all_boards = []
         all_scores = []
@@ -135,6 +141,8 @@ class SelfPlay:
             all_boards.extend(boards)
             all_scores.extend(scores)
             all_policies.extend(policies)
+            if update_progress is not None:
+                update_progress()
 
         dataset["Boards"].extend(all_boards)
         dataset["Values"].extend(all_scores)
