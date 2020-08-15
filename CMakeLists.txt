@@ -32,7 +32,7 @@ else()
 	set(BOOST_PYTHONLIB python3)
 endif()
 
-find_package(Boost 1.67.0 REQUIRED COMPONENTS python36 numpy36)
+find_package(Boost 1.67.0 REQUIRED COMPONENTS python37 numpy37)
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
 find_package(SWIG REQUIRED COMPONENTS python)
