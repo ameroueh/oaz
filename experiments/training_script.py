@@ -13,7 +13,6 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
-from tqdm import tqdm
 
 from pyoaz.bots import LeftmostBot, RandomBot, OazBot
 
