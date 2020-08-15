@@ -166,11 +166,11 @@ def train_cycle(
             self_play_controller = SelfPlay(
                 game=args.game,
                 search_batch_size=2,
-                n_games_per_worker=1000 // 64,
-                n_simulations_per_move=200,
-                n_search_worker=2,
-                n_threads=64,
-                evaluator_batch_size=8,
+                n_games_per_worker=10,
+                n_simulations_per_move=400,
+                n_search_worker=8,
+                n_threads=100,
+                evaluator_batch_size=40,
                 epsilon=0.25,
                 alpha=1.0,
             )
@@ -204,7 +204,7 @@ def main(args):
     if args.game == "connect_four":
         from pyoaz.games.connect_four import ConnectFour
 
-        model = create_connect_four_model(depth=5)
+        model = create_connect_four_model(depth=10)
         game = ConnectFour
 
     elif args.game == "tic_tac_toe":
@@ -223,7 +223,7 @@ def main(args):
             "policy": "categorical_crossentropy",
             "value": "mean_squared_error",
         },
-        optimizer=tf.keras.optimizers.SGD(learning_rate=0.01),
+        optimizer=tf.keras.optimizers.SGD(learning_rate=0.005),
         # optimizer=tf.keras.optimizers.Adadelta(
         #     learning_rate=0.1, rho=0.95, epsilon=1e-07, name="Adadelta"
         # ),
@@ -310,9 +310,7 @@ if __name__ == "__main__":
         default=5,
         help="Number of generations for which to train. Default is 5",
     )
-    parser.add_argument(
-        "--debug_mode", type=bool, default=False,
-    )
+    parser.add_argument("--debug_mode", type=bool, default=False)
     parser.add_argument(
         "--game",
         type=str,
