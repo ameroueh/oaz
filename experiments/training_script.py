@@ -122,9 +122,7 @@ def benchmark_model(benchmark_boards, benchmark_values, model):
     _, pred_values = model.predict(benchmark_boards)
     mse = ((pred_values - benchmark_values) ** 2).mean()
     LOGGER.info(
-        "\n=========================\n"
-        f"BENCHMARK MSE : {mse}"
-        "\n=========================\n"
+        f"Benchmark MSE : {mse}"
     )
     return mse
 
@@ -137,10 +135,8 @@ def evaluate_self_play_dataset(benchmark_path, boards, values):
             self_play_mse = ((values - gt_values) ** 2).mean()
 
             LOGGER.info(
-                "\n=========================\n"
                 f"Self-Play MSE: {self_play_mse} "
                 f"Self-Play ACCURACY: {self_play_accuracy}"
-                "\n=========================\n"
             )
             return self_play_mse, self_play_accuracy
     except FileNotFoundError:
@@ -148,7 +144,7 @@ def evaluate_self_play_dataset(benchmark_path, boards, values):
 
 
 def train_cycle(
-    model, configuration, hist, debug_mode=False
+    model, configuration, history, debug_mode=False
 ):
     try:
         checkpoint_path = Path(configuration["save"]["checkpoint_path"])
@@ -200,16 +196,16 @@ def train_cycle(
         self_play_mse, self_play_accuracy = evaluate_self_play_dataset(
             benchmark_path, dataset["Boards"], dataset["Values"]
         )
-        hist["self_play_mse"].append(self_play_mse)
-        hist["self_play_accuracy"].append(self_play_accuracy)
+        history["self_play_mse"].append(self_play_mse)
+        history["self_play_accuracy"].append(self_play_accuracy)
 
         mse = benchmark_model(benchmark_boards, benchmark_values, model)
-        hist["mse"].append(mse)
+        history["mse"].append(mse)
 
         wins, losses, draws = play_tournament(game, model)
-        hist["wins"].append(wins)
-        hist["losses"].append(losses)
-        hist["draws"].append(draws)
+        history["wins"].append(wins)
+        history["losses"].append(losses)
+        history["draws"].append(draws)
         
         if checkpoint and (i % configuration["save"]["checkpoint_every"]) == 0:
             LOGGER.info(f"Checkpointing model generation {i}")
@@ -254,7 +250,7 @@ def main(args):
         },
         optimizer=tf.keras.optimizers.SGD(learning_rate=configuration["learning"]["learning_rate"]),
     )
-    hist = {
+    history = {
         "mse": [],
         "self_play_mse": [],
         "self_play_accuracy": [],
@@ -269,13 +265,13 @@ def main(args):
         train_cycle(
             model=model,
             configuration=configuration,
-            hist=hist,
+            history=history,
             debug_mode=args.debug_mode,
         )
 
         LOGGER.info(f"Saving model at {save_path / 'model.pb'}")
         model.save(str(save_path / "model.pb"))
-        _save_plots(save_path, hist)
+        _save_plots(save_path, history)
 
     except KeyboardInterrupt:
         while True:
@@ -287,7 +283,7 @@ def main(args):
             if ans in ["y", "Y", "yes"]:
                 print(f"Saving model at {save_path / 'model.pb'}")
                 model.save(str(save_path / "model.pb"))
-                _save_plots(save_path, hist)
+                _save_plots(save_path, history)
                 sys.exit()
             elif ans in ["n", "N", "no"]:
                 sys.exit()
@@ -295,19 +291,19 @@ def main(args):
                 print("Invalid input, try again")
 
 
-def _save_plots(save_path, hist):
-    plt.plot(hist["mse"], label="MSE")
-    plt.plot(hist["self_play_mse"], label="Self Play MSE")
-    plt.plot(hist["self_play_accuracy"], label="Self Play Accuracy")
+def _save_plots(save_path, history):
+    plt.plot(history["mse"], label="MSE")
+    plt.plot(history["self_play_mse"], label="Self Play MSE")
+    plt.plot(history["self_play_accuracy"], label="Self Play Accuracy")
     plt.legend()
     plot_path = save_path / "_plot.png"
     plt.savefig(plot_path)
 
     plt.figure()
 
-    plt.plot(hist["wins"], label="wins")
-    plt.plot(hist["losses"], label="losses")
-    plt.plot(hist["draws"], label="draws")
+    plt.plot(history["wins"], label="wins")
+    plt.plot(history["losses"], label="losses")
+    plt.plot(history["draws"], label="draws")
     plt.legend()
     plot_path = save_path / "_wlm.png"
     plt.savefig(plot_path)
