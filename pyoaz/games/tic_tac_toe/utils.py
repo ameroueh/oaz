@@ -109,4 +109,3 @@ def boards_to_bin(boards):
         )
         all_boards.append(int(string, 2))
     return all_boards
-

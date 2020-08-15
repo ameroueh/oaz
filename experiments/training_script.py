@@ -121,9 +121,7 @@ def train_model(model, dataset):
 def benchmark_model(benchmark_boards, benchmark_values, model):
     _, pred_values = model.predict(benchmark_boards)
     mse = ((pred_values - benchmark_values) ** 2).mean()
-    LOGGER.info(
-        f"Benchmark MSE : {mse}"
-    )
+    LOGGER.info(f"Benchmark MSE : {mse}")
     return mse
 
 
@@ -143,9 +141,7 @@ def evaluate_self_play_dataset(benchmark_path, boards, values):
         return None, None
 
 
-def train_cycle(
-    model, configuration, history, debug_mode=False
-):
+def train_cycle(model, configuration, history, debug_mode=False):
     try:
         checkpoint_path = Path(configuration["save"]["checkpoint_path"])
         checkpoint = True
@@ -157,8 +153,6 @@ def train_cycle(
     benchmark_boards, benchmark_values = load_benchmark(benchmark_path)
 
     game = get_game_class(configuration["game"])
-
-
 
     for i in range(configuration["n_generations"]):
         LOGGER.info(f"Training cycle {i}")
@@ -178,12 +172,20 @@ def train_cycle(
         else:
             self_play_controller = SelfPlay(
                 game=configuration["game"],
-                search_batch_size=configuration["self_play"]["search_batch_size"],
-                n_games_per_worker=configuration["self_play"]["n_games_per_worker"],
-                n_simulations_per_move=configuration["self_play"]["n_simulations_per_move"],
+                search_batch_size=configuration["self_play"][
+                    "search_batch_size"
+                ],
+                n_games_per_worker=configuration["self_play"][
+                    "n_games_per_worker"
+                ],
+                n_simulations_per_move=configuration["self_play"][
+                    "n_simulations_per_move"
+                ],
                 n_search_worker=configuration["self_play"]["n_search_workers"],
                 n_threads=configuration["self_play"]["n_threads"],
-                evaluator_batch_size=configuration["self_play"]["evaluator_batch_size"],
+                evaluator_batch_size=configuration["self_play"][
+                    "evaluator_batch_size"
+                ],
                 epsilon=configuration["self_play"]["epsilon"],
                 alpha=configuration["self_play"]["alpha"],
             )
@@ -206,28 +208,36 @@ def train_cycle(
         history["wins"].append(wins)
         history["losses"].append(losses)
         history["draws"].append(draws)
-        
+
         if checkpoint and (i % configuration["save"]["checkpoint_every"]) == 0:
             LOGGER.info(f"Checkpointing model generation {i}")
-            model.save(str(checkpoint_path / f"model-checkpoint-generation-{i}.pb"))
+            model.save(
+                str(checkpoint_path / f"model-checkpoint-generation-{i}.pb")
+            )
 
 
 def create_model(configuration):
     if configuration["game"] == "connect_four":
-        model = create_connect_four_model(depth=configuration["model"]["n_resnet_blocks"])
+        model = create_connect_four_model(
+            depth=configuration["model"]["n_resnet_blocks"]
+        )
 
     elif configuration["game"] == "tic_tac_toe":
-        model = create_tic_tac_toe_model(depth=configuration["model"]["n_resnet_blocks"])
+        model = create_tic_tac_toe_model(
+            depth=configuration["model"]["n_resnet_blocks"]
+        )
     return model
 
 
 def get_game_class(game_name):
     if game_name == "connect_four":
         from pyoaz.games.connect_four import ConnectFour
+
         game = ConnectFour
 
     elif game_name == "tic_tac_toe":
         from pyoaz.games.tic_tac_toe import TicTacToe
+
         game = TicTacToe
     return game
 
@@ -248,7 +258,9 @@ def main(args):
             "policy": "categorical_crossentropy",
             "value": "mean_squared_error",
         },
-        optimizer=tf.keras.optimizers.SGD(learning_rate=configuration["learning"]["learning_rate"]),
+        optimizer=tf.keras.optimizers.SGD(
+            learning_rate=configuration["learning"]["learning_rate"]
+        ),
     )
     history = {
         "mse": [],
