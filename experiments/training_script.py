@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
+import toml
 
 from pyoaz.bots import LeftmostBot, RandomBot, OazBot
 
@@ -147,16 +148,19 @@ def evaluate_self_play_dataset(benchmark_path, boards, values):
 
 
 def train_cycle(
-    model, n_gen, hist, game, save_path, benchmark_path, debug_mode=False
+    model, configuration, hist, debug_mode=False
 ):
 
+    benchmark_path = Path(configuration["benchmark"]["benchmark_path"])
     benchmark_boards, benchmark_values = load_benchmark(benchmark_path)
 
-    for i in range(args.n_gen):
+    game = get_game_class(configuration["game"])
+
+    for i in range(configuration["n_generations"]):
         LOGGER.info(f"Training cycle {i}")
         if debug_mode:
             self_play_controller = SelfPlay(
-                game=args.game,
+                game=configuration["game"],
                 search_batch_size=2,
                 n_games_per_worker=3,
                 n_simulations_per_move=16,
@@ -169,15 +173,15 @@ def train_cycle(
 
         else:
             self_play_controller = SelfPlay(
-                game=args.game,
-                search_batch_size=2,
-                n_games_per_worker=10,
-                n_simulations_per_move=400,
-                n_search_worker=8,
-                n_threads=100,
-                evaluator_batch_size=40,
-                epsilon=0.25,
-                alpha=1.0,
+                game=configuration["game"],
+                search_batch_size=configuration["self_play"]["search_batch_size"],
+                n_games_per_worker=configuration["self_play"]["n_games_per_worker"],
+                n_simulations_per_move=configuration["self_play"]["n_simulations_per_move"],
+                n_search_worker=configuration["self_play"]["n_search_workers"],
+                n_threads=configuration["self_play"]["n_threads"],
+                evaluator_batch_size=configuration["self_play"]["evaluator_batch_size"],
+                epsilon=configuration["self_play"]["epsilon"],
+                alpha=configuration["self_play"]["alpha"],
             )
 
         session = K.get_session()
@@ -202,36 +206,43 @@ def train_cycle(
         # joblib.dump(dataset, save_path / f"dataset_{i}.joblib")
 
 
+def create_model(configuration):
+    if configuration["game"] == "connect_four":
+        model = create_connect_four_model(depth=configuration["model"]["n_resnet_blocks"])
+
+    elif configuration["game"] == "tic_tac_toe":
+        model = create_tic_tac_toe_model(depth=configuration["model"]["n_resnet_blocks"])
+    return model
+
+
+def get_game_class(game_name):
+    if game_name == "connect_four":
+        from pyoaz.games.connect_four import ConnectFour
+        game = ConnectFour
+
+    elif game_name == "tic_tac_toe":
+        from pyoaz.games.tic_tac_toe import TicTacToe
+        game = TicTacToe
+    return game
+
+
 def main(args):
+
+    configuration = toml.load(args.configuration_path)
 
     set_logging(debug_mode=args.debug_mode)
 
-    if args.game == "connect_four":
-        from pyoaz.games.connect_four import ConnectFour
-
-        model = create_connect_four_model(depth=10)
-        game = ConnectFour
-
-    elif args.game == "tic_tac_toe":
-        from pyoaz.games.tic_tac_toe import TicTacToe
-
-        model = create_tic_tac_toe_model(depth=3)
-        game = TicTacToe
-
     if args.load_path:
         model = load_model(args.load_path)
-
-    benchmark_path = Path("./benchmark") / args.game
+    else:
+        model = create_model(configuration)
 
     model.compile(
         loss={
             "policy": "categorical_crossentropy",
             "value": "mean_squared_error",
         },
-        optimizer=tf.keras.optimizers.SGD(learning_rate=0.005),
-        # optimizer=tf.keras.optimizers.Adadelta(
-        #     learning_rate=0.1, rho=0.95, epsilon=1e-07, name="Adadelta"
-        # ),
+        optimizer=tf.keras.optimizers.SGD(learning_rate=configuration["learning"]["learning_rate"]),
     )
     hist = {
         "mse": [],
@@ -241,17 +252,14 @@ def main(args):
         "losses": [],
         "draws": [],
     }
-    save_path = Path(args.save_path)
+    save_path = Path(configuration["save"]["save_path"])
     save_path.mkdir(exist_ok=True)
 
     try:
         train_cycle(
-            model,
-            args.n_gen,
-            hist,
-            game,
-            save_path,
-            benchmark_path,
+            model=model,
+            configuration=configuration,
+            hist=hist,
             debug_mode=args.debug_mode,
         )
 
@@ -298,9 +306,9 @@ def _save_plots(save_path, hist):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--save_path",
+        "--configuration_path",
         required=True,
-        help="path to which the model will be saved.",
+        help="path to configuration file.",
     )
     parser.add_argument(
         "--load_path",
@@ -309,20 +317,7 @@ if __name__ == "__main__":
         "which means the script will create a model from scratch.",
         default=None,
     )
-    parser.add_argument(
-        "--n_gen",
-        type=int,
-        default=5,
-        help="Number of generations for which to train. Default is 5",
-    )
     parser.add_argument("--debug_mode", type=bool, default=False)
-    parser.add_argument(
-        "--game",
-        type=str,
-        default="connect_four",
-        help="Which game to play. Can be connect_four (default) or "
-        "tic_tac_toe",
-    )
     args = parser.parse_args()
 
     main(args)
