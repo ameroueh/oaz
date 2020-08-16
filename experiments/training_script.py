@@ -365,7 +365,7 @@ if __name__ == "__main__":
         required=False,
         help="Number of generations for which to train. Default is 5",
     )
-    parser.add_argument("--debug_mode", type=bool, default=False)
+    parser.add_argument("--debug_mode", action="store_true")
     args = parser.parse_args()
 
     main(args)
