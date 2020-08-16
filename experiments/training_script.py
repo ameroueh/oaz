@@ -114,7 +114,7 @@ def train_model(model, dataset):
 
     # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
 
-    model.fit(
+    train_history = model.fit(
         train_boards,
         {"value": train_values, "policy": train_policies},
         validation_data=(
@@ -126,6 +126,7 @@ def train_model(model, dataset):
         verbose=1,
         # callbacks=[early_stopping],
     )
+    return train_history
 
 
 def benchmark_model(benchmark_boards, benchmark_values, model):
@@ -167,7 +168,7 @@ def train_cycle(model, configuration, history, debug_mode=False):
     game = get_game_class(configuration["game"])
 
     n_generations = configuration["training"]["n_generations"]
-    for i in range(n_generations):
+    for generation in range(n_generations):
         LOGGER.info(f"Training cycle {i} / {n_generations}")
         if debug_mode:
             self_play_controller = SelfPlay(
@@ -206,7 +207,7 @@ def train_cycle(model, configuration, history, debug_mode=False):
         session = K.get_session()
         dataset = self_play_controller.self_play(session)
 
-        train_model(model, dataset)
+        train_history = train_model(model, dataset)
 
         self_play_mse, self_play_accuracy = evaluate_self_play_dataset(
             benchmark_path, dataset["Boards"], dataset["Values"]
@@ -216,11 +217,23 @@ def train_cycle(model, configuration, history, debug_mode=False):
 
         mse = benchmark_model(benchmark_boards, benchmark_values, model)
         history["mse"].append(mse)
+        tournament_frequency = configuration["training"][
+            "tournament_frequency"
+        ]
+        if generation % tournament_frequency == 0:
 
-        wins, losses, draws = play_tournament(game, model)
-        history["wins"].append(wins)
-        history["losses"].append(losses)
-        history["draws"].append(draws)
+            wins, losses, draws = play_tournament(game, model)
+            history["wins"].extend([wins] * tournament_frequency)
+            history["losses"].extend([losses] * tournament_frequency)
+            history["draws"].extend([draws] * tournament_frequency)
+
+        history["val_value_loss"].append(
+            train_history.history["val_value_loss"]
+        )
+        history["val_policy_loss"].append(
+            train_history.history["val_policy_loss"]
+        )
+        history["val_loss"].append(train_history.history["val_loss"])
 
         if checkpoint and (i % configuration["save"]["checkpoint_every"]) == 0:
             LOGGER.info(f"Checkpointing model generation {i}")
@@ -274,7 +287,7 @@ def main(args):
             "policy": "categorical_crossentropy",
             "value": "mean_squared_error",
         },
-        optimizer=tf.keras.optimizers.SGD(
+        optimizer=tf.keras.optimizers.Adam(
             learning_rate=configuration["learning"]["learning_rate"]
         ),
     )
@@ -285,7 +298,11 @@ def main(args):
         "wins": [],
         "losses": [],
         "draws": [],
+        "val_value_loss": [],
+        "val_policy_loss": [],
+        "val_loss": [],
     }
+
     save_path = Path(configuration["save"]["save_path"])
     save_path.mkdir(exist_ok=True)
 
@@ -337,6 +354,15 @@ def _save_plots(save_path, history):
     plt.plot(history["draws"], label="draws")
     plt.legend()
     plot_path = save_path / "_wlm.png"
+    plt.savefig(plot_path)
+
+    plt.figure()
+
+    plt.plot(history["val_value_loss"], label="val_value_loss")
+    plt.plot(history["val_policy_loss"], label="val_policy_loss")
+    plt.plot(history["val_loss"], label="val_loss")
+    plt.legend()
+    plot_path = save_path / "training_losses.png"
     plt.savefig(plot_path)
 
 
