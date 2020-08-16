@@ -138,7 +138,9 @@ def evaluate_self_play_dataset(benchmark_path, boards, values):
 
 def train_cycle(model, configuration, history, debug_mode=False):
     try:
-        checkpoint_path = Path(configuration["save"]["checkpoint_path"])
+        checkpoint_path = (
+            Path(configuration["save"]["save_path"]) / "checkpoints"
+        )
         checkpoint = True
         checkpoint_path.mkdir(exist_ok=True)
     except KeyError:
@@ -268,7 +270,7 @@ def main(args):
     save_path = Path(configuration["save"]["save_path"])
     save_path.mkdir(exist_ok=True)
 
-    with open(save_path / "confi.toml", "w") as f:
+    with open(save_path / "config.toml", "w") as f:
         f.write(toml.dumps(configuration))
 
     try:
