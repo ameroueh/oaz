@@ -268,6 +268,9 @@ def main(args):
     save_path = Path(configuration["save"]["save_path"])
     save_path.mkdir(exist_ok=True)
 
+    with open(save_path / "confi.toml", "w") as f:
+        f.write(toml.dumps(configuration))
+
     try:
         train_cycle(
             model=model,
