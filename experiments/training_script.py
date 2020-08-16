@@ -1,12 +1,8 @@
-import os
-
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
 import argparse
-from pathlib import Path
 import logging
+import os
 import sys
-import joblib
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,15 +11,14 @@ import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 import toml
 
-from pyoaz.bots import LeftmostBot, RandomBot, OazBot
-
-
+from pyoaz.bots import LeftmostBot, OazBot, RandomBot
+from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.tournament import Participant, Tournament
 from tensorflow.keras.models import load_model
-from pyoaz.games.tic_tac_toe import boards_to_bin
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 LOGGER = logging.getLogger(__name__)
 
