@@ -1,4 +1,6 @@
 game = "connect_four"
+
+[training]
 n_generations = 100
 
 [model]

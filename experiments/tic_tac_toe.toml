@@ -1,5 +1,7 @@
 game = "tic_tac_toe"
-n_generations = 2
+
+[training]
+n_generations = 100
 
 [model]
 n_resnet_blocks = 3 
