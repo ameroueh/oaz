@@ -2,7 +2,7 @@ game = "tic_tac_toe"
 
 [training]
 n_generations = 100
-tournament_frquency = 5
+tournament_frequency = 5
 
 
 [model]

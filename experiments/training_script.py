@@ -88,7 +88,7 @@ def play_tournament(game, model, n_games=100):
     )
 
     oaz_wins, oaz_losses = win_loss[0, :].sum(), win_loss[:, 0].sum()
-    draws = 2 * n_games * 3 - oaz_wins - oaz_losses
+    draws = 2 * n_games * 2 - oaz_wins - oaz_losses
 
     LOGGER.info(f"WINS: {oaz_wins} LOSSES: {oaz_losses} DRAWS: {draws}")
 
@@ -169,7 +169,7 @@ def train_cycle(model, configuration, history, debug_mode=False):
 
     n_generations = configuration["training"]["n_generations"]
     for generation in range(n_generations):
-        LOGGER.info(f"Training cycle {i} / {n_generations}")
+        LOGGER.info(f"Training cycle {generation} / {n_generations}")
         if debug_mode:
             self_play_controller = SelfPlay(
                 game=configuration["game"],
@@ -235,10 +235,16 @@ def train_cycle(model, configuration, history, debug_mode=False):
         )
         history["val_loss"].append(train_history.history["val_loss"])
 
-        if checkpoint and (i % configuration["save"]["checkpoint_every"]) == 0:
-            LOGGER.info(f"Checkpointing model generation {i}")
+        if (
+            checkpoint
+            and (generation % configuration["save"]["checkpoint_every"]) == 0
+        ):
+            LOGGER.info(f"Checkpointing model generation {generation}")
             model.save(
-                str(checkpoint_path / f"model-checkpoint-generation-{i}.pb")
+                str(
+                    checkpoint_path
+                    / f"model-checkpoint-generation-{generation}.pb"
+                )
             )
 
 
