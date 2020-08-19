@@ -2,27 +2,27 @@ game = "connect_four"
 
 [training]
 n_generations = 100
-tournament_frquency = 5
+tournament_frequency = 5
 
 [model]
 n_resnet_blocks = 10
 
 [save]
-save_path = "connect_four_model"
+save_path = "connect_four_model_2"
 checkpoint_every = 5
 
 [benchmark]
 benchmark_path = "benchmark/connect_four"
 
 [learning]
-learning_rate = 0.005
+learning_rate = 0.001
 
 [self_play]
 search_batch_size = 2
-n_games_per_worker = 10
-n_simulations_per_move = 10
-n_threads = 10
-n_search_workers = 4
-evaluator_batch_size = 10 
+n_games_per_worker =  14
+n_simulations_per_move = 200
+n_threads = 64
+n_search_workers = 2
+evaluator_batch_size = 8
 epsilon = 0.25
 alpha = 1.0
