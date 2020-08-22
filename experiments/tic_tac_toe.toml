@@ -1,4 +1,6 @@
 game = "tic_tac_toe"
+
+[training]
 n_generations = 100
 
 [model]
@@ -6,7 +8,6 @@ n_resnet_blocks = 3
 
 [save]
 save_path = "tic_tac_toe_model"
-checkpoint_path = "tic_tac_toe_checkpoints"
 checkpoint_every = 5
 
 [benchmark]
