@@ -1,4 +1,6 @@
 game = "connect_four"
+
+[training]
 n_generations = 100
 
 [model]
@@ -6,7 +8,6 @@ n_resnet_blocks = 10
 
 [save]
 save_path = "connect_four_model"
-checkpoint_path = "connect_four_checkpoints"
 checkpoint_every = 5
 
 [benchmark]

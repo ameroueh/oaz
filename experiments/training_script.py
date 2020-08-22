@@ -39,6 +39,21 @@ def set_logging(debug_mode=False):
         )
 
 
+def overwrite_config(configuration, args_dict):
+    for key, config_stage in configuration.items():
+
+        try:
+            config_stage.update(
+                {
+                    k: v
+                    for k, v in args_dict.items()
+                    if k in config_stage and v is not None
+                }
+            )
+        except AttributeError:
+            pass
+
+
 def load_benchmark(benchmark_path):
     boards = np.load(benchmark_path / "benchmark_boards.npy")
     values = np.load(benchmark_path / "benchmark_values.npy")
@@ -138,7 +153,9 @@ def evaluate_self_play_dataset(benchmark_path, boards, values):
 
 def train_cycle(model, configuration, history, debug_mode=False):
     try:
-        checkpoint_path = Path(configuration["save"]["checkpoint_path"])
+        checkpoint_path = (
+            Path(configuration["save"]["save_path"]) / "checkpoints"
+        )
         checkpoint = True
         checkpoint_path.mkdir(exist_ok=True)
     except KeyError:
@@ -149,8 +166,9 @@ def train_cycle(model, configuration, history, debug_mode=False):
 
     game = get_game_class(configuration["game"])
 
-    for i in range(configuration["n_generations"]):
-        LOGGER.info(f"Training cycle {i}")
+    n_generations = configuration["training"]["n_generations"]
+    for i in range(n_generations):
+        LOGGER.info(f"Training cycle {i} / {n_generations}")
         if debug_mode:
             self_play_controller = SelfPlay(
                 game=configuration["game"],
@@ -240,6 +258,9 @@ def get_game_class(game_name):
 def main(args):
 
     configuration = toml.load(args.configuration_path)
+    # overwrite toml config with cli arguments
+
+    overwrite_config(configuration, vars(args))
 
     set_logging(debug_mode=args.debug_mode)
 
@@ -268,7 +289,7 @@ def main(args):
     save_path = Path(configuration["save"]["save_path"])
     save_path.mkdir(exist_ok=True)
 
-    with open(save_path / "confi.toml", "w") as f:
+    with open(save_path / "config.toml", "w") as f:
         f.write(toml.dumps(configuration))
 
     try:
@@ -333,7 +354,18 @@ if __name__ == "__main__":
         "which means the script will create a model from scratch.",
         default=None,
     )
-    parser.add_argument("--debug_mode", type=bool, default=False)
+    parser.add_argument(
+        "--save_path",
+        required=False,
+        help="path to which the model will be saved.",
+    )
+    parser.add_argument(
+        "--n_generations",
+        type=int,
+        required=False,
+        help="Number of generations for which to train. Default is 5",
+    )
+    parser.add_argument("--debug_mode", action="store_true")
     args = parser.parse_args()
 
     main(args)
