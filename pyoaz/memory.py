@@ -54,7 +54,8 @@ class MemoryBuffer:
         self.value_buffer = ArrayBuffer(maxlen)
 
     def update(self, dataset: np.ndarray):
-        """ Add new data to the buffer, pushing out old dat if necessary and removing duplicates
+        """ Add new data to the buffer, pushing out old dat if necessary and
+            removing duplicates
         """
         self.board_buffer.enqueue(dataset["Boards"])
         self.policy_buffer.enqueue(dataset["Policies"])

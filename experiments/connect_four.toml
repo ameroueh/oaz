@@ -17,6 +17,7 @@ benchmark_path = "benchmark/connect_four"
 [learning]
 learning_rate = 0.0003
 momentum = 0.9
+buffer_length = 500000
 
 [self_play]
 search_batch_size = 4
