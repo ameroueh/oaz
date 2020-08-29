@@ -393,9 +393,6 @@ def _save_plots(save_path, history):
 
 if __name__ == "__main__":
 
-    print("HEEEERERE")
-    print(tf.test.is_gpu_available())
-    print("END")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--configuration_path",
