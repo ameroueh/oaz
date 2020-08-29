@@ -401,6 +401,28 @@ class Trainer:
         return game
 
 
+def get_history(load_path=None):
+    history = {
+        "mse": [],
+        "self_play_mse": [],
+        "self_play_accuracy": [],
+        "wins": [],
+        "losses": [],
+        "draws": [],
+        "val_value_loss": [],
+        "val_policy_loss": [],
+        "val_loss": [],
+    }
+
+    if load_path:
+        hist_path = Path(load_path).parent / "history.joblib"
+        if hist_path.exists():
+            history = joblib.load(hist_path)
+            logging.debug("Loading history...")
+
+    return history
+
+
 def main(args):
 
     configuration = toml.load(args.configuration_path)
