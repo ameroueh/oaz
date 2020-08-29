@@ -4,6 +4,7 @@ import os
 import sys
 from pathlib import Path
 
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -19,6 +20,9 @@ from pyoaz.tournament import Participant, Tournament
 from tensorflow.keras.models import load_model
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# Useful for RTX cards
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
 LOGGER = logging.getLogger(__name__)
 
@@ -203,10 +207,10 @@ def train_cycle(model, configuration, history, debug_mode=False):
                 epsilon=configuration["self_play"]["epsilon"],
                 alpha=configuration["self_play"]["alpha"],
             )
-
+        # with tf.Session(config=SESSION_CONFIG) as session:
         session = K.get_session()
+        # session._config = SESSION_CONFIG
         dataset = self_play_controller.self_play(session)
-
         train_history = train_model(model, dataset)
 
         self_play_mse, self_play_accuracy = evaluate_self_play_dataset(
@@ -274,6 +278,28 @@ def get_game_class(game_name):
     return game
 
 
+def get_history(load_path=None):
+    history = {
+        "mse": [],
+        "self_play_mse": [],
+        "self_play_accuracy": [],
+        "wins": [],
+        "losses": [],
+        "draws": [],
+        "val_value_loss": [],
+        "val_policy_loss": [],
+        "val_loss": [],
+    }
+
+    if load_path:
+        hist_path = Path(load_path).parent / "history.joblib"
+        if hist_path.exists():
+            history = joblib.load(hist_path)
+            logging.debug("Loading history...")
+
+    return history
+
+
 def main(args):
 
     configuration = toml.load(args.configuration_path)
@@ -293,22 +319,12 @@ def main(args):
             "policy": "categorical_crossentropy",
             "value": "mean_squared_error",
         },
-        optimizer=tf.keras.optimizers.Adam(
-            learning_rate=configuration["learning"]["learning_rate"]
+        optimizer=tf.keras.optimizers.SGD(
+            learning_rate=configuration["learning"]["learning_rate"],
+            momentum=configuration["learning"]["momentum"],
         ),
     )
-    history = {
-        "mse": [],
-        "self_play_mse": [],
-        "self_play_accuracy": [],
-        "wins": [],
-        "losses": [],
-        "draws": [],
-        "val_value_loss": [],
-        "val_policy_loss": [],
-        "val_loss": [],
-    }
-
+    history = get_history(load_path=args.load_path)
     save_path = Path(configuration["save"]["save_path"])
     save_path.mkdir(exist_ok=True)
 
@@ -346,6 +362,9 @@ def main(args):
 
 
 def _save_plots(save_path, history):
+
+    joblib.dump(history, save_path / "history.joblib")
+
     plt.plot(history["mse"], label="MSE")
     plt.plot(history["self_play_mse"], label="Self Play MSE")
     plt.plot(history["self_play_accuracy"], label="Self Play Accuracy")
@@ -373,6 +392,10 @@ def _save_plots(save_path, history):
 
 
 if __name__ == "__main__":
+
+    print("HEEEERERE")
+    print(tf.test.is_gpu_available())
+    print("END")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--configuration_path",
