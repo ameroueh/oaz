@@ -27,6 +27,8 @@
 
 #include "boost/multi_array.hpp"
 
+#include "oaz/thread_pool/dummy_task.hpp"
+
 using namespace tensorflow;
 using namespace oaz::nn;
 using json = nlohmann::json;
@@ -34,31 +36,25 @@ using Game = ConnectFour;
 using Model = oaz::nn::Model;
 
 using SharedModelPointer = std::shared_ptr<Model>;
-
-class DummyNotifier {
-	public:
-		void operator()(){}
-};
-
-
-using Evaluator = NNEvaluator<Game, DummyNotifier>;
+using TestEvaluator = NNEvaluator<Game>;
 
 namespace oaz::nn {
 
 	TEST (EvaluationBatch, Instantiation) {
-		EvaluationBatch<Game, DummyNotifier>(64);
+
+		EvaluationBatch<Game>(64);
 	}
 
 	TEST (EvaluationBatch, ReadElementFromMemory) {
-		DummyNotifier notifier;
+		oaz::thread_pool::DummyTask task;
 		boost::multi_array<float, 3> array(boost::extents[7][6][2]);
-		EvaluationBatch<Game, DummyNotifier> batch(64);
+		EvaluationBatch<Game> batch(64);
 		batch.readElementFromMemory(
 			0, 
 			&array[0][0][0], 
 			nullptr, 
 			nullptr, 
-			notifier
+			&task
 		);
 		
 		auto dimensions = Game::Board::Dimensions();
@@ -69,7 +65,7 @@ namespace oaz::nn {
 	}
 
 	TEST (EvaluationBatch, AcquireIndex) {
-		EvaluationBatch<Game, DummyNotifier> batch(64);
+		EvaluationBatch<Game> batch(64);
 
 		size_t index = batch.acquireIndex();
 		ASSERT_FLOAT_EQ(index, 0);
@@ -79,61 +75,68 @@ namespace oaz::nn {
 	}
 
 	TEST (NNEvaluator, Instantiation) {
+		oaz::thread_pool::ThreadPool pool(1);
 		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
 		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
-		Evaluator evaluator(model, 64);
+		TestEvaluator evaluator(model, &pool, 64);
 	}
 
 	TEST (NNEvaluator, requestEvaluation) {
 		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
 		SharedModelPointer model(createModel(session.get(), "value", "policy"));
+		oaz::thread_pool::ThreadPool pool(1);
 		
-		DummyNotifier notifier;
+		oaz::thread_pool::DummyTask task;
 		typename Game::Value value;
 		typename Game::Policy policy;
 
-		Evaluator evaluator(model, 64);
+		TestEvaluator evaluator(model, &pool, 64);
 		Game game;
 		evaluator.requestEvaluation(
 			&game,
 			&value,
 			&policy,
-			notifier
+			&task
 		);
+		
+		task.wait();
 	}
 
 	TEST (NNEvaluator, forceEvaluation) {
 		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
 		SharedModelPointer model(createModel(session.get(), "value", "policy"));
+		oaz::thread_pool::ThreadPool pool(1);
 		
-		DummyNotifier notifier;
+		oaz::thread_pool::DummyTask task;
 		typename Game::Value value;
 		typename Game::Policy policy;
 
-		Evaluator evaluator(model, 64);
+		TestEvaluator evaluator(model, &pool, 64);
 		Game game;
 		evaluator.requestEvaluation(
 			&game,
 			&value,
 			&policy,
-			notifier
+			&task
 		);
 
 		evaluator.forceEvaluation();
+		task.wait();
 	}
 
 	TEST (Inference, CheckResults) {
+		oaz::thread_pool::ThreadPool pool(1);
 		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
 		SharedModelPointer model(createModel(session.get(), "value", "policy"));
-		
-		Evaluator evaluator(model, 64);
+		TestEvaluator evaluator(model, &pool, 64);
 
 		std::ifstream ifs("data.json");
 		json data = json::parse(ifs);
 
 		vector<typename Game::Value> values(data.size());
 		vector<typename Game::Policy> policies(data.size());
+		oaz::thread_pool::DummyTask task(data.size());
 		
 		for(size_t i=0; i!= data.size(); ++i) {
 			Game game;
@@ -144,21 +147,26 @@ namespace oaz::nn {
 				&game,
 				&values[i],
 				&policies[i],
-				DummyNotifier()	
+				&task	
 			);
 			
 			evaluator.forceEvaluation();
 			ASSERT_FLOAT_EQ(values[i], data[i]["value"]);
 		}
+
+		task.wait();
 	}
 	
 	TEST (Inference, DelayedEvaluation) {
+		oaz::thread_pool::ThreadPool pool(1);
 		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
 		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
 		size_t N_REQUESTS = 100;
 		size_t BATCH_SIZE = 16;
-		Evaluator evaluator(model, BATCH_SIZE);
+		TestEvaluator evaluator(model, &pool, BATCH_SIZE);
+
+		oaz::thread_pool::DummyTask task(N_REQUESTS);
 
 		std::ifstream ifs("data.json");
 		json data = json::parse(ifs);
@@ -177,15 +185,18 @@ namespace oaz::nn {
 				&games[i],
 				&values[i],
 				&policies[i],
-				DummyNotifier()	
+				&task	
 			);
 		}
+
 
 		for(int i=0; i!= (N_REQUESTS / BATCH_SIZE) + 1; ++i)
 			evaluator.forceEvaluation();
 	
 		for(size_t i=0; i!= N_REQUESTS; ++i)
 			ASSERT_FLOAT_EQ(values[i], data[i % DATA_SIZE]["value"]);
+		
+		task.wait();
 	}
 
 	void makeEvaluationRequests(
@@ -193,7 +204,8 @@ namespace oaz::nn {
 		vector<Game>* games,
 		vector<typename Game::Value>* values,
 		vector<typename Game::Policy>* policies,
-		Evaluator* evaluator) {
+		TestEvaluator* evaluator,
+		oaz::thread_pool::Task* task) {
 		
 		queue->lock();
 		while(!queue->empty()) {
@@ -205,7 +217,7 @@ namespace oaz::nn {
 				&(*games)[index],
 				&(*values)[index],
 				&(*policies)[index],
-				DummyNotifier()
+				task	
 			);
 
 			queue->lock();
@@ -219,11 +231,13 @@ namespace oaz::nn {
 		size_t N_REQUESTS = 100;
 		size_t BATCH_SIZE = 16;
 		size_t N_THREADS = 2;
+
+		oaz::thread_pool::ThreadPool pool(1);
 		
 		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
 		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
-		Evaluator evaluator(model, BATCH_SIZE);
+		TestEvaluator evaluator(model, &pool, BATCH_SIZE);
 
 		std::ifstream ifs("data.json");
 		json data = json::parse(ifs);
@@ -235,6 +249,7 @@ namespace oaz::nn {
 		vector<typename Game::Policy> policies(N_REQUESTS);
 
 		oaz::queue::SafeQueue<size_t> queue;
+		oaz::thread_pool::DummyTask task(N_REQUESTS);
 		
 		for(size_t i=0; i!= N_REQUESTS; ++i) {
 			Game::Board& board = games[i].getBoard();
@@ -251,7 +266,8 @@ namespace oaz::nn {
 					&games,
 					&values,
 					&policies,
-					&evaluator
+					&evaluator,
+					&task
 				)
 			);
 		}
@@ -264,18 +280,24 @@ namespace oaz::nn {
 		
 		for(size_t i=0; i!= N_REQUESTS; ++i)
 			ASSERT_FLOAT_EQ(values[i], data[i % DATA_SIZE]["value"]);
+
+		task.wait();
 	}
 	
 	TEST (Inference, MultiThreadedRequestsAndEvaluations) {
 
+		oaz::thread_pool::ThreadPool pool(1);
+		
 		size_t N_REQUESTS = 100;
 		size_t BATCH_SIZE = 16;
 		size_t N_THREADS = 2;
 		
+		oaz::thread_pool::DummyTask task(N_REQUESTS);
+		
 		std::unique_ptr<tensorflow::Session> session(createSessionAndLoadGraph("frozen_model.pb"));
 		SharedModelPointer model(createModel(session.get(), "value", "policy"));
 		
-		Evaluator evaluator(model, BATCH_SIZE);
+		TestEvaluator evaluator(model, &pool, BATCH_SIZE);
 
 		std::ifstream ifs("data.json");
 		json data = json::parse(ifs);
@@ -303,7 +325,8 @@ namespace oaz::nn {
 					&games,
 					&values,
 					&policies,
-					&evaluator
+					&evaluator,
+					&task
 				)
 			);
 			
@@ -316,5 +339,7 @@ namespace oaz::nn {
 		
 		for(size_t i=0; i!= N_REQUESTS; ++i)
 			ASSERT_FLOAT_EQ(values[i], data[i % DATA_SIZE]["value"]);
+
+		task.wait();
 	}
 }

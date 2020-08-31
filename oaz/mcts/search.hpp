@@ -10,45 +10,50 @@
 #include <vector>
 
 #include "stdint.h"
+#include "boost/multi_array.hpp"
+
 #include "oaz/queue/queue.hpp"
 #include "oaz/mutex/mutex.hpp"
 #include "oaz/mcts/search_node.hpp"
 #include "oaz/mcts/selection.hpp"
+#include "oaz/thread_pool/thread_pool.hpp"
+#include "oaz/evaluator/evaluator.hpp"
 
 
 namespace oaz::mcts {
 
-	class SafeQueueNotifier {
-		public:
-			SafeQueueNotifier();
-			SafeQueueNotifier(oaz::queue::SafeQueue<size_t>*, size_t);
-			void operator()();
-		private:
-			oaz::queue::SafeQueue<size_t>* m_queue;
-			size_t m_index;
-
-
-	};
-
-	template <class Game, class Evaluator, class Selector>
+	template <class Game, class Selector>
 	class Search {
 
 		TEST_FRIENDS;
 		
 		public:
+	
 			using Move = typename Game::Move;
 			using Node = SearchNode<Move>;
 			using Queue = oaz::queue::SafeQueue<size_t>;
 			using Value = typename Game::Value;
 			using Policy = typename Game::Policy;
-			using SharedEvaluatorPointer = std::shared_ptr<Evaluator>;
 
-			Search(const Game&, SharedEvaluatorPointer, size_t, size_t);
-			Search(const Game&, SharedEvaluatorPointer, size_t, size_t, float, float);
+			Search(
+				const Game&, 
+				oaz::evaluator::Evaluator<Game>*, 
+				oaz::thread_pool::ThreadPool*, 
+				size_t, 
+				size_t
+			);
+			Search(
+				const Game&, 
+				oaz::evaluator::Evaluator<Game>*, 
+				oaz::thread_pool::ThreadPool*, 
+				size_t, 
+				size_t, 
+				float, 
+				float
+			);
 			
 			bool done() const;
-			bool work();
-			bool waitingForEvaluation();
+			void search();
 			void seedRNG(size_t);
 
 			Move getBestMove();
@@ -57,6 +62,29 @@ namespace oaz::mcts {
 			~Search();
 
 		private:
+			
+			class SelectionTask : public oaz::thread_pool::Task {
+				public:
+					SelectionTask(Search<Game, Selector>*, size_t);
+					SelectionTask();
+					void operator()();					
+					~SelectionTask();
+				private:
+					Search<Game, Selector>* m_search;
+					size_t m_index;
+			};
+			
+			class ExpansionAndBackpropagationTask : public oaz::thread_pool::Task {
+				public:
+					ExpansionAndBackpropagationTask(Search<Game, Selector>*, size_t);
+					ExpansionAndBackpropagationTask();
+					void operator()();
+					virtual ~ExpansionAndBackpropagationTask();
+				private:
+					Search<Game, Selector>* m_search;
+					size_t m_index;
+			};
+
 			void selectNode(size_t); 
 			void expandNode(Node* node, Game&, Policy&);
 			Node* backpropagateNode(Node*, Game&, float); 
@@ -68,11 +96,8 @@ namespace oaz::mcts {
 			
 			size_t m_batch_size;
 			Node m_root;
-			
-			Queue m_selection_q;
-			Queue m_expansion_and_backpropagation_q;
 
-			SharedEvaluatorPointer m_evaluator;
+			oaz::evaluator::Evaluator<Game>* m_evaluator;
 
 			std::vector<Node*> m_nodes;
 			std::vector<Game> m_games;
@@ -96,14 +121,10 @@ namespace oaz::mcts {
 			std::vector<Node*> m_paused_nodes;
 
 			oaz::mutex::SpinlockMutex m_selection_lock;
-			oaz::mutex::SpinlockMutex m_completion_lock;
-			oaz::mutex::SpinlockMutex m_paused_nodes_lock;
 
 			size_t m_n_selections;
 			size_t m_n_iterations;
-			size_t m_n_completions;
-			size_t m_n_paused_nodes;
-
+			std::atomic<size_t> m_n_completions;
 			std::atomic<size_t> m_n_evaluation_requests;
 
 			void incrementNCompletions();
@@ -118,6 +139,13 @@ namespace oaz::mcts {
 
 			float m_noise_epsilon;
 			float m_noise_alpha;
+
+			oaz::thread_pool::ThreadPool* m_thread_pool;
+			std::condition_variable m_condition;
+			std::mutex m_mutex;
+
+			boost::multi_array<SelectionTask, 1> m_selection_tasks;
+			boost::multi_array<ExpansionAndBackpropagationTask, 1> m_expansion_and_backpropagation_tasks;
 	};
 
 }

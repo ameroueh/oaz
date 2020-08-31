@@ -8,24 +8,28 @@
 #include <random>
 #include "stdint.h"
 #include <array>
+#include "oaz/evaluator/evaluator.hpp"
 #include "oaz/queue/queue.hpp"
+#include "oaz/thread_pool/thread_pool.hpp"
 
 namespace oaz::random {
 
-	template <class Game, class Notifier>
-	class SimulationEvaluator {
+	template <class Game>
+	class SimulationEvaluator : public oaz::evaluator::Evaluator<Game> {
 		public:
-			SimulationEvaluator();
+			SimulationEvaluator(oaz::thread_pool::ThreadPool*);
 			void requestEvaluation(
 				Game*, 
 				typename Game::Value*,
 				typename Game::Policy*,
-				Notifier
+				oaz::thread_pool::Task*
 			);
+
 			void forceEvaluation();
 		private:
 			float simulate(Game&);
 			std::mt19937 m_generator;
+			oaz::thread_pool::ThreadPool* m_thread_pool;
 	};
 }
 
