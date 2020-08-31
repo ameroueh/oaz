@@ -151,7 +151,7 @@ class Trainer:
 
         self.save_path = Path(configuration["save"]["save_path"])
         self.save_path.mkdir(exist_ok=True)
-        self.generation = len(self.history)
+        self.generation = len(self.history["mse"])
         self.memory = MemoryBuffer(
             maxlen=configuration["learning"]["buffer_length"]
         )
