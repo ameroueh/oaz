@@ -1,6 +1,5 @@
+import os
 from abc import ABC, abstractmethod
-import importlib
-from typing import Dict
 
 import numpy as np
 
@@ -13,6 +12,9 @@ class Bot(ABC):
     @classmethod
     def load_model(cls, model_path: str):
         from tensorflow.keras.models import load_model
+
+        # Useful for RTX cards
+        os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
         model = load_model(model_path)
         return cls(model=model)

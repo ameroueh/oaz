@@ -36,7 +36,9 @@ class Tournament:
         win_loss_matrix = np.zeros(shape=(n_participants, n_participants))
         pairings = self._make_pairings(participants)
 
-        for participant_a, participant_b in pairings:
+        for participant_a, participant_b in tqdm(
+            pairings, desc="Pairings", total=len(pairings)
+        ):
 
             wins_a, losses_a, draws = self._play_n_games(
                 participant_a, participant_b, n_games
@@ -76,8 +78,11 @@ class Tournament:
         losses_a = 0
         draws = 0
 
-        LOGGER.info(f"{participant_a.name} vs {participant_b.name}")
-        for _ in tqdm(range(n_games), desc="Games", leave=False):
+        for _ in tqdm(
+            range(n_games),
+            desc=f"{participant_a.name} vs {participant_b.name}",
+            leave=False,
+        ):
 
             # Playing two games in reverse
             score = self.play_one_game((participant_a, participant_b))
