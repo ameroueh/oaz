@@ -32,7 +32,6 @@
 #include "oaz/neural_network/model.hpp"
 #include "oaz/neural_network/nn_evaluator.hpp"
 #include "oaz/mcts/az_search.hpp"
-#include "oaz/mcts/az_search_pool.hpp"
 #include "oaz/python/array_utils.hpp"
 
 #include <iostream>
@@ -42,14 +41,14 @@ namespace np = boost::python::numpy;
 
 using Game = GAME_CLASS_NAME;
 using Model = oaz::nn::Model;
-using Evaluator = oaz::nn::NNEvaluator<Game, oaz::mcts::SafeQueueNotifier>;
-using Search_ = oaz::mcts::AZSearch<Game, Evaluator>;
-using SearchPool = oaz::mcts::AZSearchPool<Game, Evaluator>;
+using GameEvaluator = oaz::nn::NNEvaluator<Game>;
+using GameSearch = oaz::mcts::AZSearch<Game>;
+using Pool = oaz::thread_pool::ThreadPool;
 using Node_ = oaz::mcts::SearchNode<Game::Move>;
 
-void perform_search(SearchPool& pool, Search_* search) {
+void perform_search(GameSearch& search) {
 	PyThreadState* save_state = PyEval_SaveThread();
-	pool.performSearch(search);
+	search.search();
 	PyEval_RestoreThread(save_state);
 }
 
@@ -85,7 +84,6 @@ BOOST_PYTHON_MODULE( MODULE_NAME ) {
 		.add_property("current_player", &Game::getCurrentPlayer)
 		.add_property("finished", &Game::Finished)
 		.add_property("score", &Game::score)
-		/* .def("get_policy_size", &Game::getPolicySize) */
 		.add_property("available_moves", available_moves)
 		.add_property("board", &get_board);
 	
@@ -96,7 +94,11 @@ BOOST_PYTHON_MODULE( MODULE_NAME ) {
 		.def("set_value_node_name", &Model::setValueNodeName)
 		.def("set_policy_node_name", &Model::setPolicyNodeName);
 	
-	p::class_<Evaluator, std::shared_ptr<Evaluator>, boost::noncopyable>("Evaluator", p::init<std::shared_ptr<Model>, size_t>());
+	p::class_<GameEvaluator, std::shared_ptr<GameEvaluator>, boost::noncopyable>(
+		"Evaluator", 
+		p::init<std::shared_ptr<Model>, 
+		oaz::thread_pool::ThreadPool*,
+		size_t>());
 
 	p::class_<Node_, boost::noncopyable>("Node", p::init<>())
 		.add_property("move", &Node_::getMove)
@@ -109,12 +111,14 @@ BOOST_PYTHON_MODULE( MODULE_NAME ) {
 		.def("get_parent", &Node_::getParent, p::return_value_policy<p::reference_existing_object>());
 
 
-	p::class_<Search_, std::shared_ptr<Search_>, boost::noncopyable>("Search", p::init<const Game&, std::shared_ptr<Evaluator>, size_t, size_t, float, float>())
-	.def("get_root", &Search_::getTreeRoot, p::return_value_policy<p::reference_existing_object>())
-	.add_property("done", &Search_::done)
-	.def("seed_rng", &Search_::seedRNG);
+	p::class_<GameSearch, std::shared_ptr<GameSearch>, boost::noncopyable>(
+		"Search", 
+		p::init<const Game&, GameEvaluator*, oaz::thread_pool::ThreadPool*, size_t, size_t, float, float>())
+	.def("get_root", &GameSearch::getTreeRoot, p::return_value_policy<p::reference_existing_object>())
+	.add_property("done", &GameSearch::done)
+	.def("search", &perform_search)
+	.def("seed_rng", &GameSearch::seedRNG);
 	
-	p::class_<SearchPool, shared_ptr<SearchPool>, boost::noncopyable>("SearchPool", p::init<std::shared_ptr<Evaluator>, size_t>())
-		.def("perform_search", &perform_search);
+	p::class_<Pool, shared_ptr<Pool>, boost::noncopyable>("Pool", p::init<size_t>());
 
 }
