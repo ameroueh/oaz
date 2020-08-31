@@ -8,7 +8,7 @@ tournament_frequency = 3
 n_resnet_blocks = 6
 
 [save]
-save_path = "connect_four_model_10"
+save_path = "connect_four_model_11"
 checkpoint_every = 5
 
 [benchmark]
@@ -20,11 +20,11 @@ momentum = 0.9
 buffer_length = 50000
 
 [self_play]
-search_batch_size = 4
-n_games_per_worker =  14
+search_batch_size = 8
+n_games_per_worker =  7
 n_simulations_per_move = 200
-n_threads = 64
+n_threads = 128
 n_search_workers = 4
-evaluator_batch_size = 64
+evaluator_batch_size = 512
 epsilon = 0.25
 alpha = 1.0
