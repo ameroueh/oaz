@@ -44,4 +44,33 @@ void loadArrayFromJson(const nlohmann::json& data, Array& array) {
 		array[i] = data[i];
 }
 
+template <class Node>
+bool checkSearchTree(Node* node) {
+	size_t n_visits = node->getNVisits();
+	bool overall_correct = true;
+	
+	if(!node->isLeaf()) {
+		bool correct_children = true;
+		size_t n_children_visits = 0;
+
+		for(size_t i=0; i!=node->getNChildren(); ++i) {
+			Node* child = node->getChild(i);
+			n_children_visits += child->getNVisits();
+			correct_children &= checkSearchTree<Node>(child);
+
+		}
+		
+		if(!correct_children)
+			std::cout << "Incorrect children at " << node << std::endl;
+		bool correct = (n_visits == (n_children_visits + 1));
+		if(!correct)
+			std::cout << "Incorrect node at " << node 
+			<< "; n_children_visits " << n_children_visits 
+			<< "; n_visits " << n_visits << std::endl;
+
+		overall_correct = correct && correct_children;
+	}
+
+	return overall_correct; 
+}
 #endif
