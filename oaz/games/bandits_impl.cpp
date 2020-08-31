@@ -115,6 +115,7 @@ float Bandits::score() const {
 				return 1.;
 			else
 				return -1.;
+	return 0.;
 }
 
 size_t Bandits::currentPlayer() const {return m_current_player; }

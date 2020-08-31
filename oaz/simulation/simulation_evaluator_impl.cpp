@@ -6,23 +6,23 @@
 
 using namespace oaz::random;
 
-template <class Game, class Notifier>
-SimulationEvaluator<Game, Notifier>::SimulationEvaluator() {
-}
+template <class Game>
+SimulationEvaluator<Game>::SimulationEvaluator(oaz::thread_pool::ThreadPool* thread_pool):
+	m_thread_pool(thread_pool) {}
 
-template <class Game, class Notifier>
-void SimulationEvaluator<Game, Notifier>::requestEvaluation(
+template <class Game>
+void SimulationEvaluator<Game>::requestEvaluation(
 	Game* game, 
 	typename Game::Value* value,
 	typename Game::Policy* policy,
-	Notifier notifier) {
+	oaz::thread_pool::Task* task) {
 
 	*value = simulate(*game);
-	notifier();
+	m_thread_pool->enqueue(task);
 }
 
-template <class Game, class Notifier>
-float SimulationEvaluator<Game, Notifier>::simulate(Game& game) {
+template <class Game>
+float SimulationEvaluator<Game>::simulate(Game& game) {
 
 	std::stack<typename Game::Move> played_moves;
 	while (!game.Finished()) {
@@ -47,6 +47,6 @@ float SimulationEvaluator<Game, Notifier>::simulate(Game& game) {
 	return score;
 }
 
-template <class Game, class Notifier>
-void SimulationEvaluator<Game, Notifier>::forceEvaluation() {
+template <class Game>
+void SimulationEvaluator<Game>::forceEvaluation() {
 }

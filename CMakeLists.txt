@@ -32,7 +32,7 @@ else()
 	set(BOOST_PYTHONLIB python3)
 endif()
 
-find_package(Boost 1.67.0 REQUIRED COMPONENTS python37 numpy37)
+find_package(Boost 1.67.0 REQUIRED COMPONENTS python36 numpy36)
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
 find_package(SWIG REQUIRED COMPONENTS python)
@@ -156,7 +156,7 @@ target_include_directories(bandits_test PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_I
 set_target_properties(bandits_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/bandits")
 
 add_executable(mcts_test test/mcts/mcts_test.cpp)
-target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(mcts_test PRIVATE ${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
 set_target_properties(mcts_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mcts")
 
 add_executable(mcts_search_test test/mcts/mcts_search_test.cpp)
@@ -190,25 +190,6 @@ set_target_properties(
 
 add_dependencies(az_search_test generate_az_search_model)
 
-add_executable(az_search_pool_test test/az/az_search_pool_test.cpp)
-target_include_directories(
-	az_search_pool_test 
-	PRIVATE 
-	${PROJECT_SOURCE_DIR} 
-	${Boost_INCLUDE_DIRS} # + Tensorflow stuff?
-	TensorFlow_DEP 
-	${TensorFlow_SOURCE_DIR} 
-	${TensorFlow_BAZEL_GENFILES}
-)
-
-set_target_properties(
-	az_search_pool_test 
-	PROPERTIES 
-	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/az"
-)
-
-add_dependencies(az_search_pool_test generate_az_search_model)
-
 add_executable(mcts_connect_four_test test/mcts/mcts_connect_four_test.cpp)
 
 target_include_directories(
@@ -234,9 +215,14 @@ set_target_properties(
 	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/simulation"
 )
 
+add_executable(thread_pool_test test/thread_pool/thread_pool_test.cpp)
+target_include_directories(thread_pool_test PRIVATE ${PROJECT_SOURCE_DIR})
+set_target_properties(thread_pool_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/thread_pool")
+
 add_executable(mutex_test test/mutex/mutex_test.cpp)
 target_include_directories(mutex_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(mutex_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/mutex")
+
 add_executable(queue_test test/queue/queue_test.cpp) 
 target_include_directories(queue_test PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(queue_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/queue")
@@ -315,13 +301,14 @@ add_dependencies(az_search_test gtest)
 add_dependencies(az_search_test gmock)
 target_link_libraries(az_search_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
 
-add_dependencies(az_search_pool_test gtest)
-add_dependencies(az_search_pool_test gmock)
-target_link_libraries(az_search_pool_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
-
 add_dependencies(mcts_connect_four_test gtest)
 add_dependencies(mcts_connect_four_test gmock)
 target_link_libraries(mcts_connect_four_test gtest_main gmock_main nlohmann_json::nlohmann_json)
+
+add_dependencies(thread_pool_test gtest)
+add_dependencies(thread_pool_test gmock)
+target_link_libraries(thread_pool_test gtest_main gmock_main)
+
 
 add_dependencies(mutex_test gtest)
 add_dependencies(mutex_test gmock)
@@ -344,6 +331,24 @@ add_dependencies(nn_evaluator_test gmock)
 target_link_libraries(nn_evaluator_test gtest_main gmock_main TensorFlow_DEP nlohmann_json::nlohmann_json Threads::Threads)
 
 enable_testing()
+
+add_custom_target(build_tests)
+add_dependencies(
+	build_tests
+	connect_four_test
+	tic_tac_toe_test
+	bandits_test
+	mcts_test
+	simulation_evaluator_test
+	mcts_search_test
+	az_search_test
+	mcts_connect_four_test
+	thread_pool_test
+	mutex_test
+	queue_test
+	tensorflow_test
+	nn_evaluator_test
+)
 
 add_test(
 	NAME connect_four_test
@@ -383,15 +388,15 @@ add_test(
 )
 
 add_test(
-	NAME az_search_pool_test
-	COMMAND az_search_pool_test
-	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/az
-)
-
-add_test(
 	NAME mcts_connect_four_test
 	COMMAND mcts_connect_four_test
 )
+
+add_test (
+	NAME thread_pool_test
+	COMMAND thread_pool_test
+)
+
 
 add_test (
 	NAME mutex_test
