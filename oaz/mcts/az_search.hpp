@@ -5,8 +5,8 @@
 
 namespace oaz::mcts {
 
-	template <class Game, class Evaluator>
-	using AZSearch = Search<Game, Evaluator, AZSelector<SearchNode<typename Game::Move>>>;
+	template <class Game>
+	using AZSearch = Search<Game, AZSelector<SearchNode<typename Game::Move>>>;
 }
 
 #endif

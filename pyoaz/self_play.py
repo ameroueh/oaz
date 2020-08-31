@@ -67,12 +67,13 @@ class SelfPlay:
         # TODO make this automatic
         self.c_model.set_value_node_name("value/Tanh")
         self.c_model.set_policy_node_name("policy/Softmax")
+        
+        self.pool = self.game_module.Pool(
+            self.n_search_worker
+        )
 
         self.evaluator = self.game_module.Evaluator(
-            self.c_model, self.evaluator_batch_size
-        )
-        self.pool = self.game_module.SearchPool(
-            self.evaluator, self.n_search_worker
+            self.c_model, self.pool, self.evaluator_batch_size
         )
 
     def self_play(self, session, debug=False) -> Dict:
@@ -177,12 +178,13 @@ class SelfPlay:
             search = self.game_module.Search(
                 game,
                 self.evaluator,
+                self.pool,
                 self.search_batch_size,
                 self.n_simulations_per_move,
                 self.epsilon,
                 self.alpha,
             )
-            self.pool.perform_search(search)
+            search.search()
             root = search.get_root()
 
             # best_visit_count = -1

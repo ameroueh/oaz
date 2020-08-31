@@ -4,44 +4,38 @@
 #include "oaz/games/connect_four.hpp"
 #include "oaz/simulation/simulation_evaluator.hpp"
 #include "oaz/queue/queue.hpp"
+#include "oaz/thread_pool/dummy_task.hpp"
 
 #include <thread>
 #include <vector>
 
 using namespace std;
 
-class DummyNotifier {
-	public:
-		void operator()() {}		
-};
-
 using Game = ConnectFour;
-using Evaluator = SimulationEvaluator<Game, DummyNotifier>;
-
-void playFromString(Game& game, std::string sMoves) {
-	for(char& c : sMoves)
-		game.playMove(c - '0');
-}
+using TestEvaluator = SimulationEvaluator<Game>;
 
 TEST (Instantiation, Default) {
-	Evaluator evaluator;
+	oaz::thread_pool::ThreadPool pool(1);
+	TestEvaluator evaluator(&pool);
 }
 
 TEST (RequestEvaluation, Default) {
-	Evaluator evaluator;
+	oaz::thread_pool::ThreadPool pool(1);
+	TestEvaluator evaluator(&pool);
 	
 	Game game;
 	Game game2(game);
 
 	Game::Value value;
 	Game::Policy policy;
-	DummyNotifier notifier;
+	
+	oaz::thread_pool::DummyTask task(2);
 
 	evaluator.requestEvaluation(
 		&game,
 		&value,
 		&policy,
-		notifier
+		&task
 	);
 
 	ASSERT_TRUE(game2 == game);
@@ -53,16 +47,18 @@ TEST (RequestEvaluation, Default) {
 		&game,
 		&value,
 		&policy,
-		notifier
+		&task
 	);
 	ASSERT_TRUE(game2 == game);
+
+	task.wait();
 }
 
 void evaluateGames(
 	std::vector<Game>* games,
 	oaz::queue::SafeQueue<size_t>* indices_q, 
-	DummyNotifier notifier, 
-	Evaluator* evaluator, 
+	oaz::thread_pool::Task* task, 
+	oaz::evaluator::Evaluator<Game>* evaluator, 
 	size_t thread_id) {
 	std::string moves = "021302130213465640514455662233001144552636";
 	size_t n_moves = moves.size();
@@ -79,15 +75,14 @@ void evaluateGames(
 	
 		size_t len = index % (moves.size() + 1);
 
-
-		playFromString(game, moves.substr(0, len));
+		game.playFromString(moves.substr(0, len));
 		Game temp_game = game;
 
 		evaluator->requestEvaluation(
 			&game,
 			&value,
 			&policy,
-			notifier
+			task
 		);
 	
 		ASSERT_TRUE(game == temp_game);
@@ -100,32 +95,35 @@ void evaluateGames(
 
 TEST (RandomGames, Default) {
 
+	oaz::thread_pool::ThreadPool pool(1);
 	std::vector<Game> games(1000);
 	oaz::queue::SafeQueue<size_t> indices;
 	for(size_t i=0; i!=1000; ++i) 
 		indices.push(i);
 
-	DummyNotifier notifier;
-	Evaluator evaluator;
+	oaz::thread_pool::DummyTask task(1000);
+	TestEvaluator evaluator(&pool);
 	
 	evaluateGames(
 		&games, 
 		&indices, 
-		notifier, 
+		&task, 
 		&evaluator,
 		0
 	);
+	task.wait();
 }
 
 TEST (MultithreadedRandomGames, Default) {
 	
+	oaz::thread_pool::ThreadPool pool(1);
 	std::vector<Game> games(1000);
 	oaz::queue::SafeQueue<size_t> indices;
 	for(size_t i=0; i!=1000; ++i) 
 		indices.push(i);
 	
-	DummyNotifier notifier;
-	Evaluator evaluator;
+	oaz::thread_pool::DummyTask task(1000);
+	TestEvaluator evaluator(&pool);
 
 	vector<thread> threads; 
 	for(size_t i=0; i!=2; ++i) {
@@ -134,7 +132,7 @@ TEST (MultithreadedRandomGames, Default) {
 				&evaluateGames, 
 				&games,
 				&indices,
-				notifier,
+				&task,
 				&evaluator,
 				0
 			)
@@ -142,5 +140,6 @@ TEST (MultithreadedRandomGames, Default) {
 	}
 	for(size_t i=0; i!=2; ++i)
 		threads[i].join();
-}
 
+	task.wait();
+}

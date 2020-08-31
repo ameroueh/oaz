@@ -16,32 +16,50 @@
 using namespace oaz::mcts;
 
 
-SafeQueueNotifier::SafeQueueNotifier(oaz::queue::SafeQueue<size_t>* queue, size_t index):
-	m_queue(queue),
-	m_index(index) {
+template <class Game, class Selector>
+Search<Game, Selector>::SelectionTask::SelectionTask(
+	Search<Game, Selector>* search,
+	size_t index):
+	m_index(index),
+	m_search(search) {}
+
+template <class Game, class Selector>
+Search<Game, Selector>::SelectionTask::SelectionTask():
+	m_index(0),
+	m_search(nullptr) {}
+
+
+template <class Game, class Selector>
+void Search<Game, Selector>::SelectionTask::operator()() {
+	m_search->selectNode(m_index);
 }
 
-SafeQueueNotifier::SafeQueueNotifier():
-	m_queue(nullptr),
-	m_index(0) {
+template <class Game, class Selector>
+Search<Game, Selector>::SelectionTask::~SelectionTask () {}
+
+template <class Game, class Selector>
+Search<Game, Selector>::ExpansionAndBackpropagationTask::ExpansionAndBackpropagationTask(
+	Search<Game, Selector>* search,
+	size_t index):
+	m_index(index),
+	m_search(search) {}
+
+template <class Game, class Selector>
+Search<Game, Selector>::ExpansionAndBackpropagationTask::ExpansionAndBackpropagationTask():
+	m_index(0),
+	m_search(nullptr) {}
+
+
+template <class Game, class Selector>
+void Search<Game, Selector>::ExpansionAndBackpropagationTask::operator()() {
+	m_search->expandAndBackpropagateNode(m_index);
 }
 
-void SafeQueueNotifier::operator()() {
-	m_queue->lock();
-	m_queue->push(m_index);
-	m_queue->unlock();
-}
+template <class Game, class Selector>
+Search<Game, Selector>::ExpansionAndBackpropagationTask::~ExpansionAndBackpropagationTask () {}
 
-
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::enqueueForExpansionAndBackpropagation(size_t index) {
-	m_expansion_and_backpropagation_q.lock();
-	m_expansion_and_backpropagation_q.push(index);
-	m_expansion_and_backpropagation_q.unlock();
-}
-
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::selectNode(size_t index) {
+template <class Game, class Selector>
+void Search<Game, Selector>::selectNode(size_t index) {
 	Node* node = getNode(index);
 	Game& game = m_games[index];
 
@@ -63,46 +81,47 @@ void Search<Game, Evaluator, Selector>::selectNode(size_t index) {
 			break;
 		} else {
 			node->incrementNVisits();
-			node->blockForEvaluation();
+			if (!game.Finished())
+				node->blockForEvaluation();
 			node->unlock();
 			m_n_evaluation_requests++;
+			m_expansion_and_backpropagation_tasks[index] = 
+				ExpansionAndBackpropagationTask(this, index); 
+
 			m_evaluator->requestEvaluation(
 				&game,
 				&getValue(index),
 				&getPolicy(index),
-				SafeQueueNotifier(&m_expansion_and_backpropagation_q, index)
+				&m_expansion_and_backpropagation_tasks[index]
 			);
 			break;
 		}
 	}
 }
 
-template <class Game, class Evaluator, class Selector>
-typename Game::Value& Search<Game, Evaluator, Selector>::getValue(size_t index) {
+template <class Game, class Selector>
+typename Game::Value& Search<Game, Selector>::getValue(size_t index) {
 	return m_values[index];
 }
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::seedRNG(size_t seed) {
+template <class Game, class Selector>
+void Search<Game, Selector>::seedRNG(size_t seed) {
 	m_generator.seed(seed);	
 }
 
 
-template <class Game, class Evaluator, class Selector>
-typename Game::Policy& Search<Game, Evaluator, Selector>::getPolicy(size_t index) {
+template <class Game, class Selector>
+typename Game::Policy& Search<Game, Selector>::getPolicy(size_t index) {
 	return m_policies[index];
 }
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::pause(size_t index) {
-	m_paused_nodes_lock.lock();
+template <class Game, class Selector>
+void Search<Game, Selector>::pause(size_t index) {
 	m_paused_nodes[index] = getNode(index);
-	++m_n_paused_nodes;
-	m_paused_nodes_lock.unlock();
 }
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::addDirichletNoise(Policy& policy) {
+template <class Game, class Selector>
+void Search<Game, Selector>::addDirichletNoise(Policy& policy) {
 	if(m_noise_epsilon > 0.001) {
 		Policy noise;
 		float total_noise = 0.;
@@ -117,8 +136,8 @@ void Search<Game, Evaluator, Selector>::addDirichletNoise(Policy& policy) {
 	}
 }
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::expandNode(Node* node, Game& game, Policy& policy) {
+template <class Game, class Selector>
+void Search<Game, Selector>::expandNode(Node* node, Game& game, Policy& policy) {
 
 	if(node->isRoot())
 		addDirichletNoise(policy);
@@ -131,51 +150,49 @@ void Search<Game, Evaluator, Selector>::expandNode(Node* node, Game& game, Polic
 	}
 }
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::unpause(Node* node) {
-	m_paused_nodes_lock.lock();
+template <class Game, class Selector>
+void Search<Game, Selector>::unpause(Node* node) {
 	for(size_t index=0; index != getBatchSize(); ++index) {
 		if(m_paused_nodes[index] == node) {
-			m_selection_q.lock();
-			m_selection_q.push(index);
-			m_selection_q.unlock();
-			--m_n_paused_nodes;
+			m_selection_tasks[index] = SelectionTask(this, index);
+			m_thread_pool->enqueue(&m_selection_tasks[index]);
 			m_paused_nodes[index] = nullptr;
 		}
 	}
-	m_paused_nodes_lock.unlock();
 }
 
-template <class Game, class Evaluator, class Selector>
-size_t Search<Game, Evaluator, Selector>::getNSelections() const {
+template <class Game, class Selector>
+size_t Search<Game, Selector>::getNSelections() const {
 	return m_n_selections;
 }
 
-template <class Game, class Evaluator, class Selector>
-size_t Search<Game, Evaluator, Selector>::getNIterations() const {
+template <class Game, class Selector>
+size_t Search<Game, Selector>::getNIterations() const {
 	return m_n_iterations;
 }
 
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::maybeSelect(size_t index) {
+template <class Game, class Selector>
+void Search<Game, Selector>::maybeSelect(size_t index) {
 	m_selection_lock.lock();
 	if(getNSelections() < getNIterations()) {
-		m_selection_q.lock();
-		m_selection_q.push(index);
-		m_selection_q.unlock();
 		++m_n_selections;
-	}
-	m_selection_lock.unlock();
+		m_selection_lock.unlock();
+		m_selection_tasks[index] = SelectionTask(this, index);
+		m_thread_pool->enqueue(&m_selection_tasks[index]);
+	} else if (done()) {
+		m_selection_lock.unlock();
+		m_condition.notify_one();
+	} else m_selection_lock.unlock();
 }
 
-template <class Game, class Evaluator, class Selector>
-Game& Search<Game, Evaluator, Selector>::getGame(size_t index) {
+template <class Game, class Selector>
+Game& Search<Game, Selector>::getGame(size_t index) {
 	return m_games[index];
 }
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::expandAndBackpropagateNode(size_t index) {
+template <class Game, class Selector>
+void Search<Game, Selector>::expandAndBackpropagateNode(size_t index) {
 	
 	float value = getValue(index);
 	float normalised_score = normaliseScore(value);
@@ -183,13 +200,14 @@ void Search<Game, Evaluator, Selector>::expandAndBackpropagateNode(size_t index)
 	Node* node = getNode(index);
 	Game& game = getGame(index);
 
-	node->lock();
-	if (!game.Finished())
+	if (!game.Finished()) {
+		node->lock();
 		expandNode(node, game, policy);
-	unpause(node);
-	node->unblockForEvaluation();
-	node->unlock();
-
+		node->unblockForEvaluation();
+		unpause(node);
+		node->unlock();
+	}
+	
 	Node* new_node = backpropagateNode(node, game, normalised_score);
 
 	setNode(index, new_node);
@@ -197,25 +215,23 @@ void Search<Game, Evaluator, Selector>::expandAndBackpropagateNode(size_t index)
 	maybeSelect(index);
 }
 
-template <class Game, class Evaluator, class Selector>
-bool Search<Game, Evaluator, Selector>::done() const {
+template <class Game, class Selector>
+bool Search<Game, Selector>::done() const {
 	return getNCompletions() == getNIterations();
 }
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::incrementNCompletions() {
-	m_completion_lock.lock();
+template <class Game, class Selector>
+void Search<Game, Selector>::incrementNCompletions() {
 	++m_n_completions;
-	m_completion_lock.unlock();
 }
 
-template <class Game, class Evaluator, class Selector>
-size_t Search<Game, Evaluator, Selector>::getNCompletions() const {
+template <class Game, class Selector>
+size_t Search<Game, Selector>::getNCompletions() const {
 	return m_n_completions;
 }
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::initialise(const Game& game) {
+template <class Game, class Selector>
+void Search<Game, Selector>::initialise(const Game& game) {
 
 	std::random_device seeder;
 	m_generator.seed(seeder());
@@ -225,20 +241,20 @@ void Search<Game, Evaluator, Selector>::initialise(const Game& game) {
 		m_games[index] = game;
 		m_nodes[index] = &m_root;
 		m_paused_nodes[index] = nullptr;
-		maybeSelect(index);
 	}
 }
 
-template <class Game, class Evaluator, class Selector>
-Search<Game, Evaluator, Selector>::Search(
-	const Game& game, SharedEvaluatorPointer evaluator, 
+template <class Game, class Selector>
+Search<Game, Selector>::Search(
+	const Game& game, 
+	oaz::evaluator::Evaluator<Game>* evaluator, 
+	oaz::thread_pool::ThreadPool* thread_pool,
 	size_t batch_size, 
 	size_t n_iterations):
 	m_batch_size(batch_size),
 	m_n_iterations(n_iterations),
 	m_n_selections(0),
 	m_n_completions(0),
-	m_n_paused_nodes(0),
 	m_n_evaluation_requests(0),
 	m_nodes(batch_size),
 	m_paused_nodes(batch_size),
@@ -247,13 +263,18 @@ Search<Game, Evaluator, Selector>::Search(
 	m_policies(batch_size),
 	m_evaluator(evaluator),
 	m_noise_epsilon(0.),
-	m_noise_alpha(1.) {
+	m_noise_alpha(1.),
+	m_thread_pool(thread_pool),
+	m_selection_tasks(boost::extents[batch_size]), 
+	m_expansion_and_backpropagation_tasks(boost::extents[batch_size]){
 	initialise(game);
 }
 
-template <class Game, class Evaluator, class Selector>
-Search<Game, Evaluator, Selector>::Search(
-	const Game& game, SharedEvaluatorPointer evaluator, 
+template <class Game, class Selector>
+Search<Game, Selector>::Search(
+	const Game& game, 
+	oaz::evaluator::Evaluator<Game>* evaluator, 
+	oaz::thread_pool::ThreadPool* thread_pool,
 	size_t batch_size, 
 	size_t n_iterations,
 	float noise_epsilon,
@@ -262,7 +283,6 @@ Search<Game, Evaluator, Selector>::Search(
 	m_n_iterations(n_iterations),
 	m_n_selections(0),
 	m_n_completions(0),
-	m_n_paused_nodes(0),
 	m_n_evaluation_requests(0),
 	m_nodes(batch_size),
 	m_paused_nodes(batch_size),
@@ -271,12 +291,15 @@ Search<Game, Evaluator, Selector>::Search(
 	m_policies(batch_size),
 	m_evaluator(evaluator),
 	m_noise_epsilon(noise_epsilon),
-	m_noise_alpha(noise_alpha) {
+	m_noise_alpha(noise_alpha),
+	m_thread_pool(thread_pool),
+	m_selection_tasks(boost::extents[batch_size]), 
+	m_expansion_and_backpropagation_tasks(boost::extents[batch_size]){
 	initialise(game);
 }
 
-template <class Game, class Evaluator, class Selector>
-typename Search<Game, Evaluator, Selector>::Node* Search<Game, Evaluator, Selector>::backpropagateNode(
+template <class Game, class Selector>
+typename Search<Game, Selector>::Node* Search<Game, Selector>::backpropagateNode(
 	Node* node, Game& game, float normalised_score) {
 	while(!node->isRoot()) {
 		float value = getValueFromScore(
@@ -292,61 +315,39 @@ typename Search<Game, Evaluator, Selector>::Node* Search<Game, Evaluator, Select
 	return node;
 }
 
-template <class Game, class Evaluator, class Selector>
-size_t Search<Game, Evaluator, Selector>::getBatchSize() const {
+template <class Game, class Selector>
+size_t Search<Game, Selector>::getBatchSize() const {
 	return m_batch_size;
 }
 
-template<class Game, class Evaluator, class Selector>
-typename Search<Game, Evaluator, Selector>::Node* Search<Game, Evaluator, Selector>::getNode(size_t index) {
+template<class Game, class Selector>
+typename Search<Game, Selector>::Node* Search<Game, Selector>::getNode(size_t index) {
 	return m_nodes[index];
 }
 
-template <class Game, class Evaluator, class Selector>
-bool Search<Game, Evaluator, Selector>::work() {
-	m_selection_q.lock();
-	if(!m_selection_q.empty()) {
-		size_t index = m_selection_q.front();
-		m_selection_q.pop();
-		m_selection_q.unlock();
-		selectNode(index);
-		return true;
-	} else m_selection_q.unlock();
-	
-	m_expansion_and_backpropagation_q.lock();
-	if(!m_expansion_and_backpropagation_q.empty()) {
-		size_t index = m_expansion_and_backpropagation_q.front();
-		m_expansion_and_backpropagation_q.pop();
-		m_expansion_and_backpropagation_q.unlock();
-		m_n_evaluation_requests--;
-		expandAndBackpropagateNode(index);
-		return true;
-	} else m_expansion_and_backpropagation_q.unlock();
+template <class Game, class Selector>
+void Search<Game, Selector>::search() {
+	for(size_t i=0; i!=getBatchSize(); ++i)
+		maybeSelect(i);
 
-	return false;
-}
-
-template <class Game, class Evaluator, class Selector>
-bool Search<Game, Evaluator, Selector>::waitingForEvaluation() {
-	size_t effective_batch_size = std::min(getBatchSize(), getNIterations() - getNCompletions());
-	size_t unfulfilled_requests = m_n_evaluation_requests - m_expansion_and_backpropagation_q.size();
-	return unfulfilled_requests ==  (effective_batch_size - m_n_paused_nodes);
+	std::unique_lock<std::mutex> lock(m_mutex);
+	m_condition.wait(lock, [this]{ return done(); });
 }
 
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::setNode(size_t index, Node* node) {
+template <class Game, class Selector>
+void Search<Game, Selector>::setNode(size_t index, Node* node) {
 	m_nodes[index] = node;
 }
 
-template <class Game, class Evaluator, class Selector>
-typename Search<Game, Evaluator, Selector>::Node* Search<Game, Evaluator, Selector>::getTreeRoot() {
+template <class Game, class Selector>
+typename Search<Game, Selector>::Node* Search<Game, Selector>::getTreeRoot() {
 	return &m_root;
 }
 
 
-template <class Game, class Evaluator, class Selector>
-typename Search<Game, Evaluator, Selector>::Move Search<Game, Evaluator, Selector>::getBestMove() {
+template <class Game, class Selector>
+typename Search<Game, Selector>::Move Search<Game, Selector>::getBestMove() {
 	Move best_move = 0;
 	size_t best_n_visits = 0;
 	for(size_t i=0; i!= m_root.getNChildren(); ++i) {
@@ -360,13 +361,13 @@ typename Search<Game, Evaluator, Selector>::Move Search<Game, Evaluator, Selecto
 	return best_move;
 }
 
-template <class Game, class Evaluator, class Selector>
-void Search<Game, Evaluator, Selector>::getVisitCounts(Policy& move_counts) {
+template <class Game, class Selector>
+void Search<Game, Selector>::getVisitCounts(Policy& move_counts) {
 	for(size_t i=0; i!= m_root.getNChildren(); ++i) {
 		Node* node = m_root.getChild(i);
 		move_counts[node->getMove()] = node->getNVisits();
 	}
 }
 
-template <class Game, class Evaluator, class Selector>
-Search<Game, Evaluator, Selector>::~Search() {}
+template <class Game, class Selector>
+Search<Game, Selector>::~Search() {}

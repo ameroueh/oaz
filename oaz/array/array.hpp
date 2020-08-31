@@ -3,6 +3,7 @@
 
 #include "boost/multi_array.hpp"
 #include <utility>
+#include <cstring>
 #include <tuple>
 
 
@@ -42,6 +43,13 @@ namespace oaz::array {
 			Array(): boost::multi_array<float, sizeof... (dimensions)> (
 				std::array<size_t, sizeof... (dimensions)>({dimensions...})
 			) {}
+
+			void Set(float* source) {
+				std::memcpy(
+					boost::multi_array<size_t, sizeof... (dimensions)>::origin(), 
+					source, SizeBytes()
+				);
+			}
 	};
 }
 
