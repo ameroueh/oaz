@@ -1,13 +1,10 @@
-import os
-
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
 import argparse
-from pathlib import Path
 import logging
+import os
 import sys
-import joblib
+from pathlib import Path
 
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,15 +12,17 @@ import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 import toml
 
-from pyoaz.bots import LeftmostBot, RandomBot, OazBot
-
-
+from pyoaz.bots import LeftmostBot, OazBot, RandomBot
+from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.tournament import Participant, Tournament
 from tensorflow.keras.models import load_model
-from pyoaz.games.tic_tac_toe import boards_to_bin
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# Useful for RTX cards
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +41,21 @@ def set_logging(debug_mode=False):
             level=logging.INFO,
             datefmt="%Y-%m-%d %H:%M:%S",
         )
+
+
+def overwrite_config(configuration, args_dict):
+    for key, config_stage in configuration.items():
+
+        try:
+            config_stage.update(
+                {
+                    k: v
+                    for k, v in args_dict.items()
+                    if k in config_stage and v is not None
+                }
+            )
+        except AttributeError:
+            pass
 
 
 def load_benchmark(benchmark_path):
@@ -78,7 +92,7 @@ def play_tournament(game, model, n_games=100):
     )
 
     oaz_wins, oaz_losses = win_loss[0, :].sum(), win_loss[:, 0].sum()
-    draws = 2 * n_games * 3 - oaz_wins - oaz_losses
+    draws = 2 * n_games * 2 - oaz_wins - oaz_losses
 
     LOGGER.info(f"WINS: {oaz_wins} LOSSES: {oaz_losses} DRAWS: {draws}")
 
@@ -104,7 +118,7 @@ def train_model(model, dataset):
 
     # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
 
-    model.fit(
+    train_history = model.fit(
         train_boards,
         {"value": train_values, "policy": train_policies},
         validation_data=(
@@ -116,6 +130,7 @@ def train_model(model, dataset):
         verbose=1,
         # callbacks=[early_stopping],
     )
+    return train_history
 
 
 def benchmark_model(benchmark_boards, benchmark_values, model):
@@ -143,7 +158,9 @@ def evaluate_self_play_dataset(benchmark_path, boards, values):
 
 def train_cycle(model, configuration, history, debug_mode=False):
     try:
-        checkpoint_path = Path(configuration["save"]["checkpoint_path"])
+        checkpoint_path = (
+            Path(configuration["save"]["save_path"]) / "checkpoints"
+        )
         checkpoint = True
         checkpoint_path.mkdir(exist_ok=True)
     except KeyError:
@@ -154,8 +171,9 @@ def train_cycle(model, configuration, history, debug_mode=False):
 
     game = get_game_class(configuration["game"])
 
-    for i in range(configuration["n_generations"]):
-        LOGGER.info(f"Training cycle {i}")
+    n_generations = configuration["training"]["n_generations"]
+    for generation in range(n_generations):
+        LOGGER.info(f"Training cycle {generation} / {n_generations}")
         if debug_mode:
             self_play_controller = SelfPlay(
                 game=configuration["game"],
@@ -189,11 +207,11 @@ def train_cycle(model, configuration, history, debug_mode=False):
                 epsilon=configuration["self_play"]["epsilon"],
                 alpha=configuration["self_play"]["alpha"],
             )
-
+        # with tf.Session(config=SESSION_CONFIG) as session:
         session = K.get_session()
+        # session._config = SESSION_CONFIG
         dataset = self_play_controller.self_play(session)
-
-        train_model(model, dataset)
+        train_history = train_model(model, dataset)
 
         self_play_mse, self_play_accuracy = evaluate_self_play_dataset(
             benchmark_path, dataset["Boards"], dataset["Values"]
@@ -203,16 +221,34 @@ def train_cycle(model, configuration, history, debug_mode=False):
 
         mse = benchmark_model(benchmark_boards, benchmark_values, model)
         history["mse"].append(mse)
+        tournament_frequency = configuration["training"][
+            "tournament_frequency"
+        ]
+        if generation % tournament_frequency == 0:
 
-        wins, losses, draws = play_tournament(game, model)
-        history["wins"].append(wins)
-        history["losses"].append(losses)
-        history["draws"].append(draws)
+            wins, losses, draws = play_tournament(game, model)
+            history["wins"].extend([wins] * tournament_frequency)
+            history["losses"].extend([losses] * tournament_frequency)
+            history["draws"].extend([draws] * tournament_frequency)
 
-        if checkpoint and (i % configuration["save"]["checkpoint_every"]) == 0:
-            LOGGER.info(f"Checkpointing model generation {i}")
+        history["val_value_loss"].append(
+            train_history.history["val_value_loss"]
+        )
+        history["val_policy_loss"].append(
+            train_history.history["val_policy_loss"]
+        )
+        history["val_loss"].append(train_history.history["val_loss"])
+
+        if (
+            checkpoint
+            and (generation % configuration["save"]["checkpoint_every"]) == 0
+        ):
+            LOGGER.info(f"Checkpointing model generation {generation}")
             model.save(
-                str(checkpoint_path / f"model-checkpoint-generation-{i}.pb")
+                str(
+                    checkpoint_path
+                    / f"model-checkpoint-generation-{generation}.pb"
+                )
             )
 
 
@@ -242,9 +278,34 @@ def get_game_class(game_name):
     return game
 
 
+def get_history(load_path=None):
+    history = {
+        "mse": [],
+        "self_play_mse": [],
+        "self_play_accuracy": [],
+        "wins": [],
+        "losses": [],
+        "draws": [],
+        "val_value_loss": [],
+        "val_policy_loss": [],
+        "val_loss": [],
+    }
+
+    if load_path:
+        hist_path = Path(load_path).parent / "history.joblib"
+        if hist_path.exists():
+            history = joblib.load(hist_path)
+            logging.debug("Loading history...")
+
+    return history
+
+
 def main(args):
 
     configuration = toml.load(args.configuration_path)
+    # overwrite toml config with cli arguments
+
+    overwrite_config(configuration, vars(args))
 
     set_logging(debug_mode=args.debug_mode)
 
@@ -259,19 +320,16 @@ def main(args):
             "value": "mean_squared_error",
         },
         optimizer=tf.keras.optimizers.SGD(
-            learning_rate=configuration["learning"]["learning_rate"]
+            learning_rate=configuration["learning"]["learning_rate"],
+            momentum=configuration["learning"]["momentum"],
         ),
     )
-    history = {
-        "mse": [],
-        "self_play_mse": [],
-        "self_play_accuracy": [],
-        "wins": [],
-        "losses": [],
-        "draws": [],
-    }
+    history = get_history(load_path=args.load_path)
     save_path = Path(configuration["save"]["save_path"])
     save_path.mkdir(exist_ok=True)
+
+    with open(save_path / "config.toml", "w") as f:
+        f.write(toml.dumps(configuration))
 
     try:
         train_cycle(
@@ -304,6 +362,9 @@ def main(args):
 
 
 def _save_plots(save_path, history):
+
+    joblib.dump(history, save_path / "history.joblib")
+
     plt.plot(history["mse"], label="MSE")
     plt.plot(history["self_play_mse"], label="Self Play MSE")
     plt.plot(history["self_play_accuracy"], label="Self Play Accuracy")
@@ -320,8 +381,18 @@ def _save_plots(save_path, history):
     plot_path = save_path / "_wlm.png"
     plt.savefig(plot_path)
 
+    plt.figure()
+
+    plt.plot(history["val_value_loss"], label="val_value_loss")
+    plt.plot(history["val_policy_loss"], label="val_policy_loss")
+    plt.plot(history["val_loss"], label="val_loss")
+    plt.legend()
+    plot_path = save_path / "training_losses.png"
+    plt.savefig(plot_path)
+
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--configuration_path",
@@ -335,7 +406,18 @@ if __name__ == "__main__":
         "which means the script will create a model from scratch.",
         default=None,
     )
-    parser.add_argument("--debug_mode", type=bool, default=False)
+    parser.add_argument(
+        "--save_path",
+        required=False,
+        help="path to which the model will be saved.",
+    )
+    parser.add_argument(
+        "--n_generations",
+        type=int,
+        required=False,
+        help="Number of generations for which to train. Default is 5",
+    )
+    parser.add_argument("--debug_mode", action="store_true")
     args = parser.parse_args()
 
     main(args)
