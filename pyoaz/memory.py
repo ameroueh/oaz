@@ -37,7 +37,7 @@ class ArrayBuffer:
         """
         array = np.flip(self._array[0], axis=0)
         _, indices = np.unique(array, return_index=True, axis=0)
-        return np.sort(len(array) - 1 - indices)
+        return np.sort(-indices + len(array) - 1)
 
     def keep_indices(self, indices: np.ndarray):
         """
