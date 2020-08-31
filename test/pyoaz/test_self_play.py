@@ -1,9 +1,13 @@
 # import pyoaz.games.connect_four
 
-from pyoaz.self_play import SelfPlay
-from pyoaz.models import create_connect_four_model
+import os
+
 import tensorflow as tf
-import numpy as np
+from pyoaz.models import create_connect_four_model
+from pyoaz.self_play import SelfPlay
+
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+
 
 python_model = create_connect_four_model()
 with tf.Session() as session:

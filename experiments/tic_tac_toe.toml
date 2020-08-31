@@ -9,7 +9,7 @@ tournament_frequency = 5
 n_resnet_blocks = 3 
 
 [save]
-save_path = "test_tic_tac_toe_2"
+save_path = "test_tic_tac_toe"
 checkpoint_every = 5
 
 [benchmark]
@@ -18,13 +18,14 @@ benchmark_path = "benchmark/tic_tac_toe"
 [learning]
 learning_rate = 0.005
 momentum = 0.9
+buffer_length = 5000
 
 [self_play]
-search_batch_size = 2
-n_games_per_worker = 10
-n_simulations_per_move = 10
-n_threads = 10
+search_batch_size = 4
+n_games_per_worker =  14
+n_simulations_per_move = 200
+n_threads = 64
 n_search_workers = 4
-evaluator_batch_size = 10 
+evaluator_batch_size = 64
 epsilon = 0.25
 alpha = 1.0
