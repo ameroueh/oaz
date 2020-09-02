@@ -1,5 +1,13 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Activation, Conv2D, Dense, Flatten, add
+from tensorflow.keras.layers import (
+    Activation,
+    Conv2D,
+    Dense,
+    Flatten,
+    add,
+    BatchNormalization,
+    ReLU,
+)
 from tensorflow.keras.regularizers import l2
 
 
@@ -34,7 +42,7 @@ def residual_block(
         padding="same",
         kernel_initializer="he_normal",
         kernel_regularizer=l2(1e-4),
-        activation="relu",
+        activation=None,
     )
     conv2 = Conv2D(
         num_filters,
@@ -47,8 +55,11 @@ def residual_block(
     )
 
     x = conv(inputs)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
     x = conv2(x)
     x = add([inputs, x])
+    x = BatchNormalization()(x)
     x = Activation("relu")(x)
     return x
 
@@ -79,10 +90,12 @@ def create_alpha_zero_model(
         padding="same",
         kernel_initializer="he_normal",
         kernel_regularizer=l2(1e-4),
-        activation="relu",
+        activation=None,
     )
 
     x = conv(input)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
 
     block_output = residual_block(inputs=x, strides=1, num_filters=num_filters)
 
@@ -90,7 +103,8 @@ def create_alpha_zero_model(
         block_output = residual_block(
             inputs=block_output, strides=1, num_filters=num_filters
         )
-
+    # TODO: consider adding an extra conv layer here and for the policy head as
+    # well, see https://medium.com/oracledevs/lessons-from-alpha-zero-part-6-hyperparameter-tuning-b1cfcbe4ca9a
     value_conv_output = Conv2D(
         1,
         kernel_size=3,
@@ -98,8 +112,11 @@ def create_alpha_zero_model(
         padding="same",
         kernel_initializer="he_normal",
         kernel_regularizer=l2(1e-4),
-        activation="relu",
+        activation=None,
     )(block_output)
+    value_conv_output = BatchNormalization()(value_conv_output)
+    value_conv_output = Activation("relu")(value_conv_output)
+
     value = Dense(
         units=1,
         kernel_regularizer=l2(1e-4),
@@ -115,8 +132,12 @@ def create_alpha_zero_model(
         padding="same",
         kernel_initializer="he_normal",
         kernel_regularizer=l2(1e-4),
-        activation="relu",
+        activation=None,
     )(block_output)
+
+    policy_conv_output = BatchNormalization()(policy_conv_output)
+    policy_conv_output = Activation("relu")(policy_conv_output)
+
     policy = Dense(
         units=policy_output_size,
         kernel_regularizer=l2(1e-4),
