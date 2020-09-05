@@ -50,15 +50,23 @@ using Pool = oaz::thread_pool::ThreadPool;
 using Node_ = oaz::mcts::SearchNode<Game::Move>;
 
 
-std::shared_ptr<spdlog::logger> createLogger() {
+void setupLogging() {
 	size_t MAX_LOG_SIZE = 1073741824;
-	size_t MAX_LOG_FILES = 5;
-	return spdlog::rotating_logger_mt(
-		"CXX_LOGGER", 
-		"cxx_log.txt", 
-		MAX_LOG_SIZE, 
-		MAX_LOG_FILES
+	size_t MAX_LOG_FILES = 2;
+	auto debug_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+		"cxx_log_debug.txt", MAX_LOG_SIZE, MAX_LOG_FILES
 	);
+	debug_sink->set_level(spdlog::level::debug);
+	auto info_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+		"cxx_log_info.txt", MAX_LOG_SIZE, MAX_LOG_FILES
+	);
+	info_sink->set_level(spdlog::level::info);
+	auto* plogger = new spdlog::logger(
+		"CXX_LOGGER", {debug_sink, info_sink}
+	);
+	auto logger = std::shared_ptr<spdlog::logger>(plogger);
+	spdlog::set_default_logger(logger);
+	spdlog::set_level(spdlog::level::debug);
 }
 
 void perform_search(GameSearch& search) {
@@ -89,9 +97,8 @@ void set_session(Model& model, PyObject* obj) {
 
 
 BOOST_PYTHON_MODULE( MODULE_NAME ) {
-	
-	spdlog::set_level(spdlog::level::debug);
-	spdlog::set_default_logger(createLogger());
+
+	setupLogging();
 
 	PyEval_InitThreads();
 	np::initialize();
