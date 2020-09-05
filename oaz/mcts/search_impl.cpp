@@ -365,13 +365,13 @@ typename Search<Game, Selector>::Node* Search<Game, Selector>::getNode(size_t in
 template <class Game, class Selector>
 void Search<Game, Selector>::search() {
 
-	spdlog::debug("Search {:p} searching", (void*)this);
+	spdlog::info("Search {:p} searching", (void*)this);
 	for(size_t i=0; i!=getBatchSize(); ++i)
 		maybeSelect(i);
 
 	std::unique_lock<std::mutex> lock(m_mutex);
 	m_condition.wait(lock, [this]{ return done(); });
-	spdlog::debug("Search {:p} returning", (void*)this);
+	spdlog::info("Search {:p} returning", (void*)this);
 }
 
 
