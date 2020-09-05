@@ -12,6 +12,8 @@
 #include <memory>
 #include <future>
 
+#include "spdlog/spdlog.h"
+
 using namespace oaz::nn;
 using namespace tensorflow;
 using namespace std;
@@ -215,6 +217,8 @@ void NNEvaluator<Game>::requestEvaluation(
 
 template <class Game>
 void NNEvaluator<Game>::evaluateBatch(Batch* batch) {
+
+	spdlog::debug("Evaluating batch of size {}", batch->getNElements());
 	std::vector<tensorflow::Tensor> outputs;
 
 	m_n_evaluation_requests++;
@@ -249,6 +253,8 @@ void NNEvaluator<Game>::evaluateBatch(Batch* batch) {
 
 template <class Game>
 void NNEvaluator<Game>::forceEvaluation() {
+
+	spdlog::debug("Forced evaluation");
 	m_batches.lock();
 	if (!m_batches.empty()) {
 		Batch* earliest_batch = m_batches.front().get();
