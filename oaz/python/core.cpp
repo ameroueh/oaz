@@ -52,7 +52,7 @@ using Node_ = oaz::mcts::SearchNode<Game::Move>;
 
 std::shared_ptr<spdlog::logger> createLogger() {
 	size_t MAX_LOG_SIZE = 1073741824;
-	size_t MAX_LOG_FILES = 10;
+	size_t MAX_LOG_FILES = 5;
 	return spdlog::rotating_logger_mt(
 		"CXX_LOGGER", 
 		"cxx_log.txt", 
