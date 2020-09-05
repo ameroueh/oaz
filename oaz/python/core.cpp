@@ -36,6 +36,9 @@
 
 #include <iostream>
 
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/rotating_file_sink.h"
+
 namespace p = boost::python;
 namespace np = boost::python::numpy;
 
@@ -45,6 +48,18 @@ using GameEvaluator = oaz::nn::NNEvaluator<Game>;
 using GameSearch = oaz::mcts::AZSearch<Game>;
 using Pool = oaz::thread_pool::ThreadPool;
 using Node_ = oaz::mcts::SearchNode<Game::Move>;
+
+
+std::shared_ptr<spdlog::logger> createLogger() {
+	size_t MAX_LOG_SIZE = 1073741824;
+	size_t MAX_LOG_FILES = 10;
+	return spdlog::rotating_logger_mt(
+		"CXX_LOGGER", 
+		"cxx_log.txt", 
+		MAX_LOG_SIZE, 
+		MAX_LOG_FILES
+	);
+}
 
 void perform_search(GameSearch& search) {
 	PyThreadState* save_state = PyEval_SaveThread();
@@ -74,6 +89,9 @@ void set_session(Model& model, PyObject* obj) {
 
 
 BOOST_PYTHON_MODULE( MODULE_NAME ) {
+	
+	spdlog::set_level(spdlog::level::debug);
+	spdlog::set_default_logger(createLogger());
 
 	PyEval_InitThreads();
 	np::initialize();
