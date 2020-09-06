@@ -60,9 +60,8 @@ namespace oaz::mcts {
 			void getVisitCounts(Policy&);
 			Node* getTreeRoot();
 			~Search();
-
+		
 		private:
-			
 			class SelectionTask : public oaz::thread_pool::Task {
 				public:
 					SelectionTask(Search<Game, Selector>*, size_t);
@@ -85,6 +84,9 @@ namespace oaz::mcts {
 					size_t m_index;
 			};
 
+			void handleFinishedTask();
+			void handleCreatedTask();
+			
 			void selectNode(size_t); 
 			void expandNode(Node* node, Game&, Policy&);
 			Node* backpropagateNode(Node*, Game&, float); 
@@ -124,14 +126,17 @@ namespace oaz::mcts {
 
 			size_t m_n_selections;
 			size_t m_n_iterations;
+
 			std::atomic<size_t> m_n_completions;
 			std::atomic<size_t> m_n_evaluation_requests;
+			std::atomic<size_t> m_n_active_tasks;
 
 			void incrementNCompletions();
 
 			size_t getNSelections() const;
 			size_t getNIterations() const; 
 			size_t getNCompletions() const;
+			size_t getNActiveTasks() const;
 
 			size_t getEvaluatorIndex(size_t) const;
 

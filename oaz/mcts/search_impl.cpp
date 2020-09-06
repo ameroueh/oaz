@@ -13,6 +13,8 @@
 #include "oaz/mcts/search.hpp"
 #include "oaz/mcts/backpropagation.hpp"
 
+#include "spdlog/spdlog.h"
+
 using namespace oaz::mcts;
 
 
@@ -21,7 +23,9 @@ Search<Game, Selector>::SelectionTask::SelectionTask(
 	Search<Game, Selector>* search,
 	size_t index):
 	m_index(index),
-	m_search(search) {}
+	m_search(search) {
+		m_search->handleCreatedTask();
+}
 
 template <class Game, class Selector>
 Search<Game, Selector>::SelectionTask::SelectionTask():
@@ -31,7 +35,9 @@ Search<Game, Selector>::SelectionTask::SelectionTask():
 
 template <class Game, class Selector>
 void Search<Game, Selector>::SelectionTask::operator()() {
+	spdlog::debug("Search {:p} index {} selection task", (void*)m_search, m_index);
 	m_search->selectNode(m_index);
+	m_search->handleFinishedTask();
 }
 
 template <class Game, class Selector>
@@ -42,7 +48,9 @@ Search<Game, Selector>::ExpansionAndBackpropagationTask::ExpansionAndBackpropaga
 	Search<Game, Selector>* search,
 	size_t index):
 	m_index(index),
-	m_search(search) {}
+	m_search(search) {
+		m_search->handleCreatedTask();
+}
 
 template <class Game, class Selector>
 Search<Game, Selector>::ExpansionAndBackpropagationTask::ExpansionAndBackpropagationTask():
@@ -52,7 +60,9 @@ Search<Game, Selector>::ExpansionAndBackpropagationTask::ExpansionAndBackpropaga
 
 template <class Game, class Selector>
 void Search<Game, Selector>::ExpansionAndBackpropagationTask::operator()() {
+	spdlog::debug("Search {:p} index {} expansion and backpropagation task", (void*)m_search, m_index);
 	m_search->expandAndBackpropagateNode(m_index);
+	m_search->handleFinishedTask();
 }
 
 template <class Game, class Selector>
@@ -60,6 +70,8 @@ Search<Game, Selector>::ExpansionAndBackpropagationTask::~ExpansionAndBackpropag
 
 template <class Game, class Selector>
 void Search<Game, Selector>::selectNode(size_t index) {
+	
+	spdlog::debug("Search {:p} index {} selectNode", (void*)this, index);
 	Node* node = getNode(index);
 	Game& game = m_games[index];
 
@@ -76,13 +88,18 @@ void Search<Game, Selector>::selectNode(size_t index) {
 
 		} else if (node->IsBlockedForEvaluation() ) {
 			
+			spdlog::debug("Search {:p} index {} selectNode node {:p} blocked for evaluation, pausing", (void*)this, index, (void*)node);
 			pause(index);
 			node->unlock();
 			break;
 		} else {
+			
+			spdlog::debug("Search {:p} index {} selectNode node {:p} requesting evaluation", (void*)this, index, (void*)node);
 			node->incrementNVisits();
-			if (!game.Finished())
+			if (!game.Finished()) {
+				spdlog::debug("Search {:p} index {} selectNode node {:p} game not finished, blocking evaluations", (void*)this, index, (void*)node);
 				node->blockForEvaluation();
+			}
 			node->unlock();
 			m_n_evaluation_requests++;
 			m_expansion_and_backpropagation_tasks[index] = 
@@ -94,6 +111,7 @@ void Search<Game, Selector>::selectNode(size_t index) {
 				&getPolicy(index),
 				&m_expansion_and_backpropagation_tasks[index]
 			);
+			spdlog::debug("Search {:p} index {} selectNode node {:p} returning", (void*)this, index, (void*)node);
 			break;
 		}
 	}
@@ -138,6 +156,7 @@ void Search<Game, Selector>::addDirichletNoise(Policy& policy) {
 
 template <class Game, class Selector>
 void Search<Game, Selector>::expandNode(Node* node, Game& game, Policy& policy) {
+	spdlog::debug("Search {:p} node {:p} expandNode", (void*)this, (void*)node);
 
 	if(node->isRoot())
 		addDirichletNoise(policy);
@@ -152,11 +171,14 @@ void Search<Game, Selector>::expandNode(Node* node, Game& game, Policy& policy) 
 
 template <class Game, class Selector>
 void Search<Game, Selector>::unpause(Node* node) {
+	
+	spdlog::debug("Search {:p} node {:p} unpause", (void*)this, (void*)node);
 	for(size_t index=0; index != getBatchSize(); ++index) {
 		if(m_paused_nodes[index] == node) {
 			m_selection_tasks[index] = SelectionTask(this, index);
 			m_thread_pool->enqueue(&m_selection_tasks[index]);
 			m_paused_nodes[index] = nullptr;
+			spdlog::debug("Search {:p} node {:p} unpause unpaused index {}", (void*)this, (void*)node, index);
 		}
 	}
 }
@@ -174,16 +196,25 @@ size_t Search<Game, Selector>::getNIterations() const {
 
 template <class Game, class Selector>
 void Search<Game, Selector>::maybeSelect(size_t index) {
+
+	spdlog::debug("Search {:p} index {} maybeSelect n_selections {} / {}; n_completions {} / {}", 
+		(void*)this, 
+		index,
+		getNSelections(),
+		getNIterations(),
+		getNCompletions(),
+		getNIterations()
+	);
+
 	m_selection_lock.lock();
 	if(getNSelections() < getNIterations()) {
+		spdlog::debug("Search {:p} index {} maybeSelect new selection", (void*)this, index);
 		++m_n_selections;
 		m_selection_lock.unlock();
 		m_selection_tasks[index] = SelectionTask(this, index);
 		m_thread_pool->enqueue(&m_selection_tasks[index]);
-	} else if (done()) {
-		m_selection_lock.unlock();
-		m_condition.notify_one();
 	} else m_selection_lock.unlock();
+	spdlog::debug("Search {:p} index {} maybeSelect returning", (void*)this, index);
 }
 
 template <class Game, class Selector>
@@ -193,6 +224,7 @@ Game& Search<Game, Selector>::getGame(size_t index) {
 
 template <class Game, class Selector>
 void Search<Game, Selector>::expandAndBackpropagateNode(size_t index) {
+	spdlog::debug("Search {:p} index {} expandAndBackpropagate", (void*)this, index);
 	
 	float value = getValue(index);
 	float normalised_score = normaliseScore(value);
@@ -201,6 +233,7 @@ void Search<Game, Selector>::expandAndBackpropagateNode(size_t index) {
 	Game& game = getGame(index);
 
 	if (!game.Finished()) {
+		spdlog::debug("Search {:p} index {} expandAndBackpropagate game not finished", (void*)this, index);
 		node->lock();
 		expandNode(node, game, policy);
 		node->unblockForEvaluation();
@@ -213,16 +246,18 @@ void Search<Game, Selector>::expandAndBackpropagateNode(size_t index) {
 	setNode(index, new_node);
 	incrementNCompletions();
 	maybeSelect(index);
+	spdlog::debug("Search {:p} index {} expandAndBackpropagate returning", (void*)this, index);
 }
 
 template <class Game, class Selector>
 bool Search<Game, Selector>::done() const {
-	return getNCompletions() == getNIterations();
+	return (getNCompletions() == getNIterations()) && (getNActiveTasks() == 0);
 }
 
 template <class Game, class Selector>
 void Search<Game, Selector>::incrementNCompletions() {
 	++m_n_completions;
+	spdlog::debug("Search {:p} incrementNCompletions", (void*)this);
 }
 
 template <class Game, class Selector>
@@ -256,6 +291,7 @@ Search<Game, Selector>::Search(
 	m_n_selections(0),
 	m_n_completions(0),
 	m_n_evaluation_requests(0),
+	m_n_active_tasks(0),
 	m_nodes(batch_size),
 	m_paused_nodes(batch_size),
 	m_games(batch_size),
@@ -284,6 +320,7 @@ Search<Game, Selector>::Search(
 	m_n_selections(0),
 	m_n_completions(0),
 	m_n_evaluation_requests(0),
+	m_n_active_tasks(0),
 	m_nodes(batch_size),
 	m_paused_nodes(batch_size),
 	m_games(batch_size),
@@ -301,6 +338,7 @@ Search<Game, Selector>::Search(
 template <class Game, class Selector>
 typename Search<Game, Selector>::Node* Search<Game, Selector>::backpropagateNode(
 	Node* node, Game& game, float normalised_score) {
+	spdlog::debug("Search {:p} node {:p} backpropagateNode", (void*)this, (void*)node);
 	while(!node->isRoot()) {
 		float value = getValueFromScore(
 			normalised_score, 
@@ -312,12 +350,30 @@ typename Search<Game, Selector>::Node* Search<Game, Selector>::backpropagateNode
 		game.undoMove(node->getMove());
 		node = node->getParent();
 	}
+	spdlog::debug("Search {:p} node {:p} backpropagateNode returning", (void*)this, (void*)node);
 	return node;
 }
 
 template <class Game, class Selector>
 size_t Search<Game, Selector>::getBatchSize() const {
 	return m_batch_size;
+}
+
+template <class Game, class Selector>
+void Search<Game, Selector>::handleCreatedTask() {
+	m_n_active_tasks++;
+}
+
+template <class Game, class Selector>
+void Search<Game, Selector>::handleFinishedTask() {
+	m_n_active_tasks--;
+	if(done())
+		m_condition.notify_one();
+}
+
+template <class Game, class Selector>
+size_t Search<Game, Selector>::getNActiveTasks() const {
+	return m_n_active_tasks;
 }
 
 template<class Game, class Selector>
@@ -327,11 +383,14 @@ typename Search<Game, Selector>::Node* Search<Game, Selector>::getNode(size_t in
 
 template <class Game, class Selector>
 void Search<Game, Selector>::search() {
+
+	spdlog::info("Search {:p} searching", (void*)this);
 	for(size_t i=0; i!=getBatchSize(); ++i)
 		maybeSelect(i);
 
 	std::unique_lock<std::mutex> lock(m_mutex);
 	m_condition.wait(lock, [this]{ return done(); });
+	spdlog::info("Search {:p} returning", (void*)this);
 }
 
 
