@@ -23,7 +23,9 @@ Search<Game, Selector>::SelectionTask::SelectionTask(
 	Search<Game, Selector>* search,
 	size_t index):
 	m_index(index),
-	m_search(search) {}
+	m_search(search) {
+		m_search->handleCreatedTask();
+}
 
 template <class Game, class Selector>
 Search<Game, Selector>::SelectionTask::SelectionTask():
@@ -35,6 +37,7 @@ template <class Game, class Selector>
 void Search<Game, Selector>::SelectionTask::operator()() {
 	spdlog::debug("Search {:p} index {} selection task", (void*)m_search, m_index);
 	m_search->selectNode(m_index);
+	m_search->handleFinishedTask();
 }
 
 template <class Game, class Selector>
@@ -45,7 +48,9 @@ Search<Game, Selector>::ExpansionAndBackpropagationTask::ExpansionAndBackpropaga
 	Search<Game, Selector>* search,
 	size_t index):
 	m_index(index),
-	m_search(search) {}
+	m_search(search) {
+		m_search->handleCreatedTask();
+}
 
 template <class Game, class Selector>
 Search<Game, Selector>::ExpansionAndBackpropagationTask::ExpansionAndBackpropagationTask():
@@ -57,6 +62,7 @@ template <class Game, class Selector>
 void Search<Game, Selector>::ExpansionAndBackpropagationTask::operator()() {
 	spdlog::debug("Search {:p} index {} expansion and backpropagation task", (void*)m_search, m_index);
 	m_search->expandAndBackpropagateNode(m_index);
+	m_search->handleFinishedTask();
 }
 
 template <class Game, class Selector>
@@ -196,7 +202,7 @@ void Search<Game, Selector>::maybeSelect(size_t index) {
 		index,
 		getNSelections(),
 		getNIterations(),
-		m_n_selections,
+		getNCompletions(),
 		getNIterations()
 	);
 
@@ -207,14 +213,7 @@ void Search<Game, Selector>::maybeSelect(size_t index) {
 		m_selection_lock.unlock();
 		m_selection_tasks[index] = SelectionTask(this, index);
 		m_thread_pool->enqueue(&m_selection_tasks[index]);
-	} else if (done()) {
-		spdlog::debug("Search {:p} index {} maybeSelect done", (void*)this, index);
-		m_selection_lock.unlock();
-		m_condition.notify_one();
-	} else {
-		m_selection_lock.unlock();
-		spdlog::debug("Search {:p} index {} maybeSelect no action", (void*)this, index);
-	}
+	} else m_selection_lock.unlock();
 	spdlog::debug("Search {:p} index {} maybeSelect returning", (void*)this, index);
 }
 
@@ -252,12 +251,13 @@ void Search<Game, Selector>::expandAndBackpropagateNode(size_t index) {
 
 template <class Game, class Selector>
 bool Search<Game, Selector>::done() const {
-	return getNCompletions() == getNIterations();
+	return (getNCompletions() == getNIterations()) && (getNActiveTasks() == 0);
 }
 
 template <class Game, class Selector>
 void Search<Game, Selector>::incrementNCompletions() {
 	++m_n_completions;
+	spdlog::debug("Search {:p} incrementNCompletions", (void*)this);
 }
 
 template <class Game, class Selector>
@@ -291,6 +291,7 @@ Search<Game, Selector>::Search(
 	m_n_selections(0),
 	m_n_completions(0),
 	m_n_evaluation_requests(0),
+	m_n_active_tasks(0),
 	m_nodes(batch_size),
 	m_paused_nodes(batch_size),
 	m_games(batch_size),
@@ -319,6 +320,7 @@ Search<Game, Selector>::Search(
 	m_n_selections(0),
 	m_n_completions(0),
 	m_n_evaluation_requests(0),
+	m_n_active_tasks(0),
 	m_nodes(batch_size),
 	m_paused_nodes(batch_size),
 	m_games(batch_size),
@@ -355,6 +357,23 @@ typename Search<Game, Selector>::Node* Search<Game, Selector>::backpropagateNode
 template <class Game, class Selector>
 size_t Search<Game, Selector>::getBatchSize() const {
 	return m_batch_size;
+}
+
+template <class Game, class Selector>
+void Search<Game, Selector>::handleCreatedTask() {
+	m_n_active_tasks++;
+}
+
+template <class Game, class Selector>
+void Search<Game, Selector>::handleFinishedTask() {
+	m_n_active_tasks--;
+	if(done())
+		m_condition.notify_one();
+}
+
+template <class Game, class Selector>
+size_t Search<Game, Selector>::getNActiveTasks() const {
+	return m_n_active_tasks;
 }
 
 template<class Game, class Selector>
