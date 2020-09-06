@@ -13,6 +13,8 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/extern/googletest" "extern/googletest")
 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/json" "extern/json")
+add_subdirectory("${PROJECT_SOURCE_DIR}/extern/spdlog" "extern/spdlog")
+
 
 # Add tensorflow-cmake
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
@@ -33,7 +35,8 @@ else()
 endif()
 
 
-find_package(Boost 1.67.0 REQUIRED COMPONENTS system python program_options numpy)
+# find_package(Boost 1.67.0 REQUIRED COMPONENTS python36 numpy36)
+find_package(Boost 1.67.0 REQUIRED COMPONENTS python numpy)
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
 find_package(SWIG REQUIRED COMPONENTS python)
@@ -69,6 +72,7 @@ target_include_directories(
 	${TensorFlow_INCLUDE_DIR}
 	${TensorFlow_BAZEL_GENFILES}
 	${SWIG_DIR}
+	"${PROJECT_SOURCE_DIR}/extern/spdlog/include"
 )
 add_library(TensorFlow_DEP2 INTERFACE)
 target_include_directories(TensorFlow_DEP2 SYSTEM INTERFACE ${TensorFlow_SOURCE_DIR})
@@ -99,6 +103,7 @@ target_include_directories(
 	${TensorFlow_INCLUDE_DIR}
 	${TensorFlow_BAZEL_GENFILES}
 	${SWIG_DIR}
+	"${PROJECT_SOURCE_DIR}/extern/spdlog/include"
 )
 target_link_libraries(
 	pyoaz_tic_tac_toe_core
@@ -125,6 +130,7 @@ target_include_directories(
 	${TensorFlow_INCLUDE_DIR}
 	${TensorFlow_BAZEL_GENFILES}
 	${SWIG_DIR}
+	"${PROJECT_SOURCE_DIR}/extern/spdlog/include"
 )
 target_link_libraries(
 	pyoaz_bandits_core
@@ -300,7 +306,14 @@ target_link_libraries(mcts_search_test gtest_main gmock_main nlohmann_json::nloh
 
 add_dependencies(az_search_test gtest)
 add_dependencies(az_search_test gmock)
-target_link_libraries(az_search_test gtest_main gmock_main nlohmann_json::nlohmann_json Threads::Threads TensorFlow_DEP)
+target_link_libraries(
+	az_search_test 
+	gtest_main 
+	gmock_main 
+	nlohmann_json::nlohmann_json 
+	Threads::Threads 
+	TensorFlow_DEP
+)
 
 add_dependencies(mcts_connect_four_test gtest)
 add_dependencies(mcts_connect_four_test gmock)
