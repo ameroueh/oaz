@@ -25,6 +25,10 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 # Useful for RTX cards
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
+# turn on C++ logging
+# os.environ["OAZ_LOGGING"] = "true"
+os.environ["OAZ_LOGGING"] = "false"
+
 LOGGER = logging.getLogger(__name__)
 
 
