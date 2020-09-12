@@ -119,8 +119,8 @@ class Trainer:
 
         self.configuration = configuration
 
-        if args.load_path:
-            self.model = load_model(args.load_path)
+        if load_path:
+            self.model = load_model(load_path)
         else:
             self.create_model()
 
@@ -133,6 +133,9 @@ class Trainer:
                 learning_rate=configuration["learning"]["learning_rate"],
                 momentum=configuration["learning"]["momentum"],
             ),
+        )
+        memory = MemoryBuffer(
+            maxlen=configuration["learning"]["buffer_length"]
         )
         history = {
             "mse": [],
@@ -147,18 +150,20 @@ class Trainer:
         }
         if load_path:
             hist_path = Path(load_path).parent / "history.joblib"
+            memory_path = Path(load_path).parent / "memory.joblib"
             if hist_path.exists():
                 history = joblib.load(hist_path)
                 logging.debug("Loading history...")
+            if memory_path.exists():
+                memory = joblib.load(memory_path)
+                logging.debug("Loading experience buffer...")
 
         self.history = history
+        self.memory = memory
 
         self.save_path = Path(configuration["save"]["save_path"])
         self.save_path.mkdir(exist_ok=True)
         self.generation = len(self.history["mse"])
-        self.memory = MemoryBuffer(
-            maxlen=configuration["learning"]["buffer_length"]
-        )
 
     def create_model(self):
         if self.configuration["game"] == "connect_four":
@@ -214,10 +219,11 @@ class Trainer:
             self.history["self_play_mse"].append(self_play_mse)
             self.history["self_play_accuracy"].append(self_play_accuracy)
 
-            mse = self.benchmark_model(
+            mse, accuracy = self.benchmark_model(
                 benchmark_boards, benchmark_values, self.model
             )
             self.history["mse"].append(mse)
+            self.history["accuracy"].append(accuracy)
             tournament_frequency = self.configuration["training"][
                 "tournament_frequency"
             ]
@@ -291,8 +297,12 @@ class Trainer:
     def benchmark_model(self, benchmark_boards, benchmark_values, model):
         _, pred_values = model.predict(benchmark_boards)
         mse = ((pred_values - benchmark_values) ** 2).mean()
-        LOGGER.info(f"Benchmark MSE : {mse}")
-        return mse
+        # For now only works with +1 or -1 values doesn't evaluate accuracy of games with draws well
+        accuracy = (
+            np.where(pred_values > 0, 1.0, -1.0) == benchmark_values
+        ).mean()
+        LOGGER.info(f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}")
+        return mse, accuracy
 
     def evaluate_self_play_dataset(self, benchmark_path, boards, values):
         try:
@@ -365,7 +375,13 @@ class Trainer:
         plt.savefig(plot_path)
 
         plt.figure()
+        plt.plot(self.history["accuracy"], alpha=0.5, label="Accuracy")
+        # plt.plot(running_mean(self.history["mse"]), label="Smoothed MSE")
+        plt.legend()
+        plot_path = self.save_path / "accuracy_plot.png"
+        plt.savefig(plot_path)
 
+        plt.figure()
         plt.plot(self.history["self_play_mse"], label="Self Play MSE")
         plt.plot(
             self.history["self_play_accuracy"], label="Self Play Accuracy"
@@ -375,7 +391,6 @@ class Trainer:
         plt.savefig(plot_path)
 
         plt.figure()
-
         plt.plot(self.history["wins"], label="wins")
         plt.plot(self.history["losses"], label="losses")
         plt.plot(self.history["draws"], label="draws")
@@ -408,6 +423,7 @@ class Trainer:
 def get_history(load_path=None):
     history = {
         "mse": [],
+        "accuracy": [],
         "self_play_mse": [],
         "self_play_accuracy": [],
         "wins": [],
