@@ -1,8 +1,33 @@
 import pickle
 from pathlib import Path
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
+
+
+def apply_symmetry(boards: np.ndarray) -> Tuple[np.ndarray, int]:
+    """ Given board positions, return all the equivalent symmetric positions
+        and the order of symmetry.
+
+    Parameters
+    ----------
+    boards : np.ndarray
+        Boards to flip
+
+    Returns
+    -------
+    Tuple[np.ndarray, int]
+        Array containing all equivalent positions, and the order of the applied
+        symmetry
+    """
+
+    lr_flip = np.flip(boards, axis=1)
+    ud_flip = np.flip(boards, axis=2)
+    both_flip = np.flip(np.flip(boards, axis=2), axis=1)
+
+    all_boards = np.concatenate([boards, lr_flip, ud_flip, both_flip])
+    return all_boards, 4
 
 
 def get_gt_values(benchmark_path, boards):
