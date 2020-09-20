@@ -9,6 +9,7 @@ save_path = "runs/connect_four_model_20"
 checkpoint_every = 5
 
 [benchmark]
+
 tournament_frequency = 3
 benchmark_path = "benchmark/connect_four"
 
