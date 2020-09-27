@@ -3,6 +3,7 @@ import importlib
 import logging
 import os
 import sys
+import time
 from collections import deque
 from pathlib import Path
 
@@ -21,6 +22,8 @@ from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.tournament import Participant, Tournament
 from tensorflow.keras.models import load_model
+
+# TODO try playing a smaller number of games  for some of the earlier stages
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -130,6 +133,7 @@ class Trainer:
         history = {
             "mse": [],
             "accuracy": [],
+            "generation_duration": [],
             "self_play_mse": [],
             "self_play_accuracy": [],
             "wins": [],
@@ -151,6 +155,7 @@ class Trainer:
 
         self.history = history
         self.memory = memory
+        # TODO dump the memory buffer somewhere
 
         self.save_path = Path(configuration["save"]["save_path"])
         self.save_path.mkdir(exist_ok=True)
@@ -161,12 +166,15 @@ class Trainer:
     def create_model(self):
         if self.configuration["game"] == "connect_four":
             self.model = create_connect_four_model(
-                depth=self.configuration["model"]["n_resnet_blocks"]
+                depth=self.configuration["model"]["n_resnet_blocks"],
+                activation=self.configuration["model"]["activation"],
+                policy_factor=self.configuration["model"]["policy_factor"],
             )
 
         elif self.configuration["game"] == "tic_tac_toe":
             self.model = create_tic_tac_toe_model(
-                depth=self.configuration["model"]["n_resnet_blocks"]
+                depth=self.configuration["model"]["n_resnet_blocks"],
+                activation=self.configuration["model"]["activation"],
             )
 
     def train(self, debug_mode=False):
@@ -193,19 +201,17 @@ class Trainer:
 
         for stage_idx, stage_params in enumerate(self.configuration["stages"]):
             LOGGER.info(f"Starting stage  {stage_idx}")
-
             stage_params = self.configuration["stages"][stage_idx]
+            optimizer = self._get_optimizer(stage_params)
             self.model.compile(
                 loss={
                     "policy": "categorical_crossentropy",
                     "value": "mean_squared_error",
                 },
-                optimizer=tf.keras.optimizers.SGD(
-                    learning_rate=stage_params["learning_rate"],
-                    momentum=stage_params["momentum"],
-                ),
+                optimizer=optimizer,
             )
 
+            self.memory.purge(stage_params["n_purge"])
             self.memory.set_maxlen(stage_params["buffer_length"])
 
             for _ in range(stage_params["n_generations"]):
@@ -214,12 +220,19 @@ class Trainer:
                 )
 
                 self_play_controller = self._get_self_play_controller(
+                    stage_params["n_games_per_worker"],
                     stage_params["n_simulations_per_move"],
                     debug_mode=debug_mode,
                 )
-
                 session = K.get_session()
-                dataset = self_play_controller.self_play(session)
+
+                start_time = time.time()
+                dataset = self_play_controller.self_play(
+                    session, discount_factor=stage_params["discount_factor"],
+                )
+                self.history["generation_duration"].append(
+                    time.time() - start_time
+                )
 
                 dataset = self.dataset_apply_symmetry(dataset)
 
@@ -287,11 +300,11 @@ class Trainer:
                 self.generation += 1
 
     def train_model(self):
-        dataset = self.memory.recall()
+        dataset = self.memory.recall(shuffle=True)
         dataset_size = dataset["Boards"].shape[0]
 
         train_select = np.random.choice(
-            a=[False, True], size=dataset_size, p=[0.2, 0.8]
+            a=[False, True], size=dataset_size, p=[0.001, 0.999]
         )
         validation_select = ~train_select
 
@@ -361,10 +374,11 @@ class Trainer:
     def save(self):
         LOGGER.info(f"Saving model at {self.save_path / 'model.pb'}")
         self.model.save(str(self.save_path / "model.pb"))
+        joblib.dump(self.memory, self.save_path / "memory.joblib")
         self._save_plots()
 
     def _get_self_play_controller(
-        self, n_simulations_per_move, debug_mode=False
+        self, n_games_per_worker, n_simulations_per_move, debug_mode=False
     ):
         if debug_mode:
             self_play_controller = SelfPlay(
@@ -385,9 +399,7 @@ class Trainer:
                 search_batch_size=self.configuration["self_play"][
                     "search_batch_size"
                 ],
-                n_games_per_worker=self.configuration["self_play"][
-                    "n_games_per_worker"
-                ],
+                n_games_per_worker=n_games_per_worker,
                 n_simulations_per_move=n_simulations_per_move,
                 n_search_worker=self.configuration["self_play"][
                     "n_search_workers"
@@ -401,6 +413,20 @@ class Trainer:
             )
         return self_play_controller
 
+    def _get_optimizer(self, stage_params):
+        if self.configuration["model"]["optimizer"] == "sgd":
+            return tf.keras.optimizers.SGD(
+                learning_rate=stage_params["learning_rate"],
+                momentum=stage_params["momentum"],
+            )
+
+        elif self.configuration["model"]["optimizer"] == "adam":
+            return tf.keras.optimizers.Adam(
+                learning_rate=stage_params["learning_rate"],
+            )
+        else:
+            raise NotImplementedError("Wrong optimizer")
+
     def _save_plots(self):
 
         joblib.dump(self.history, self.save_path / "history.joblib")
@@ -410,6 +436,23 @@ class Trainer:
         plt.plot(running_mean(self.history["mse"]), label="Smoothed MSE")
         plt.legend()
         plot_path = self.save_path / "mse_plot.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
+        plt.plot(
+            np.cumsum(self.history["generation_duration"]),
+            self.history["mse"],
+            alpha=0.5,
+            label="MSE",
+        )
+        plt.plot(
+            np.cumsum(self.history["generation_duration"]),
+            running_mean(self.history["mse"]),
+            label="Smoothed MSE",
+        )
+        plt.legend()
+        plot_path = self.save_path / "timed_mse_plot.png"
         plt.savefig(plot_path)
         plt.close()
 
