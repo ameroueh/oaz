@@ -6,7 +6,6 @@ from tensorflow.keras.layers import (
     Flatten,
     add,
     BatchNormalization,
-    ReLU,
 )
 from tensorflow.keras.regularizers import l2
 
@@ -56,31 +55,42 @@ def residual_block(
 
     x = conv(inputs)
     x = BatchNormalization()(x)
-    x = Activation("relu")(x)
+    x = Activation(activation)(x)
     x = conv2(x)
     x = add([inputs, x])
     x = BatchNormalization()(x)
-    x = Activation("relu")(x)
+    x = Activation(activation)(x)
     return x
 
 
-def create_connect_four_model(depth=3):
+def create_connect_four_model(depth=3, activation="relu", policy_factor=1.0):
     return create_alpha_zero_model(
-        depth=depth, input_shape=(7, 6, 2), policy_output_size=7
+        depth=depth,
+        input_shape=(7, 6, 2),
+        policy_output_size=7,
+        activation=activation,
+        policy_factor=policy_factor,
     )
 
 
-def create_tic_tac_toe_model(depth=3,):
+def create_tic_tac_toe_model(depth=3, activation="relu", policy_factor=1.0):
     return create_alpha_zero_model(
         depth=depth,
         input_shape=(3, 3, 2),
         policy_output_size=9,
         num_filters=32,
+        activation=activation,
+        policy_factor=policy_factor,
     )
 
 
 def create_alpha_zero_model(
-    depth, input_shape, policy_output_size, num_filters=64
+    depth,
+    input_shape,
+    policy_output_size,
+    num_filters=64,
+    activation="relu",
+    policy_factor=1.0,
 ):
     input = tf.keras.Input(shape=input_shape, name="input")
     conv = Conv2D(
@@ -95,7 +105,7 @@ def create_alpha_zero_model(
 
     x = conv(input)
     x = BatchNormalization()(x)
-    x = Activation("relu")(x)
+    x = Activation(activation)(x)
 
     block_output = residual_block(inputs=x, strides=1, num_filters=num_filters)
 
@@ -113,7 +123,7 @@ def create_alpha_zero_model(
         activation=None,
     )(block_output)
     value_conv_output = BatchNormalization()(value_conv_output)
-    value_conv_output = Activation("relu")(value_conv_output)
+    value_conv_output = Activation(activation)(value_conv_output)
 
     value = Dense(
         units=1,
@@ -134,16 +144,21 @@ def create_alpha_zero_model(
     )(block_output)
 
     policy_conv_output = BatchNormalization()(policy_conv_output)
-    policy_conv_output = Activation("relu")(policy_conv_output)
+    policy_conv_output = Activation(activation)(policy_conv_output)
 
-    policy = Dense(
-        units=policy_output_size,
-        kernel_regularizer=l2(1e-4),
-        kernel_initializer="he_normal",
-        activation="softmax",
-        name="policy",
-    )(Flatten()(policy_conv_output))
-    # policy = Softmax(name="policy")(_policy + 1e-12)
+    policy = (
+        Dense(
+            units=policy_output_size,
+            kernel_regularizer=l2(1e-4),
+            kernel_initializer="he_normal",
+            activation=None,
+        )(Flatten()(policy_conv_output))
+        * policy_factor
+    )
+    policy = Activation("softmax", name="policy")(policy)
+    # policy = tf.keras.layers.Lambda(
+    #     # lambda x: x * policy_factor, name="policy"
+    # )(policy)
     model = tf.keras.Model(inputs=input, outputs=[policy, value])
 
     return model

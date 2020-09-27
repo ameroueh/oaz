@@ -47,9 +47,26 @@ EXPECTED_DATASET = {
     "Values": EXPECTED_VALUES,
 }
 
+N_PURGE = 3
+EXPECTED_PURGED_BOARDS = np.array([[3, 3, 3], [4, 4, 4], [4, 5, 5],])
+EXPECTED_PURGED_POLICIES = np.array([[0.2, 0.8], [0.6, 0.4], [0.1, 0.9]])
+EXPECTED_PURGED_VALUES = np.array([1.0, 1.0, -1.0])
+EXPECTED_PURGED_DATASET = {
+    "Boards": EXPECTED_PURGED_BOARDS,
+    "Policies": EXPECTED_PURGED_POLICIES,
+    "Values": EXPECTED_PURGED_VALUES,
+}
+
 IN_ARRAY = np.repeat(np.arange(0, 10)[:, np.newaxis], 3, axis=1)
 IN_ARRAY_2 = np.repeat(np.arange(11, 20)[:, np.newaxis], 3, axis=1)
 EXPECTED_OUT_ARRAY = np.repeat(np.arange(8, 20)[:, np.newaxis], 3, axis=1)
+
+LARGE_DATASET_LENGTH = 1000000
+LARGE_DATASET = {
+    "Boards": np.random.uniform(size=(LARGE_DATASET_LENGTH, 3, 3, 2)),
+    "Policies": np.random.uniform(size=(LARGE_DATASET_LENGTH, 9)),
+    "Values": np.random.uniform(size=(LARGE_DATASET_LENGTH)),
+}
 
 
 def test_ArrayBuffer():
@@ -77,3 +94,13 @@ def test_MemoyBuffer():
     for key, value in ret.items():
 
         np.testing.assert_array_equal(value, EXPECTED_DATASET[key])
+
+    buffer.purge(N_PURGE)
+    ret = buffer.recall()
+    for key, value in ret.items():
+
+        np.testing.assert_array_equal(value, EXPECTED_PURGED_DATASET[key])
+
+    buffer = MemoryBuffer(maxlen=LARGE_DATASET_LENGTH)
+    buffer.update(LARGE_DATASET)
+    buffer.purge(LARGE_DATASET_LENGTH // 2)

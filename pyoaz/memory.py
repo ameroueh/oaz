@@ -3,6 +3,9 @@
 
 import numpy as np
 from typing import Mapping
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ArrayBuffer:
@@ -34,6 +37,13 @@ class ArrayBuffer:
         """
         return self._array[0]
 
+    def purge(self, n_purge: int) -> None:
+        """ Purge the first n parameters
+        """
+        if n_purge > 0:
+            if len(self._array[0]) > n_purge:
+                self._array = [self._array[0][n_purge:]]
+
     def _get_unique_indices(self) -> np.ndarray:
         """ Return the indices corresponding to unique arrays. In case of
             duplicates, return the later indices.
@@ -45,12 +55,20 @@ class ArrayBuffer:
     def _keep_indices(self, indices: np.ndarray):
         """
         """
+        LOGGER.info(
+            f"Throwing away {len(self._array[0]) - len(indices)} duplicate "
+            "positions"
+        )
         self._array = [self._array[0][indices]]
 
     def _truncate(self):
         """ truncate excessive elemnts
         """
-        if len(self._array[0] > self.maxlen):
+        if len(self._array[0]) > self.maxlen:
+            LOGGER.info(
+                f"{len(self._array[0]) - self.maxlen} positions pushed out of "
+                "buffer"
+            )
             self._array = [self._array[0][: self.maxlen]]
 
     def _enqueue(self, array: np.ndarray):
@@ -84,13 +102,31 @@ class MemoryBuffer:
             dataset["Values"], keep_indices=keep_indices
         )
 
-    def recall(self) -> Mapping[str, np.ndarray]:
+    def recall(self, shuffle: bool = False) -> Mapping[str, np.ndarray]:
         """ Return all stored memories
             TODO should probably subsample
         """
-        dataset = {
-            "Boards": self.board_buffer.get_array(),
-            "Policies": self.policy_buffer.get_array(),
-            "Values": self.value_buffer.get_array(),
-        }
+        if shuffle:
+            boards = self.board_buffer.get_array()
+            policies = self.policy_buffer.get_array()
+            values = self.value_buffer.get_array()
+            shuffled_idx = np.random.permutation(len(boards))
+            dataset = {
+                "Boards": boards[shuffled_idx],
+                "Policies": policies[shuffled_idx],
+                "Values": values[shuffled_idx],
+            }
+
+        else:
+            dataset = {
+                "Boards": self.board_buffer.get_array(),
+                "Policies": self.policy_buffer.get_array(),
+                "Values": self.value_buffer.get_array(),
+            }
         return dataset
+
+    def purge(self, n_purge: int) -> None:
+        """ Throw away the n_purge oldest memories"""
+        self.board_buffer.purge(n_purge)
+        self.policy_buffer.purge(n_purge)
+        self.value_buffer.purge(n_purge)
