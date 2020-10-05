@@ -14,6 +14,7 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 import toml
+from keras_contrib.callbacks import CyclicLR
 from pyoaz.bots import LeftmostBot, OazBot, RandomBot
 
 # from pyoaz.games.tic_tac_toe import boards_to_bin
@@ -160,6 +161,18 @@ class Trainer:
         self.save_path = Path(configuration["save"]["save_path"])
         self.save_path.mkdir(exist_ok=True)
         self.generation = len(self.history["mse"])
+
+        self.stage_idx = 0
+        generation_tracker = 0
+        self.gen_in_stage = 0
+        for stage_params in configuration["stages"]:
+            stage_length = stage_params["n_generations"]
+            if self.generation < generation_tracker + stage_length:
+                self.gen_in_stage = self.generation - generation_tracker
+                break
+            self.stage_idx += 1
+            generation_tracker += stage_length
+
         with open(self.save_path / "config.toml", "w") as f:
             f.write(toml.dumps(self.configuration))
 
@@ -197,11 +210,11 @@ class Trainer:
         total_generations = [
             stages["n_generations"] for stages in self.configuration["stages"]
         ]
-        total_generations = sum(total_generations) + self.generation
+        total_generations = sum(total_generations)
 
-        for stage_idx, stage_params in enumerate(self.configuration["stages"]):
-            LOGGER.info(f"Starting stage  {stage_idx}")
-            stage_params = self.configuration["stages"][stage_idx]
+        for stage_params in self.configuration["stages"][self.stage_idx :]:
+            LOGGER.info(f"Starting stage  {self.stage_idx}")
+            stage_params = self.configuration["stages"][self.stage_idx]
             optimizer = self._get_optimizer(stage_params)
             self.model.compile(
                 loss={
@@ -211,10 +224,11 @@ class Trainer:
                 optimizer=optimizer,
             )
 
-            self.memory.purge(stage_params["n_purge"])
+            if self.gen_in_stage == 0:
+                self.memory.purge(stage_params["n_purge"])
             self.memory.set_maxlen(stage_params["buffer_length"])
 
-            for _ in range(stage_params["n_generations"]):
+            for _ in range(self.gen_in_stage, stage_params["n_generations"]):
                 LOGGER.info(
                     f"Training cycle {self.generation} / {total_generations}"
                 )
@@ -237,7 +251,7 @@ class Trainer:
                 dataset = self.dataset_apply_symmetry(dataset)
 
                 self.memory.update(dataset)
-                train_history = self.train_model()
+                train_history = self.train_model(stage_params)
 
                 (
                     self_play_mse,
@@ -298,8 +312,9 @@ class Trainer:
                     )
                 self._save_plots()
                 self.generation += 1
+                self.gen_in_stage = 0
 
-    def train_model(self):
+    def train_model(self, stage_params):
         dataset = self.memory.recall(shuffle=True)
         dataset_size = dataset["Boards"].shape[0]
 
@@ -318,6 +333,12 @@ class Trainer:
 
         # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
 
+        clr = CyclicLR(
+            base_lr=stage_params["learning_rate"],
+            max_lr=stage_params["learning_rate"] / 3,
+            step_size=4 * len(train_boards) // 64,
+            mode="triangular",
+        )
         train_history = self.model.fit(
             train_boards,
             {"value": train_values, "policy": train_policies},
@@ -328,7 +349,7 @@ class Trainer:
             batch_size=64,
             epochs=1,
             verbose=1,
-            # callbacks=[early_stopping],
+            callbacks=[clr],
         )
         return train_history
 
