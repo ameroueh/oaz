@@ -35,6 +35,7 @@
 #include "oaz/python/array_utils.hpp"
 
 #include <iostream>
+#include <string.h>
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/rotating_file_sink.h"
@@ -49,22 +50,34 @@ using GameSearch = oaz::mcts::AZSearch<Game>;
 using Pool = oaz::thread_pool::ThreadPool;
 using Node_ = oaz::mcts::SearchNode<Game::Move>;
 
+void setupLogging()
+{
 
-void setupLogging() {
+	char *debug_flag = std::getenv("OAZ_LOGGING");
+
 	size_t MAX_LOG_SIZE = 1073741824;
 	size_t MAX_LOG_FILES = 2;
 	auto debug_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-		"cxx_log_debug.txt", MAX_LOG_SIZE, MAX_LOG_FILES
-	);
-	debug_sink->set_level(spdlog::level::debug);
+		"cxx_log_debug.txt", MAX_LOG_SIZE, MAX_LOG_FILES);
+
 	auto info_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-		"cxx_log_info.txt", MAX_LOG_SIZE, MAX_LOG_FILES
-	);
-	info_sink->set_level(spdlog::level::info);
-	auto* plogger = new spdlog::logger(
-		"CXX_LOGGER", {debug_sink, info_sink}
-	);
+		"cxx_log_info.txt", MAX_LOG_SIZE, MAX_LOG_FILES);
+
+	if (debug_flag && (strcmp(debug_flag, "true") == 0 || strcmp(debug_flag, "1") == 0))
+	{
+		debug_sink->set_level(spdlog::level::debug);
+		info_sink->set_level(spdlog::level::info);
+	}
+	else
+	{
+		debug_sink->set_level(spdlog::level::off);
+		info_sink->set_level(spdlog::level::off);
+	}
+
+	auto *plogger = new spdlog::logger(
+		"CXX_LOGGER", {debug_sink, info_sink});
 	auto logger = std::shared_ptr<spdlog::logger>(plogger);
+
 	spdlog::set_default_logger(logger);
 	spdlog::set_level(spdlog::level::debug);
 }
