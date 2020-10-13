@@ -1,31 +1,37 @@
 game = "tic_tac_toe"
 
-[training]
-n_generations = 100
-tournament_frequency = 5
-
 
 [model]
-n_resnet_blocks = 3 
+n_resnet_blocks = 3
 
 [save]
-save_path = "runs/test_tic_tac_toe"
+save_path = "runs/connect_four_model_20"
 checkpoint_every = 5
 
 [benchmark]
-benchmark_path = "benchmark/tic_tac_toe"
 
-[learning]
-learning_rate = 0.005
+tournament_frequency = 3
+benchmark_path = "benchmark/connect_four"
+
+[[stages]]
+n_generations = 10
+learning_rate = 0.01
 momentum = 0.9
 buffer_length = 5000
+n_simulations_per_move = 100
+
+[[stages]]
+n_generations = 20
+learning_rate = 0.01
+momentum = 0.9
+buffer_length = 10000
+n_simulations_per_move = 200
 
 [self_play]
-search_batch_size = 4
-n_games_per_worker =  14
-n_simulations_per_move = 200
-n_threads = 64
+search_batch_size = 8
+n_games_per_worker = 30
+n_threads = 256
 n_search_workers = 4
-evaluator_batch_size = 64
+evaluator_batch_size = 256
 epsilon = 0.25
 alpha = 1.0

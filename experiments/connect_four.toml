@@ -1,30 +1,87 @@
 game = "connect_four"
 
-[training]
-n_generations = 100
-tournament_frequency = 3
-
 [model]
 n_resnet_blocks = 7
+activation="tanh"
+optimizer="adam"
+policy_factor=1.0
 
 [save]
-save_path = "runs/connect_four_model_19"
+save_path = "runs/connect_four_model_31"
 checkpoint_every = 5
 
 [benchmark]
+tournament_frequency = 5
 benchmark_path = "benchmark/connect_four"
-
-[learning]
-learning_rate = 0.01
-momentum = 0.9
-buffer_length = 1200000
 
 [self_play]
 search_batch_size = 8
-n_games_per_worker = 30
-n_simulations_per_move = 800
 n_threads = 256
 n_search_workers = 4
 evaluator_batch_size = 256
 epsilon = 0.25
 alpha = 1.0
+
+[[stages]]
+n_generations = 10
+learning_rate = 0.001
+momentum = 0.9
+buffer_length = 600000
+n_purge = 0
+n_simulations_per_move = 200
+discount_factor = 0.99
+n_games_per_worker = 30
+
+
+[[stages]]
+n_generations = 15
+learning_rate = 0.001
+momentum = 0.9
+buffer_length = 1200000
+n_purge = 300000
+n_simulations_per_move = 400
+discount_factor = 0.999
+n_games_per_worker = 30
+
+
+[[stages]]
+n_generations = 5
+learning_rate = 0.001
+momentum = 0.9
+buffer_length = 2400000
+n_purge = 600000
+n_simulations_per_move = 800
+discount_factor =1.0
+n_games_per_worker = 30
+
+
+[[stages]]
+n_generations = 5
+learning_rate = 0.001
+momentum = 0.9
+buffer_length = 2400000
+n_purge = 300000
+n_simulations_per_move = 800
+discount_factor = 1.0
+n_games_per_worker = 30
+
+
+[[stages]]
+n_generations = 5
+learning_rate = 0.001
+momentum = 0.9
+buffer_length = 2400000
+n_purge = 300000
+n_simulations_per_move = 800
+discount_factor = 1.0
+n_games_per_worker = 30
+
+[[stages]]
+n_generations = 10
+learning_rate = 0.001
+momentum = 0.9
+buffer_length = 2400000
+n_purge = 0
+n_simulations_per_move = 800
+discount_factor = 1.0
+n_games_per_worker = 30
