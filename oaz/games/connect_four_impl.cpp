@@ -1,214 +1,157 @@
 #include <vector>
 
 #include "oaz/games/connect_four.hpp"
-#include "boost/multi_array.hpp"
 #include <algorithm>
 #include <string>
+
+#include <bit>
 
 
 using namespace oaz::games;
 
+ConnectFour::ConnectFour(): m_status(0) {}
 
-ConnectFour::ConnectFour(): 
-	m_current_player(0), 
-	m_score(0),
-	m_game_won(false),
-	m_available_moves(0) {
-		initialise();
-}
-
-ConnectFour::ConnectFour(const ConnectFour& game):
-	m_current_player(game.getCurrentPlayer()),
-	m_score(game.m_score),
-	m_game_won(game.m_game_won),
-	m_available_moves(game.m_available_moves),
-	m_tokens_in_column(game.m_tokens_in_column),
-	m_board(game.m_board)
-{
-}
-
-void ConnectFour::playFromString(std::string moves) {
+void ConnectFour::PlayFromString(std::string moves) {
 	for(char& c : moves)
-		playMove(c - '0');
+		PlayMove(c - '0');
 }
 
-void ConnectFour::setCurrentPlayer(size_t current_player) {
-	m_current_player = current_player;
+size_t ConnectFour::GetCurrentPlayer() const {
+	return m_player0_tokens.Sum() == m_player1_tokens.Sum() ? 0 : 1;
 }
 
-void ConnectFour::initialise() {
-	for(Move i = 0; i != Board::Dimensions()[0]; ++i) {
-		m_available_moves.push_back(i);
-		m_tokens_in_column[i] = 0;
-	}
-	resetBoard();
+size_t ConnectFour::GetNumberOfTokensInColumn(size_t column) const {
+	return (m_player0_tokens | m_player1_tokens).ColumnSum(column);
 }
 
-void ConnectFour::reset() {
-	setCurrentPlayer(0);
-	m_score = 0;
-	m_game_won = false;
-	m_available_moves.resize(0);
-	m_tokens_in_column = Registry();
-	initialise();
+const ConnectFour::Board& ConnectFour::GetPlayerBoard(size_t player) const {
+	return (player == 0) ? m_player0_tokens : m_player1_tokens;
 }
 
-void ConnectFour::resetBoard() {
-	for(size_t i=0; i != Board::Dimensions()[0]; ++i)
-		for(size_t j=0; j != Board::Dimensions()[1]; ++j)
-			for(size_t k=0; k != n_players; ++k)
-				m_board[i][j][k] = EMPTY_TOKEN;
+ConnectFour::Board& ConnectFour::GetPlayerBoard(size_t player) {
+	return const_cast<Board&>(static_cast<const ConnectFour&>(*this).GetPlayerBoard(player));
 }
 
-void ConnectFour::playMove(Move move) {
+
+void ConnectFour::PlayMove(size_t move) {
+	size_t player = GetCurrentPlayer();
+	size_t n_tokens_in_column = (m_player0_tokens | m_player1_tokens).ColumnSum(move);
+	Board& board = GetPlayerBoard(player);
+	board.Set(n_tokens_in_column, move);
+	bool victory = CheckVictory(board, n_tokens_in_column, move); 
+	if (victory) {
+		SetWinner(player);
+		DeclareFinished();
+	} else if ((m_player0_tokens | m_player1_tokens).Sum() == 42)
+		DeclareFinished();
 	
-	placeToken(move);
-	maybeDeclareVictory(move);
-	swapPlayers();
-	refreshAvailableMoves();
+}
+
+void ConnectFour::DeclareFinished() {
+	m_status.set(2);
+}
+
+void ConnectFour::GetAvailableMoves(std::vector<size_t>& moves) const {
+	
+	moves.clear();
+
+	if(IsFinished())
+		return;
+	
+	Board board = m_player0_tokens | m_player1_tokens;
+	for(size_t i=0; i!= 7; ++i)
+		if(board.ColumnSum(i) < 6)
+			moves.push_back(i);
 }
 
 
-void ConnectFour::undoMove(Move move) {
-	swapPlayers();
-	m_game_won = false;
-	removeToken(move);
-	refreshAvailableMoves();
+bool ConnectFour::IsFinished() const {
+	return m_status.test(2);
 }
 
-
-void ConnectFour::refreshAvailableMoves() {
-	m_available_moves.resize(0);
-
-	for(size_t i = 0; i!= Board::Dimensions()[0]; ++i)
-		if(m_tokens_in_column[i] < Board::Dimensions()[1])
-			m_available_moves.push_back(i);
+void ConnectFour::SetWinner(size_t player) {
+	m_status.set(player);
 }
 
+bool ConnectFour::CheckVictory(const Board& board, size_t row, size_t column) const {
 
-void ConnectFour::maybeDeclareVictory(Move move) {
-	size_t token_height = m_tokens_in_column[move] - 1;
+	return CheckVerticalVictory(board, row, column) 
+		|| CheckHorizontalVictory(board, row, column)
+		|| CheckDiagonalVictory1(board, row, column)
+		|| CheckDiagonalVictory2(board, row, column);
+}
 
-	if (checkVerticalVictory(move, token_height, m_current_player)
-	|| checkHorizontalVictory(move, token_height, m_current_player)
-	|| checkFirstDiagonalVictory(move, token_height, m_current_player)
-	|| checkSecondDiagonalVictory(move, token_height, m_current_player))
-		m_game_won = true;
+bool ConnectFour::CheckVerticalVictory(const ConnectFour::Board& board, size_t row, size_t column) const {
+	Board mask = COLUMN;
+	mask.PositiveColumnShift(column);
+	return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 	
-bool ConnectFour::checkVerticalVictory(size_t i, size_t j, size_t player) {
-	size_t counter = 0;
-	for(size_t k = 0; j >= k; ++k) {
-		if (m_board[i][j - k][player] != BASE_TOKEN)
-			break;
-		++counter;
-	}
-	return counter >= 4;
+bool ConnectFour::CheckHorizontalVictory(const ConnectFour::Board& board, size_t row, size_t column) const {
+	Board mask = ROW;
+	mask.PositiveRowShift(row);
+	return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 
-bool ConnectFour::checkHorizontalVictory(size_t i, size_t j, size_t player) {
-	size_t counter = 0;
-	for(size_t k = 0; i >= k; ++k) {
-		if (m_board[i - k][j][player] != BASE_TOKEN)
-			break;
-		++counter;
-	}
-	for(size_t k = 0; i + 1 + k < Board::Dimensions()[0]; ++k) {
-		if (m_board[i + 1 + k][j][player] != BASE_TOKEN)
-			break;
-		++counter;
-	}
-	return counter >= 4;
+bool ConnectFour::CheckDiagonalVictory1(const ConnectFour::Board& board, size_t row, size_t column) const {
+	Board mask = FIRST_DIAGONAL;
+	if(row > column)
+		mask.NegativeColumnShift(row - column);
+	else if(column > row)
+		mask.PositiveColumnShift(column - row);
+	return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 
-bool ConnectFour::checkFirstDiagonalVictory(size_t i, size_t j, size_t player) {
-	size_t counter = 0;
-	for(size_t k = 0; (i >= k) && (j >= k); ++k) {
-		if (m_board[i - k][j - k][player] != BASE_TOKEN)
-			break;
-		++counter;
-	}
-	for(size_t k = 0; (i + 1 + k < Board::Dimensions()[0]) && (j + 1 + k < Board::Dimensions()[1]); ++k) {
-		if (m_board[i + 1 + k][j + 1 + k][player] != BASE_TOKEN)
-			break;
-		++counter;
-	}
-	return counter >= 4;
+bool ConnectFour::CheckDiagonalVictory2(const ConnectFour::Board& board, size_t row, size_t column) const {
+	Board mask = SECOND_DIAGONAL;
+	size_t column_match = 5 - row;
+	if(column > column_match)
+		mask.PositiveColumnShift(column - column_match);
+	else if(column < column_match)
+		mask.NegativeColumnShift(column_match - column);
+	return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 
-bool ConnectFour::checkSecondDiagonalVictory(size_t i, size_t j, size_t player) {
-	size_t counter = 0;
-	for(size_t k = 0; (i >= k) && (j + k < Board::Dimensions()[1]); ++k) {
-		if (m_board[i - k][j + k][player] != BASE_TOKEN)
-			break;
-		++counter;
-	}
-	for(size_t k = 0; (i + 1 + k < Board::Dimensions()[0]) && (j >= k + 1); ++k) {
-		if (m_board[i + 1 + k][j - 1 - k][player] != BASE_TOKEN)
-			break;
-		++counter;
-	}
-	return counter >= 4;
+bool ConnectFour::Player0Won() const {
+	return m_status.test(0);
 }
 
-void ConnectFour::swapPlayers() {
-	if (getCurrentPlayer() == 1)
-		setCurrentPlayer(0);
-	else
-		setCurrentPlayer(1);
+bool ConnectFour::Player1Won() const {
+	return m_status.test(1);
 }
 
-void ConnectFour::placeToken(Move move) {
-	size_t tile_number = m_tokens_in_column[move];
-	m_board[move][tile_number][m_current_player] = BASE_TOKEN;
-	++m_tokens_in_column[move];
-}
-
-void ConnectFour::removeToken(Move move) {
-	--m_tokens_in_column[move];
-	size_t tile_number = m_tokens_in_column[move];
-	m_board[move][tile_number][m_current_player] = EMPTY_TOKEN;
-}
-
-bool ConnectFour::Finished() const {
-	return (m_available_moves.size() == 0) || m_game_won;
-}
-
-std::vector<ConnectFour::Move>* ConnectFour::availableMoves() {
-	return &m_available_moves;
-}
-
-float ConnectFour::score() const {
-	if (Finished() && m_game_won) {
-		if(getCurrentPlayer() == 1) 
+	
+float ConnectFour::GetScore() const {
+	if (IsFinished())
+		if(Player0Won())
 			return 1;
-		else
+		else if (Player1Won())
 			return -1;
-	}
-	else 
-		return 0;
+		else return 0;
+	else return 0;
 }
 
-size_t ConnectFour::currentPlayer() const {return m_current_player; }
-
-bool ConnectFour::operator==(const ConnectFour& rhs) {
-	return (m_score == rhs.m_score)
-	&& (m_game_won == rhs.m_game_won)
-	&& (getCurrentPlayer() == rhs.getCurrentPlayer())
-	&& (m_available_moves == rhs.m_available_moves)
-	&& (m_board == rhs.m_board)
-	&& (m_tokens_in_column == rhs.m_tokens_in_column);
+std::unique_ptr<Game> ConnectFour::Clone() const {
+	return std::make_unique<ConnectFour>(*this);
 }
 
-size_t ConnectFour::getCurrentPlayer() const {
-	return m_current_player;
+bool ConnectFour::operator==(const ConnectFour& rhs) const {
+	return m_player0_tokens == rhs.m_player0_tokens
+		&& m_player1_tokens == rhs.m_player1_tokens
+		&& m_status == rhs.m_status;
 }
 
-void ConnectFour::set(const ConnectFour& game) {
-	setCurrentPlayer(game.getCurrentPlayer());
-	m_score = game.m_score;
-	m_game_won = game.m_game_won;
-	m_available_moves = game.m_available_moves;
-	m_tokens_in_column = game.m_tokens_in_column;
-	m_board = game.m_board;
+void ConnectFour::WriteStateToTensorMemory(float* destination) const {
+	boost::multi_array_ref<float, 3> tensor(
+		destination,
+		boost::extents[6][7][2]
+	);
+	const Board& player0_tokens = GetPlayerBoard(0);
+	for(size_t i=0; i!=6; ++i)
+		for(size_t j=0; j!=7; ++j)
+			tensor[i][j][0] = player0_tokens.Get(i, j) ? 1. : 0.;
+	const Board& player1_tokens = GetPlayerBoard(1);
+	for(size_t i=0; i!=6; ++i)
+		for(size_t j=0; j!=7; ++j)
+			tensor[i][j][1] = player1_tokens.Get(i, j) ? 1. : 0.;
 }

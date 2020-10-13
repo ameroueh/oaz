@@ -7,13 +7,13 @@ namespace oaz::mutex {
 	class SpinlockMutex {
 		public:
 			SpinlockMutex(): m_locked(false) {}
-			void lock() {
+			void Lock() {
 				bool expected = false;
 				while( !std::atomic_compare_exchange_weak(&m_locked, &expected, true) ) {
 					expected = false;				
 				}
 			}
-			void unlock() {
+			void Unlock() {
 				m_locked = false;
 			}
 		

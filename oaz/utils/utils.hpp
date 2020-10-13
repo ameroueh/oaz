@@ -4,6 +4,8 @@
 #include <vector>
 #include "nlohmann/json.hpp"
 
+#include "oaz/mcts/search_node.hpp"
+
 template <class Game>
 void loadBoardFromJson(const nlohmann::json& data, typename Game::Board& board) {
 	auto dimensions = Game::Board::Dimensions();
@@ -44,19 +46,18 @@ void loadArrayFromJson(const nlohmann::json& data, Array& array) {
 		array[i] = data[i];
 }
 
-template <class Node>
-bool checkSearchTree(Node* node) {
-	size_t n_visits = node->getNVisits();
+bool CheckSearchTree(oaz::mcts::SearchNode* node) {
+	size_t n_visits = node->GetNVisits();
 	bool overall_correct = true;
 	
-	if(!node->isLeaf()) {
+	if(!node->IsLeaf()) {
 		bool correct_children = true;
 		size_t n_children_visits = 0;
 
-		for(size_t i=0; i!=node->getNChildren(); ++i) {
-			Node* child = node->getChild(i);
-			n_children_visits += child->getNVisits();
-			correct_children &= checkSearchTree<Node>(child);
+		for(size_t i=0; i!=node->GetNChildren(); ++i) {
+			oaz::mcts::SearchNode* child = node->GetChild(i);
+			n_children_visits += child->GetNVisits();
+			correct_children &= CheckSearchTree(child);
 
 		}
 		

@@ -18,23 +18,23 @@ namespace oaz::nn {
 		public:
 			Model(): m_session(nullptr) {}
 		
-			void setSession(tensorflow::Session* session) {
+			void SetSession(tensorflow::Session* session) {
 				m_session = session;
 			}
 
-			void setPolicyNodeName(std::string policy_node_name) {
+			void SetPolicyNodeName(std::string policy_node_name) {
 				m_policy_node_name = policy_node_name;
 			}
 			
-			void setValueNodeName(std::string value_node_name) {
+			void SetValueNodeName(std::string value_node_name) {
 				m_value_node_name = value_node_name;
 			}
 
-			std::string getPolicyNodeName() const {
+			std::string GetPolicyNodeName() const {
 				return m_policy_node_name;
 			}
 			
-			std::string getValueNodeName() const {
+			std::string GetValueNodeName() const {
 				return m_value_node_name;
 			}
 
@@ -59,30 +59,33 @@ namespace oaz::nn {
 			std::string m_value_node_name;
 	};
 
-	tensorflow::Session* createSession() {
+	tensorflow::Session* CreateSession() {
 		tensorflow::SessionOptions options;
 		tensorflow::Session* session;
 		TF_CHECK_OK(tensorflow::NewSession(options, &session));
 		return session;
 	}
 
-	void loadGraph(tensorflow::Session* session, std::string path) {
+	void LoadGraph(tensorflow::Session* session, std::string path) {
 		GraphDef graph_def;
 		ReadBinaryProto(Env::Default(), path, &graph_def);
 		TF_CHECK_OK(session->Create(graph_def));
 	}
 
-	tensorflow::Session* createSessionAndLoadGraph(std::string path) {
-		tensorflow::Session* session(createSession());
-		loadGraph(session, path);
+	tensorflow::Session* CreateSessionAndLoadGraph(std::string path) {
+		tensorflow::Session* session(CreateSession());
+		LoadGraph(session, path);
 		return session;
 	}
 
-	Model* createModel(tensorflow::Session* session, std::string value_node_name, std::string policy_node_name) {
-		Model* model(new Model());
-		model->setSession(session);
-		model->setValueNodeName("value");
-		model->setPolicyNodeName("policy");
+	std::shared_ptr<Model> CreateModel(
+		tensorflow::Session* session, 
+		std::string value_node_name, 
+		std::string policy_node_name) {
+		auto model = std::make_shared<Model>();
+		model->SetSession(session);
+		model->SetValueNodeName("value");
+		model->SetPolicyNodeName("policy");
 		return model;
 	}
 }

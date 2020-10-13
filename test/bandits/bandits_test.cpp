@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <string>
 
 #include "oaz/games/bandits.hpp"
@@ -16,66 +15,56 @@ TEST (InstantiationTest, Default) {
 
 TEST (InstantiationTest, AvailableMoves) {
 	Bandits game;
-	ASSERT_THAT(*(game.availableMoves()), ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
-}
-
-
-TEST (ResetTest, Default) {
-	Bandits game;
-	game.reset();
-}
-
-
-TEST (PlayTest, DoUndo) {
-	Bandits game;
-	Bandits game2;
-
-	auto available_moves = *(game.availableMoves());
-	
-	for(int i=0; i!=available_moves.size(); ++i) {
-		auto move_to_play = available_moves[i];
-		game2.playMove(move_to_play);
-		game2.undoMove(move_to_play);
-		ASSERT_TRUE(game == game2);
-	}
+	std::vector<size_t> available_moves;
+	game.GetAvailableMoves(available_moves);
+	ASSERT_THAT(available_moves, ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 }
 
 TEST (PlayTest, Victory) {
 	Bandits game;
-	ASSERT_TRUE(~game.Finished());
-	game.playFromString("3");
-	ASSERT_TRUE(game.Finished());
-	ASSERT_EQ(-1., game.score());
+	ASSERT_FALSE(game.IsFinished());
+	game.PlayFromString("3");
+	ASSERT_TRUE(game.IsFinished());
+	ASSERT_EQ(-1., game.GetScore());
 }
 
 TEST (PlayTest, Victory2) {
 	Bandits game;
-	ASSERT_TRUE(~game.Finished());
-	game.playFromString("2");
-	ASSERT_TRUE(game.Finished());
-	ASSERT_EQ(1., game.score());
+	ASSERT_FALSE(game.IsFinished());
+	game.PlayFromString("2");
+	ASSERT_TRUE(game.IsFinished());
+	ASSERT_EQ(1., game.GetScore());
 }
 
-TEST (CopyTest, Default) {
+TEST (Clone, Default) {
 	Bandits game;
-	game.playFromString("6");
-	Bandits game2(game);
-	ASSERT_TRUE(game == game2);
+	game.PlayFromString("6");
+	std::unique_ptr<Game> clone = game.Clone();
+	Bandits* clone_ptr = dynamic_cast<Bandits*>(clone.get());
+	ASSERT_TRUE(game == *clone_ptr);
 }
 
 TEST (GetCurrentPlayer, Default) {
 	Bandits game;
-	ASSERT_EQ(game.getCurrentPlayer(), 0);
-	game.playMove(0);
-	ASSERT_EQ(game.getCurrentPlayer(), 1);
+	ASSERT_EQ(game.GetCurrentPlayer(), 0);
+	game.PlayMove(0);
+	ASSERT_EQ(game.GetCurrentPlayer(), 1);
 }
 
-TEST (Set, Default) {
+TEST (ClassMethods, Default) {
 	Bandits game;
-	game.playFromString("2");
-	
-	Bandits game2;
-	game2.set(game);
+	Game* game_ptr = &game;
+	ASSERT_EQ(game_ptr->ClassMethods().GetMaxNumberOfMoves(), 10);
+	ASSERT_EQ(game_ptr->ClassMethods().GetBoardShape()[0], 10);
+}
 
-	ASSERT_TRUE(game == game2);	
+TEST (WriteStateToTensorMemory, Default) {
+	Bandits game;
+	game.PlayMove(0);
+	boost::multi_array<float, 1> tensor(boost::extents[10]);
+	game.WriteStateToTensorMemory(tensor.origin());
+	for(size_t i=0; i!=10; ++i)
+		if(i==0)
+			ASSERT_EQ(tensor[i], 1.);
+		else ASSERT_EQ(tensor[i], 0.);
 }

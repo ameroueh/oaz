@@ -12,15 +12,11 @@
 	friend class Search_CheckSearchTree_Test; \
 	friend class WaitingForEvaluation_Default_Test;
 
-
+#include "oaz/mcts/search.hpp"
+#include "oaz/mcts/selection.hpp"
 #include "oaz/games/connect_four.hpp"
 #include "oaz/simulation/simulation_evaluator.hpp"
-#include "oaz/mcts/mcts_search.hpp"
-#include "oaz/mcts/search_node.hpp" 
-#include "oaz/mcts/selection.hpp"
-#include "oaz/mcts/search_node_serialisation.hpp"
 #include "oaz/utils/utils.hpp"
-#include "oaz/thread_pool/dummy_task.hpp"
 
 #include <iostream>
 #include <queue>
@@ -31,61 +27,34 @@ using namespace std;
 using namespace oaz::mcts;
 using namespace oaz::games;
 
-using Game = ConnectFour;
-using Move = typename Game::Move;
-using Node = SearchNode<Game::Move>;
-using TestEvaluator = SimulationEvaluator<Game>;
-using GameSearch = MCTSSearch<Game>;
-
 namespace oaz::mcts {
 	TEST (Instantiation, Default) {
-		oaz::thread_pool::ThreadPool pool(1);
-		std::shared_ptr<TestEvaluator> shared_evaluator_ptr(new TestEvaluator(&pool));
-		Game game;
-		GameSearch(game, shared_evaluator_ptr.get(), &pool, 1, 1);
+		auto pool = make_shared<oaz::thread_pool::ThreadPool>(1);
+		auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
+		UCTSelector selector;
+		ConnectFour game;
+		Search(game, selector, evaluator, pool, 1, 1);
 	}
-
-
-	/* TEST (SelectNode, Default) { */
-	/* 	oaz::thread_pool::ThreadPool pool(1); */
-	/* 	std::shared_ptr<TestEvaluator> shared_evaluator_ptr(new TestEvaluator(&pool)); */
-	/* 	Game game; */
-	/* 	GameSearch search(game, shared_evaluator_ptr.get(), &pool, 1, 1); */
-	/* 	search.selectNode(0); */
-	/* } */
-
-	/* TEST (ExpandAndBackpropagateNode, Default) { */
-	/* 	oaz::thread_pool::ThreadPool pool(1); */
-	/* 	std::shared_ptr<TestEvaluator> shared_evaluator_ptr(new TestEvaluator(&pool)); */
-	/* 	Game game; */
-	/* 	GameSearch search(game, shared_evaluator_ptr.get(), &pool, 1, 1); */
-		
-	/* 	search.selectNode(0); */
-	/* 	search.expandAndBackpropagateNode(0); */
-	/* } */
 	
-	/* TEST (Search, CheckSearchTree) { */
-	/* 	oaz::thread_pool::ThreadPool pool(1); */
-	/* 	std::shared_ptr<TestEvaluator> shared_evaluator_ptr(new TestEvaluator(&pool)); */
-	/* 	Game game; */
-	/* 	GameSearch search (game, shared_evaluator_ptr.get(), &pool, 1, 100); */ 
-
-	/* 	search.search(); */
-
-	/* 	ASSERT_EQ(search.getTreeRoot()->getNVisits(), 100); */
-	/* 	ASSERT_TRUE(checkSearchTree(&search.m_root)); */
-	/* } */
+	TEST (Search, CheckSearchTree) {
+		auto pool = make_shared<oaz::thread_pool::ThreadPool>(1);
+		auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
+		ConnectFour game;
+		UCTSelector selector;
+		Search search(game, selector, evaluator, pool, 1, 100);
+		auto tree_root = search.GetTreeRoot();
+		ASSERT_EQ(tree_root->GetNVisits(), 100);
+		ASSERT_TRUE(CheckSearchTree(tree_root.get()));
+	}
 	
-	/* TEST (MultithreadedSearch, CheckSearchTree) { */
-	/* 	oaz::thread_pool::ThreadPool pool(2); */
-	/* 	std::shared_ptr<TestEvaluator> shared_evaluator_ptr(new TestEvaluator(&pool)); */
-	/* 	Game game; */
-	/* 	GameSearch search (game, shared_evaluator_ptr.get(), &pool, 2, 1000); */ 
-	/* 	search.search(); */
-
-	/* 	Node* root = search.getTreeRoot(); */
-
-	/* 	ASSERT_EQ(root->getNVisits(), 1000); */
-	/* 	ASSERT_TRUE(checkSearchTree(root)); */
-	/* } */
+	TEST (MultithreadedSearch, CheckSearchTree) {
+		auto pool = make_shared<oaz::thread_pool::ThreadPool>(2);
+		auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
+		ConnectFour game;
+		UCTSelector selector;
+		Search search(game, selector, evaluator, pool, 2, 1000);
+		auto tree_root = search.GetTreeRoot();
+		ASSERT_EQ(tree_root->GetNVisits(), 1000);
+		ASSERT_TRUE(CheckSearchTree(tree_root.get()));
+	}
 }

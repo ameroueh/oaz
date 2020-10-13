@@ -2,13 +2,12 @@
 #define __BACKPROPAGATION_HPP__
 
 namespace oaz::mcts {
-	float normaliseScore(float score) {
+	float NormaliseScore(float score) {
 		return (score + 1.) / 2.;
 	}
 
-	float getValueFromScore(float score, int current_player) {
-		return (current_player == 1) ? score : 1. - score;
-		
+	float GetValueFromScore(float score, int player) {
+		return (player == 0) ? score : 1. - score;
 	}
 }
 #endif
