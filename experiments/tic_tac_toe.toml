@@ -9,7 +9,7 @@ tournament_frequency = 5
 n_resnet_blocks = 3 
 
 [save]
-save_path = "test_tic_tac_toe"
+save_path = "runs/test_tic_tac_toe"
 checkpoint_every = 5
 
 [benchmark]

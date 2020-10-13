@@ -123,9 +123,9 @@ class Trainer:
 
         if load_path:
             self.model = load_model(load_path)
+
         else:
             self.create_model()
-
         self.model.compile(
             loss={
                 "policy": "categorical_crossentropy",
@@ -136,9 +136,11 @@ class Trainer:
                 momentum=configuration["learning"]["momentum"],
             ),
         )
+
         memory = MemoryBuffer(
             maxlen=configuration["learning"]["buffer_length"]
         )
+
         history = {
             "mse": [],
             "accuracy": [],
@@ -293,7 +295,7 @@ class Trainer:
                 validation_boards,
                 {"value": validation_values, "policy": validation_policies},
             ),
-            batch_size=64,
+            batch_size=512,
             epochs=1,
             verbose=1,
             # callbacks=[early_stopping],
