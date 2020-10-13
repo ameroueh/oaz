@@ -103,10 +103,11 @@ def create_alpha_zero_model(
         block_output = residual_block(
             inputs=block_output, strides=1, num_filters=num_filters
         )
+
     # TODO: consider adding an extra conv layer here and for the policy head as
-    # well, see https://medium.com/oracledevs/lessons-from-alpha-zero-part-6-hyperparameter-tuning-b1cfcbe4ca9a
+    # well, see https://medium.com/oracledevs/lessons-from-alpha-zero-part-6-hyperparameter-tuning-b1cfcbe4ca9
     value_conv_output = Conv2D(
-        1,
+        num_filters // 2,
         kernel_size=3,
         strides=1,
         padding="same",

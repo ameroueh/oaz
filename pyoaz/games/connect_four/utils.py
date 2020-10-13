@@ -4,6 +4,50 @@ import numpy as np
 from pyoaz.games.connect_four import ConnectFour
 
 
+def apply_symmetry(boards, policies):
+    all_boards = _board_symmetry(boards)
+    all_policies = _policy_symmetry(policies)
+    return all_boards, all_policies, 2
+
+
+def _policy_symmetry(policies: np.ndarray) -> Tuple[np.ndarray, int]:
+    """ Given a set of policies, return the policies corresponding to symmetric positions
+        and the order of symmetry.
+
+    Parameters
+    ----------
+    policies : np.ndarray
+        policies to flip
+
+    Returns
+    -------
+    np.ndarray
+        Array containing policies and policies of the symmetric positions.
+    """
+
+    all_policies = np.concatenate([policies, np.flip(policies, axis=1)])
+    return all_policies
+
+
+def _board_symmetry(boards: np.ndarray) -> Tuple[np.ndarray, int]:
+    """ Given board positions, return all the equivalent symmetric positions
+        and the order of symmetry.
+
+    Parameters
+    ----------
+    boards : np.ndarray
+        Boards to flip
+
+    Returns
+    -------
+    np.ndarray
+        Array containing all equivalent positions
+    """
+
+    all_boards = np.concatenate([boards, np.flip(boards, axis=1)])
+    return all_boards
+
+
 def create_benchmark_dataset(
     input: str, only_won_positions=False
 ) -> Tuple[np.ndarray, np.ndarray]:

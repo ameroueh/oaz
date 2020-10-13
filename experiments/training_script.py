@@ -1,4 +1,5 @@
 import argparse
+import importlib
 import logging
 import os
 import sys
@@ -13,7 +14,8 @@ import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 import toml
 from pyoaz.bots import LeftmostBot, OazBot, RandomBot
-from pyoaz.games.tic_tac_toe import boards_to_bin
+
+# from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.memory import MemoryBuffer
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
@@ -120,7 +122,7 @@ class Trainer:
         self.configuration = configuration
 
         if load_path:
-            self.model = load_model(args.load_path)
+            self.model = load_model(load_path)
 
         else:
             self.create_model()
@@ -135,8 +137,13 @@ class Trainer:
             ),
         )
 
+        memory = MemoryBuffer(
+            maxlen=configuration["learning"]["buffer_length"]
+        )
+
         history = {
             "mse": [],
+            "accuracy": [],
             "self_play_mse": [],
             "self_play_accuracy": [],
             "wins": [],
@@ -148,18 +155,21 @@ class Trainer:
         }
         if load_path:
             hist_path = Path(load_path).parent / "history.joblib"
+            memory_path = Path(load_path).parent / "memory.joblib"
             if hist_path.exists():
-                history = joblib.load(hist_path)
                 logging.debug("Loading history...")
+                history = joblib.load(hist_path)
+            if memory_path.exists():
+                logging.debug("Loading experience buffer...")
+                memory = joblib.load(memory_path)
+                memory.maxlen = configuration["learning"]["buffer_length"]
 
         self.history = history
+        self.memory = memory
 
         self.save_path = Path(configuration["save"]["save_path"])
         self.save_path.mkdir(exist_ok=True)
         self.generation = len(self.history["mse"])
-        self.memory = MemoryBuffer(
-            maxlen=configuration["learning"]["buffer_length"]
-        )
 
     def create_model(self):
         if self.configuration["game"] == "connect_four":
@@ -187,7 +197,7 @@ class Trainer:
         )
         benchmark_boards, benchmark_values = load_benchmark(benchmark_path)
 
-        game = self._get_game_class()
+        self._set_game_class()
 
         total_generations = (
             self.configuration["training"]["n_generations"] + self.generation
@@ -203,6 +213,8 @@ class Trainer:
 
             session = K.get_session()
             dataset = self_play_controller.self_play(session)
+
+            dataset = self.dataset_apply_symmetry(dataset)
             self.memory.update(dataset)
             train_history = self.train_model()
 
@@ -215,16 +227,17 @@ class Trainer:
             self.history["self_play_mse"].append(self_play_mse)
             self.history["self_play_accuracy"].append(self_play_accuracy)
 
-            mse = self.benchmark_model(
+            mse, accuracy = self.benchmark_model(
                 benchmark_boards, benchmark_values, self.model
             )
             self.history["mse"].append(mse)
+            self.history["accuracy"].append(accuracy)
             tournament_frequency = self.configuration["training"][
                 "tournament_frequency"
             ]
             if self.generation % tournament_frequency == 0:
 
-                wins, losses, draws = play_tournament(game, self.model)
+                wins, losses, draws = play_tournament(self.game, self.model)
                 self.history["wins"].extend([wins] * tournament_frequency)
                 self.history["losses"].extend([losses] * tournament_frequency)
                 self.history["draws"].extend([draws] * tournament_frequency)
@@ -289,11 +302,28 @@ class Trainer:
         )
         return train_history
 
+    def dataset_apply_symmetry(self, dataset):
+
+        sym_boards, sym_policies, sym_order = self.game_module.apply_symmetry(
+            dataset["Boards"], dataset["Policies"]
+        )
+        sym_dataset = {
+            "Boards": sym_boards,
+            "Values": np.tile(dataset["Values"], sym_order),
+            "Policies": sym_policies,
+        }
+
+        return sym_dataset
+
     def benchmark_model(self, benchmark_boards, benchmark_values, model):
         _, pred_values = model.predict(benchmark_boards)
         mse = ((pred_values - benchmark_values) ** 2).mean()
-        LOGGER.info(f"Benchmark MSE : {mse}")
-        return mse
+        # For now only works with +1 or -1 values doesn't evaluate accuracy of games with draws well
+        accuracy = (
+            np.where(pred_values > 0, 1.0, -1.0) == benchmark_values
+        ).mean()
+        LOGGER.info(f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}")
+        return mse, accuracy
 
     def evaluate_self_play_dataset(self, benchmark_path, boards, values):
         try:
@@ -366,7 +396,15 @@ class Trainer:
         plt.savefig(plot_path)
 
         plt.figure()
+        plt.plot(self.history["accuracy"], alpha=0.5, label="Accuracy")
+        plt.plot(
+            running_mean(self.history["accuracy"]), label="Smoothed Accuracy"
+        )
+        plt.legend()
+        plot_path = self.save_path / "accuracy_plot.png"
+        plt.savefig(plot_path)
 
+        plt.figure()
         plt.plot(self.history["self_play_mse"], label="Self Play MSE")
         plt.plot(
             self.history["self_play_accuracy"], label="Self Play Accuracy"
@@ -376,7 +414,6 @@ class Trainer:
         plt.savefig(plot_path)
 
         plt.figure()
-
         plt.plot(self.history["wins"], label="wins")
         plt.plot(self.history["losses"], label="losses")
         plt.plot(self.history["draws"], label="draws")
@@ -393,39 +430,22 @@ class Trainer:
         plot_path = self.save_path / "training_losses.png"
         plt.savefig(plot_path)
 
-    def _get_game_class(self):
+    def _set_game_class(self):
         if self.configuration["game"] == "connect_four":
             from pyoaz.games.connect_four import ConnectFour
 
-            game = ConnectFour
+            self.game = ConnectFour
+            self.game_module = importlib.import_module(
+                "pyoaz.games.connect_four"
+            )
 
         elif self.configuration["game"] == "tic_tac_toe":
             from pyoaz.games.tic_tac_toe import TicTacToe
 
-            game = TicTacToe
-        return game
-
-
-def get_history(load_path=None):
-    history = {
-        "mse": [],
-        "self_play_mse": [],
-        "self_play_accuracy": [],
-        "wins": [],
-        "losses": [],
-        "draws": [],
-        "val_value_loss": [],
-        "val_policy_loss": [],
-        "val_loss": [],
-    }
-
-    if load_path:
-        hist_path = Path(load_path).parent / "history.joblib"
-        if hist_path.exists():
-            history = joblib.load(hist_path)
-            logging.debug("Loading history...")
-
-    return history
+            self.game = TicTacToe
+            self.game_module = importlib.import_module(
+                "pyoaz.games.tic_tac_toe"
+            )
 
 
 def main(args):

@@ -8,7 +8,7 @@ tournament_frequency = 3
 n_resnet_blocks = 7
 
 [save]
-save_path = "runs/connect_four_model_14"
+save_path = "runs/connect_four_model_19"
 checkpoint_every = 5
 
 [benchmark]
@@ -17,14 +17,14 @@ benchmark_path = "benchmark/connect_four"
 [learning]
 learning_rate = 0.01
 momentum = 0.9
-buffer_length = 300000
+buffer_length = 1200000
 
 [self_play]
 search_batch_size = 8
-n_games_per_worker =  30
+n_games_per_worker = 30
 n_simulations_per_move = 800
-n_threads = 128
+n_threads = 256
 n_search_workers = 4
-evaluator_batch_size = 512
+evaluator_batch_size = 256
 epsilon = 0.25
 alpha = 1.0
