@@ -85,6 +85,3 @@ n_purge = 0
 n_simulations_per_move = 800
 discount_factor = 1.0
 n_games_per_worker = 30
-
-
-
