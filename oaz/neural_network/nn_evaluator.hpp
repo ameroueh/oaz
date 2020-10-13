@@ -20,80 +20,91 @@
 #include "oaz/queue/queue.hpp"
 #include "oaz/mutex/mutex.hpp"
 #include "oaz/evaluator/evaluator.hpp"
-#include "boost/multi_array.hpp"
 
+#include "boost/multi_array.hpp"
 #include "oaz/neural_network/model.hpp"
 #include "oaz/thread_pool/thread_pool.hpp"
 
 namespace oaz::nn {
-	template <class Game>	
 	class EvaluationBatch {
 		
 		TEST_FRIENDS;
 
 		public:
-			EvaluationBatch(size_t size);
-			void readElementFromMemory(
+			EvaluationBatch(
+				const std::vector<int>&,
+				size_t
+			);
+			bool IsAvailableForEvaluation() const;
+			size_t GetSize() const;
+			size_t GetElementSize() const;
+			float* GetValue(size_t);			
+			
+			size_t AcquireIndex();
+			void InitialiseElement(
 				size_t, 
-				float*, 
-				typename Game::Value*,
-				typename Game::Policy*,
+				oaz::games::Game*, 
+				float*,
+				boost::multi_array_ref<float, 1>,
 				oaz::thread_pool::Task*
 			);
-			bool availableForEvaluation();
-			size_t acquireIndex();
-			size_t getSize() const;
-			tensorflow::Tensor& getBatchTensor();
-			typename Game::Value* getValue(size_t);			
-			typename Game::Policy* getPolicy(size_t);
-			void lock();			
-			void unlock();
-			bool full();
-			size_t getNElements() const;
-			oaz::thread_pool::Task* getTask(size_t);
+			
+			tensorflow::Tensor& GetBatchTensor();
+			boost::multi_array_ref<float, 1> GetPolicy(size_t);
+			size_t GetNumberOfElements() const;
+			oaz::thread_pool::Task* GetTask(size_t);
+			void Lock();			
+			void Unlock();
+			bool IsFull();
 		private:
 			oaz::mutex::SpinlockMutex m_lock;
 			tensorflow::Tensor m_batch;
 			boost::multi_array<oaz::thread_pool::Task*, 1> m_tasks;
-			boost::multi_array<typename Game::Value*, 1> m_values;
-			boost::multi_array<typename Game::Policy*, 1> m_policies;
+			boost::multi_array<float*, 1> m_values;
+			boost::multi_array<
+				std::unique_ptr<
+					boost::multi_array_ref<float, 1>
+				>,
+				1
+			> m_policies;
 			size_t m_current_index;
 			size_t m_size;
+			size_t m_element_size;
 			std::atomic<size_t> m_n_reads;
 
 	};
 
-	template <class Game> 
-	class NNEvaluator : public oaz::evaluator::Evaluator<Game> { 
+	class NNEvaluator : public oaz::evaluator::Evaluator { 
 
 		TEST_FRIENDS;
 
 		public: 
-			using SharedModelPointer = std::shared_ptr<Model>;
-			
-			NNEvaluator(SharedModelPointer, oaz::thread_pool::ThreadPool*, size_t);
-			~NNEvaluator();
-			
-			void requestEvaluation(
-				Game*, 
-				typename Game::Value*,
-				typename Game::Policy*,
+			NNEvaluator(
+				std::shared_ptr<Model>, 
+				std::shared_ptr<oaz::thread_pool::ThreadPool>,
+				const std::vector<int>&,
+				size_t
+			);
+			void RequestEvaluation(
+				oaz::games::Game*, 
+				float*,
+				boost::multi_array_ref<float, 1>,
 				oaz::thread_pool::Task*
 			);
-			void forceEvaluation();
 
-			std::string getStatus() const;
+			std::string GetStatus() const;
+			~NNEvaluator();
 		private:
-			using Batch = EvaluationBatch<Game>;
-			using UniqueBatchPointer = std::unique_ptr<Batch>;
+			size_t GetBatchSize() const;
+			const std::vector<int>& GetElementDimensions() const;
+			void ForceEvaluation();
+			void EvaluateBatch(EvaluationBatch*);
+			void AddNewBatch();
+			void Monitor(std::future<void>);
 			
-			void evaluateBatch(Batch*);
-			void addNewBatch();
-			void monitor(std::future<void>);
-			
-			oaz::queue::SafeDeque<UniqueBatchPointer> m_batches;
+			oaz::queue::SafeDeque<std::unique_ptr<EvaluationBatch>> m_batches;
 			oaz::mutex::SpinlockMutex m_requests_lock;
-			SharedModelPointer m_model;
+
 			size_t m_batch_size;
 
 			std::atomic<size_t> m_n_evaluation_requests;
@@ -101,9 +112,12 @@ namespace oaz::nn {
 
 			std::thread m_worker;
 			std::promise<void> m_exit_signal;
-
 			std::atomic<bool> m_evaluation_completed;
-			oaz::thread_pool::ThreadPool* m_thread_pool;
+
+
+			std::vector<int> m_element_dimensions;
+			std::shared_ptr<Model> m_model;
+			std::shared_ptr<oaz::thread_pool::ThreadPool> m_thread_pool;
 	};
 }
 
