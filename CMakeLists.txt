@@ -4,8 +4,8 @@ project (oaz)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto -std=c++17")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address -std=c++17")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto -std=c++17 -march=native")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address -std=c++17 =-march=native")
 
 ###############################
 # Add GoogleTest
@@ -35,8 +35,8 @@ else()
 endif()
 
 
-# find_package(Boost 1.67.0 REQUIRED COMPONENTS python36 numpy36)
-find_package(Boost 1.67.0 REQUIRED COMPONENTS python numpy)
+find_package(Boost 1.67.0 REQUIRED COMPONENTS python36 numpy36)
+# find_package(Boost 1.67.0 REQUIRED COMPONENTS python numpy)
 find_package(TensorFlow REQUIRED)
 find_package(Threads REQUIRED)
 find_package(SWIG REQUIRED COMPONENTS python)
@@ -58,10 +58,10 @@ TensorFlow_REQUIRE_SOURCE()
 add_custom_target(
 	generate_az_search_model
 	COMMAND 
-	python3 ${PROJECT_SOURCE_DIR}/data/generate_bandits_model.py ${PROJECT_BINARY_DIR}/test/az/
+	python3 ${PROJECT_SOURCE_DIR}/data/generate_connect_four_model.py ${PROJECT_BINARY_DIR}/test/az/
 )
 
-python_add_module(pyoaz_connect_four_core oaz/python/core.cpp)
+python_add_module(pyoaz_connect_four_core oaz/python/game.cpp)
 target_include_directories(
 	pyoaz_connect_four_core
 	PUBLIC
@@ -147,10 +147,16 @@ target_compile_definitions(
 )
 
 
+add_executable(bitboard_test test/bitboard/bitboard_test.cpp)
+target_include_directories(bitboard_test PRIVATE ${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
+target_link_libraries(bitboard_test ${Boost_LIBRARIES})
+set_target_properties(bitboard_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/bitboard")
+
 add_executable(connect_four_test test/connect_four/connect_four_test.cpp)
 target_include_directories(connect_four_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_include_directories(connect_four_test PRIVATE ${Boost_INCLUDE_DIRS})
 set_target_properties(connect_four_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/test/connect_four")
+
 
 add_executable(tic_tac_toe_test test/tic_tac_toe/tic_tac_toe_test.cpp)
 target_include_directories(tic_tac_toe_test PRIVATE ${PROJECT_SOURCE_DIR})
@@ -267,6 +273,10 @@ set_target_properties(nn_evaluator_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${P
 add_dependencies(nn_evaluator_test generate_evaluator_test_data)
 
 ##############################
+add_dependencies(bitboard_test gtest)
+add_dependencies(bitboard_test gmock)
+target_link_libraries(bitboard_test gtest_main gmock_main)
+
 add_dependencies(connect_four_test gtest)
 add_dependencies(connect_four_test gmock)
 target_link_libraries(connect_four_test gtest_main gmock_main)
@@ -363,6 +373,12 @@ add_dependencies(
 	tensorflow_test
 	nn_evaluator_test
 )
+
+add_test(
+	NAME bitboard_test
+	COMMAND bitboard_test
+)
+
 
 add_test(
 	NAME connect_four_test
