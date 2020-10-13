@@ -67,10 +67,8 @@ class SelfPlay:
         # TODO make this automatic
         self.c_model.set_value_node_name("value/Tanh")
         self.c_model.set_policy_node_name("policy/Softmax")
-        
-        self.pool = self.game_module.Pool(
-            self.n_search_worker
-        )
+
+        self.pool = self.game_module.Pool(self.n_search_worker)
 
         self.evaluator = self.game_module.Evaluator(
             self.c_model, self.pool, self.evaluator_batch_size
