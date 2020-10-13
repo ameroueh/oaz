@@ -46,3 +46,5 @@ __pycache__/
 #Models
 models/
 bin/
+experiments/runs
+
