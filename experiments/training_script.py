@@ -127,10 +127,12 @@ class Trainer:
 
         if load_path:
             self.model = load_model(load_path)
+
         else:
             self.create_model()
 
         memory = MemoryBuffer(maxlen=1)
+
         history = {
             "mse": [],
             "accuracy": [],
@@ -346,7 +348,7 @@ class Trainer:
                 validation_boards,
                 {"value": validation_values, "policy": validation_policies},
             ),
-            batch_size=64,
+            batch_size=512,
             epochs=1,
             verbose=1,
             callbacks=[clr],
