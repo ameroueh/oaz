@@ -44,6 +44,7 @@ class SelfPlay:
         self.alpha = alpha
         self._import_game_module(game)
         self._create_model()
+        self.discount_factor = 1.0
 
     def _import_game_module(self, game):
         if game == "connect_four":
@@ -67,17 +68,15 @@ class SelfPlay:
         # TODO make this automatic
         self.c_model.set_value_node_name("value/Tanh")
         self.c_model.set_policy_node_name("policy/Softmax")
-        
-        self.pool = self.game_module.Pool(
-            self.n_search_worker
-        )
+
+        self.pool = self.game_module.Pool(self.n_search_worker)
 
         self.evaluator = self.game_module.Evaluator(
             self.c_model, self.pool, self.evaluator_batch_size
         )
 
-    def self_play(self, session, debug=False) -> Dict:
-
+    def self_play(self, session, discount_factor=1.0, debug=False) -> Dict:
+        self.discount_factor = discount_factor
         self.c_model.set_session(session._session)
 
         all_datasets = [
@@ -224,4 +223,5 @@ class SelfPlay:
 
         # LOGGER.info("Game is finished!")
         scores = [game.score] * len(boards)
+        scores *= np.power(self.discount_factor, np.arange(len(boards)))
         return boards, scores, policies
