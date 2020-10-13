@@ -3,6 +3,7 @@ import importlib
 import logging
 import os
 import sys
+import time
 from collections import deque
 from pathlib import Path
 
@@ -13,6 +14,7 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 import toml
+from keras_contrib.callbacks import CyclicLR
 from pyoaz.bots import LeftmostBot, OazBot, RandomBot
 
 # from pyoaz.games.tic_tac_toe import boards_to_bin
@@ -21,6 +23,8 @@ from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.tournament import Participant, Tournament
 from tensorflow.keras.models import load_model
+
+# TODO try playing a smaller number of games  for some of the earlier stages
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -126,24 +130,13 @@ class Trainer:
 
         else:
             self.create_model()
-        self.model.compile(
-            loss={
-                "policy": "categorical_crossentropy",
-                "value": "mean_squared_error",
-            },
-            optimizer=tf.keras.optimizers.SGD(
-                learning_rate=configuration["learning"]["learning_rate"],
-                momentum=configuration["learning"]["momentum"],
-            ),
-        )
 
-        memory = MemoryBuffer(
-            maxlen=configuration["learning"]["buffer_length"]
-        )
+        memory = MemoryBuffer(maxlen=1)
 
         history = {
             "mse": [],
             "accuracy": [],
+            "generation_duration": [],
             "self_play_mse": [],
             "self_play_accuracy": [],
             "wins": [],
@@ -162,24 +155,41 @@ class Trainer:
             if memory_path.exists():
                 logging.debug("Loading experience buffer...")
                 memory = joblib.load(memory_path)
-                memory.maxlen = configuration["learning"]["buffer_length"]
 
         self.history = history
         self.memory = memory
+        # TODO dump the memory buffer somewhere
 
         self.save_path = Path(configuration["save"]["save_path"])
         self.save_path.mkdir(exist_ok=True)
         self.generation = len(self.history["mse"])
 
+        self.stage_idx = 0
+        generation_tracker = 0
+        self.gen_in_stage = 0
+        for stage_params in configuration["stages"]:
+            stage_length = stage_params["n_generations"]
+            if self.generation < generation_tracker + stage_length:
+                self.gen_in_stage = self.generation - generation_tracker
+                break
+            self.stage_idx += 1
+            generation_tracker += stage_length
+
+        with open(self.save_path / "config.toml", "w") as f:
+            f.write(toml.dumps(self.configuration))
+
     def create_model(self):
         if self.configuration["game"] == "connect_four":
             self.model = create_connect_four_model(
-                depth=self.configuration["model"]["n_resnet_blocks"]
+                depth=self.configuration["model"]["n_resnet_blocks"],
+                activation=self.configuration["model"]["activation"],
+                policy_factor=self.configuration["model"]["policy_factor"],
             )
 
         elif self.configuration["game"] == "tic_tac_toe":
             self.model = create_tic_tac_toe_model(
-                depth=self.configuration["model"]["n_resnet_blocks"]
+                depth=self.configuration["model"]["n_resnet_blocks"],
+                activation=self.configuration["model"]["activation"],
             )
 
     def train(self, debug_mode=False):
@@ -199,82 +209,119 @@ class Trainer:
 
         self._set_game_class()
 
-        total_generations = (
-            self.configuration["training"]["n_generations"] + self.generation
-        )
-        while self.generation < total_generations:
-            LOGGER.info(
-                f"Training cycle {self.generation} / {total_generations}"
+        total_generations = [
+            stages["n_generations"] for stages in self.configuration["stages"]
+        ]
+        total_generations = sum(total_generations)
+
+        for stage_params in self.configuration["stages"][self.stage_idx :]:
+            LOGGER.info(f"Starting stage  {self.stage_idx}")
+            stage_params = self.configuration["stages"][self.stage_idx]
+            optimizer = self._get_optimizer(stage_params)
+            self.model.compile(
+                loss={
+                    "policy": "categorical_crossentropy",
+                    "value": "mean_squared_error",
+                },
+                optimizer=optimizer,
             )
 
-            self_play_controller = self._get_self_play_controller(
-                debug_mode=debug_mode
-            )
+            if self.gen_in_stage == 0:
+                self.memory.purge(stage_params["n_purge"])
+            self.memory.set_maxlen(stage_params["buffer_length"])
 
-            session = K.get_session()
-            dataset = self_play_controller.self_play(session)
-
-            dataset = self.dataset_apply_symmetry(dataset)
-            self.memory.update(dataset)
-            train_history = self.train_model()
-
-            (
-                self_play_mse,
-                self_play_accuracy,
-            ) = self.evaluate_self_play_dataset(
-                benchmark_path, dataset["Boards"], dataset["Values"]
-            )
-            self.history["self_play_mse"].append(self_play_mse)
-            self.history["self_play_accuracy"].append(self_play_accuracy)
-
-            mse, accuracy = self.benchmark_model(
-                benchmark_boards, benchmark_values, self.model
-            )
-            self.history["mse"].append(mse)
-            self.history["accuracy"].append(accuracy)
-            tournament_frequency = self.configuration["training"][
-                "tournament_frequency"
-            ]
-            if self.generation % tournament_frequency == 0:
-
-                wins, losses, draws = play_tournament(self.game, self.model)
-                self.history["wins"].extend([wins] * tournament_frequency)
-                self.history["losses"].extend([losses] * tournament_frequency)
-                self.history["draws"].extend([draws] * tournament_frequency)
-
-            self.history["val_value_loss"].append(
-                train_history.history["val_value_loss"]
-            )
-            self.history["val_policy_loss"].append(
-                train_history.history["val_policy_loss"]
-            )
-            self.history["val_loss"].append(train_history.history["val_loss"])
-
-            if (
-                checkpoint
-                and (
-                    self.generation
-                    % self.configuration["save"]["checkpoint_every"]
-                )
-                == 0
-            ):
+            for _ in range(self.gen_in_stage, stage_params["n_generations"]):
                 LOGGER.info(
-                    f"Checkpointing model generation {self.generation}"
+                    f"Training cycle {self.generation} / {total_generations}"
                 )
-                self.model.save(
-                    str(
-                        checkpoint_path
-                        / f"model-checkpoint-generation-{self.generation}.pb"
-                    )
-                )
-            self.generation += 1
 
-    def train_model(self):
-        dataset = self.memory.recall()
+                self_play_controller = self._get_self_play_controller(
+                    stage_params["n_games_per_worker"],
+                    stage_params["n_simulations_per_move"],
+                    debug_mode=debug_mode,
+                )
+                session = K.get_session()
+
+                start_time = time.time()
+                dataset = self_play_controller.self_play(
+                    session, discount_factor=stage_params["discount_factor"],
+                )
+                self.history["generation_duration"].append(
+                    time.time() - start_time
+                )
+
+                dataset = self.dataset_apply_symmetry(dataset)
+
+                self.memory.update(dataset)
+                train_history = self.train_model(stage_params)
+
+                (
+                    self_play_mse,
+                    self_play_accuracy,
+                ) = self.evaluate_self_play_dataset(
+                    benchmark_path, dataset["Boards"], dataset["Values"]
+                )
+                self.history["self_play_mse"].append(self_play_mse)
+                self.history["self_play_accuracy"].append(self_play_accuracy)
+
+                mse, accuracy = self.benchmark_model(
+                    benchmark_boards, benchmark_values, self.model
+                )
+                self.history["mse"].append(mse)
+                self.history["accuracy"].append(accuracy)
+                tournament_frequency = self.configuration["benchmark"][
+                    "tournament_frequency"
+                ]
+                if self.generation % tournament_frequency == 0:
+
+                    wins, losses, draws = play_tournament(
+                        self.game, self.model
+                    )
+                    self.history["wins"].extend([wins] * tournament_frequency)
+                    self.history["losses"].extend(
+                        [losses] * tournament_frequency
+                    )
+                    self.history["draws"].extend(
+                        [draws] * tournament_frequency
+                    )
+
+                self.history["val_value_loss"].append(
+                    train_history.history["val_value_loss"]
+                )
+                self.history["val_policy_loss"].append(
+                    train_history.history["val_policy_loss"]
+                )
+                self.history["val_loss"].append(
+                    train_history.history["val_loss"]
+                )
+
+                if (
+                    checkpoint
+                    and (
+                        self.generation
+                        % self.configuration["save"]["checkpoint_every"]
+                    )
+                    == 0
+                ):
+                    LOGGER.info(
+                        f"Checkpointing model generation {self.generation}"
+                    )
+                    self.model.save(
+                        str(
+                            checkpoint_path
+                            / f"model-checkpoint-generation-{self.generation}.pb"
+                        )
+                    )
+                self._save_plots()
+                self.generation += 1
+                self.gen_in_stage = 0
+
+    def train_model(self, stage_params):
+        dataset = self.memory.recall(shuffle=True)
         dataset_size = dataset["Boards"].shape[0]
 
         train_select = np.random.choice(
-            a=[False, True], size=dataset_size, p=[0.2, 0.8]
+            a=[False, True], size=dataset_size, p=[0.001, 0.999]
         )
         validation_select = ~train_select
 
@@ -288,6 +335,12 @@ class Trainer:
 
         # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
 
+        clr = CyclicLR(
+            base_lr=stage_params["learning_rate"],
+            max_lr=stage_params["learning_rate"] / 3,
+            step_size=4 * len(train_boards) // 64,
+            mode="triangular",
+        )
         train_history = self.model.fit(
             train_boards,
             {"value": train_values, "policy": train_policies},
@@ -298,7 +351,7 @@ class Trainer:
             batch_size=512,
             epochs=1,
             verbose=1,
-            # callbacks=[early_stopping],
+            callbacks=[clr],
         )
         return train_history
 
@@ -318,7 +371,8 @@ class Trainer:
     def benchmark_model(self, benchmark_boards, benchmark_values, model):
         _, pred_values = model.predict(benchmark_boards)
         mse = ((pred_values - benchmark_values) ** 2).mean()
-        # For now only works with +1 or -1 values doesn't evaluate accuracy of games with draws well
+        # For now only works with +1 or -1 values doesn't evaluate accuracy of
+        # games with draws well
         accuracy = (
             np.where(pred_values > 0, 1.0, -1.0) == benchmark_values
         ).mean()
@@ -343,11 +397,12 @@ class Trainer:
     def save(self):
         LOGGER.info(f"Saving model at {self.save_path / 'model.pb'}")
         self.model.save(str(self.save_path / "model.pb"))
+        joblib.dump(self.memory, self.save_path / "memory.joblib")
         self._save_plots()
-        with open(self.save_path / "config.toml", "w") as f:
-            f.write(toml.dumps(self.configuration))
 
-    def _get_self_play_controller(self, debug_mode=False):
+    def _get_self_play_controller(
+        self, n_games_per_worker, n_simulations_per_move, debug_mode=False
+    ):
         if debug_mode:
             self_play_controller = SelfPlay(
                 game=self.configuration["game"],
@@ -367,12 +422,8 @@ class Trainer:
                 search_batch_size=self.configuration["self_play"][
                     "search_batch_size"
                 ],
-                n_games_per_worker=self.configuration["self_play"][
-                    "n_games_per_worker"
-                ],
-                n_simulations_per_move=self.configuration["self_play"][
-                    "n_simulations_per_move"
-                ],
+                n_games_per_worker=n_games_per_worker,
+                n_simulations_per_move=n_simulations_per_move,
                 n_search_worker=self.configuration["self_play"][
                     "n_search_workers"
                 ],
@@ -385,15 +436,48 @@ class Trainer:
             )
         return self_play_controller
 
+    def _get_optimizer(self, stage_params):
+        if self.configuration["model"]["optimizer"] == "sgd":
+            return tf.keras.optimizers.SGD(
+                learning_rate=stage_params["learning_rate"],
+                momentum=stage_params["momentum"],
+            )
+
+        elif self.configuration["model"]["optimizer"] == "adam":
+            return tf.keras.optimizers.Adam(
+                learning_rate=stage_params["learning_rate"],
+            )
+        else:
+            raise NotImplementedError("Wrong optimizer")
+
     def _save_plots(self):
 
         joblib.dump(self.history, self.save_path / "history.joblib")
 
+        plt.figure()
         plt.plot(self.history["mse"], alpha=0.5, label="MSE")
         plt.plot(running_mean(self.history["mse"]), label="Smoothed MSE")
         plt.legend()
         plot_path = self.save_path / "mse_plot.png"
         plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
+        plt.plot(
+            np.cumsum(self.history["generation_duration"]),
+            self.history["mse"],
+            alpha=0.5,
+            label="MSE",
+        )
+        plt.plot(
+            np.cumsum(self.history["generation_duration"]),
+            running_mean(self.history["mse"]),
+            label="Smoothed MSE",
+        )
+        plt.legend()
+        plot_path = self.save_path / "timed_mse_plot.png"
+        plt.savefig(plot_path)
+        plt.close()
 
         plt.figure()
         plt.plot(self.history["accuracy"], alpha=0.5, label="Accuracy")
@@ -403,6 +487,7 @@ class Trainer:
         plt.legend()
         plot_path = self.save_path / "accuracy_plot.png"
         plt.savefig(plot_path)
+        plt.close()
 
         plt.figure()
         plt.plot(self.history["self_play_mse"], label="Self Play MSE")
@@ -412,6 +497,7 @@ class Trainer:
         plt.legend()
         plot_path = self.save_path / "self_play_plot.png"
         plt.savefig(plot_path)
+        plt.close()
 
         plt.figure()
         plt.plot(self.history["wins"], label="wins")
@@ -420,6 +506,7 @@ class Trainer:
         plt.legend()
         plot_path = self.save_path / "_wlm.png"
         plt.savefig(plot_path)
+        plt.close()
 
         plt.figure()
 
@@ -429,6 +516,7 @@ class Trainer:
         plt.legend()
         plot_path = self.save_path / "training_losses.png"
         plt.savefig(plot_path)
+        plt.close()
 
     def _set_game_class(self):
         if self.configuration["game"] == "connect_four":
