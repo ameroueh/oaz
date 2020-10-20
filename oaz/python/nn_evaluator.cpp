@@ -2,6 +2,7 @@
 #include <boost/python.hpp>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/stl_iterator.hpp>
 
 #include "swiglabels.swg"
 #include "swigrun.swg"
@@ -25,7 +26,32 @@ void SetSession(Model& model, PyObject* obj) {
 	model.SetSession(session->session);
 }
 
-BOOST_PYTHON_MODULE( pyoaz_connect_four_core ) {
+
+std::shared_ptr<oaz::nn::NNEvaluator> ConstructNNEvaluator(
+	std::shared_ptr<oaz::nn::Model> model,
+	p::object cache,
+	std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool,
+	const p::object& dimensions,
+	size_t batch_size) {
+		
+		p::stl_input_iterator<int> begin(dimensions), end;
+		std::vector<int> dimensions_vec(begin, end);
+
+		std::shared_ptr<oaz::cache::Cache> cache_cxx(nullptr);
+		if(!cache.is_none())
+			cache_cxx = p::extract<std::shared_ptr<oaz::cache::Cache>>(cache);
+		return std::shared_ptr<oaz::nn::NNEvaluator>(
+			new oaz::nn::NNEvaluator(
+				model,
+				cache_cxx,
+				thread_pool,
+				dimensions_vec,
+				batch_size
+			)
+		);
+}
+
+BOOST_PYTHON_MODULE( nn_evaluator ) {
 
 	PyEval_InitThreads();
 
@@ -42,13 +68,14 @@ BOOST_PYTHON_MODULE( pyoaz_connect_four_core ) {
 
 	p::class_<
 		oaz::nn::NNEvaluator, 
+		p::bases<oaz::evaluator::Evaluator>,
 		std::shared_ptr<oaz::nn::NNEvaluator>,
 		boost::noncopyable
 	>(
 		"NNEvaluator", 
-		p::init<std::shared_ptr<oaz::nn::Model>, 
-		std::shared_ptr<oaz::thread_pool::ThreadPool>,
-		const std::vector<int>&,
-		size_t>()
+		p::no_init
+	).def(
+		"__init__",
+		p::make_constructor(&ConstructNNEvaluator)
 	);
 }

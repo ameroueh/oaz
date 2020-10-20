@@ -102,6 +102,10 @@ namespace oaz::bitboard {
 						array[i][j] = Get(i, j) ? 1. : 0.;
 			}
 
+			uint64_t GetBits() const {
+				return m_board;
+			}
+
 		private:
 			BitBoard(uint64_t board): m_board(board) {}
 

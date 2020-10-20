@@ -6,6 +6,7 @@
 #include "stdint.h"
 
 #include "oaz/games/game.hpp"
+#include "oaz/games/generic_game_map.hpp"
 #include "oaz/bitboard/bitboard.hpp"
 #include "oaz/array/array.hpp"
 
@@ -19,6 +20,9 @@ namespace oaz::games {
 				}
 				const std::vector<int>& GetBoardShape() const {
 					return m_board_shape;
+				}
+				GameMap* CreateGameMap() const {
+					return new GenericGameMap<TicTacToe, uint64_t>();
 				}
 				static const Class& Methods() {
 					static const Class meta;
@@ -44,6 +48,8 @@ namespace oaz::games {
 			std::unique_ptr<Game> Clone() const;
 				
 			bool operator==(const TicTacToe&);
+
+			size_t GetState() const;
 
 		private:
 			using Board = oaz::bitboard::BitBoard<3, 3>;

@@ -9,9 +9,18 @@ namespace oaz::games {
 
 	class Game {
 		public:
+			class GameMap {
+				public:
+					virtual bool Get(const Game&, size_t&) const = 0;
+					virtual void Insert(const Game&, size_t) = 0;
+					virtual size_t GetSize() const = 0;
+					virtual ~GameMap(){}
+			};
+
 			struct Class {
 				virtual size_t GetMaxNumberOfMoves() const = 0;
 				virtual const std::vector<int>& GetBoardShape() const = 0;
+				virtual GameMap* CreateGameMap() const = 0;  
 
 			};
 			virtual const Class& ClassMethods() const = 0;

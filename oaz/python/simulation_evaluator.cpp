@@ -13,8 +13,9 @@ BOOST_PYTHON_MODULE( simulation_evaluator ) {
 	PyEval_InitThreads();
 
 	p::class_<
-		SimulationEvaluator,
-		std::shared_ptr<SimulationEvaluator>, 
+		oaz::simulation::SimulationEvaluator,
+		p::bases<oaz::evaluator::Evaluator>,
+		std::shared_ptr<oaz::simulation::SimulationEvaluator>, 
 		boost::noncopyable
 	>(
 		"SimulationEvaluator",

@@ -140,3 +140,44 @@ TEST (WriteStateToTensorMemory, Default) {
 				ASSERT_EQ(tensor[i][j][1], 1.);
 			else ASSERT_EQ(tensor[i][j][1], 0.);
 }
+
+TEST (GameMap, Instantiation) {
+	ConnectFour game;
+	std::unique_ptr<oaz::games::Game::GameMap> game_map(
+		game.ClassMethods().CreateGameMap()
+	);
+}
+
+TEST (GameMap, GetNotInDB) {
+	ConnectFour game;
+	std::unique_ptr<oaz::games::Game::GameMap> game_map(
+		game.ClassMethods().CreateGameMap()
+	);
+	size_t index;
+	ASSERT_FALSE(game_map->Get(game, index));
+}
+
+TEST (GameMap, GetInDB) {
+	ConnectFour game;
+	std::unique_ptr<oaz::games::Game::GameMap> game_map(
+		game.ClassMethods().CreateGameMap()
+	);
+	game_map->Insert(game, 1ll);
+
+	size_t index = 0;
+	ASSERT_TRUE(game_map->Get(game, index));
+	ASSERT_EQ(index, 1);
+}
+
+TEST (GameMap, InsertAlreadyInDB) {
+	ConnectFour game;
+	std::unique_ptr<oaz::games::Game::GameMap> game_map(
+		game.ClassMethods().CreateGameMap()
+	);
+
+	ASSERT_EQ(game_map->GetSize(), 0);
+	game_map->Insert(game, 1ll);
+	ASSERT_EQ(game_map->GetSize(), 1);
+	game_map->Insert(game, 1ll);
+	ASSERT_EQ(game_map->GetSize(), 1);
+}

@@ -1,1 +1,2 @@
-from .pyoaz_bandits_core import *
+from ..game import *
+from .bandits import *

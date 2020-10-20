@@ -1,3 +1,2 @@
-from .pyoaz_tic_tac_toe_core import *
-from .viz import *
-from .utils import *
+from ..game import *
+from .tic_tac_toe import *

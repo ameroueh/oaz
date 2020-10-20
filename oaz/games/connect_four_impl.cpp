@@ -155,3 +155,14 @@ void ConnectFour::WriteStateToTensorMemory(float* destination) const {
 		for(size_t j=0; j!=7; ++j)
 			tensor[i][j][1] = player1_tokens.Get(i, j) ? 1. : 0.;
 }
+
+uint64_t ConnectFour::GetState() const {
+	return m_player0_tokens.GetBits() 
+		| (m_player1_tokens.ColumnSum(0) << 42)	
+		| (m_player1_tokens.ColumnSum(1) << 45)	
+		| (m_player1_tokens.ColumnSum(2) << 48)	
+		| (m_player1_tokens.ColumnSum(3) << 51)	
+		| (m_player1_tokens.ColumnSum(4) << 54)	
+		| (m_player1_tokens.ColumnSum(5) << 57)	
+		| (m_player1_tokens.ColumnSum(6) << 60);
+}
