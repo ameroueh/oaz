@@ -11,6 +11,17 @@ BOOST_PYTHON_MODULE( selection ) {
 
 	PyEval_InitThreads();
 
-	p::class_<oaz::mcts::UCTSelector>( "UCTSelector" );
-	p::class_<oaz::mcts::AZSelector>( "AZSelector" );
+	p::class_<
+		oaz::mcts::Selector,
+		boost::noncopyable
+	>( "Selector", p::no_init);
+
+	p::class_<
+		oaz::mcts::UCTSelector,
+		p::bases<oaz::mcts::Selector>
+	>( "UCTSelector" );
+	p::class_<
+		oaz::mcts::AZSelector,
+		p::bases<oaz::mcts::Selector>
+	>( "AZSelector" );
 }

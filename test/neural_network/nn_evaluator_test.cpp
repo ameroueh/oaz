@@ -13,6 +13,7 @@
 #include "oaz/neural_network/model.hpp"
 #include "oaz/games/connect_four.hpp"
 #include "oaz/queue/queue.hpp"
+#include "oaz/cache/simple_cache.hpp"
 
 #include "nlohmann/json.hpp"
 
@@ -80,7 +81,7 @@ namespace oaz::nn {
 			"policy"
 		);
 		
-		NNEvaluator evaluator(model, pool, {6, 7, 2}, 64);
+		NNEvaluator evaluator(model, nullptr, pool, {6, 7, 2}, 64);
 	}
 
 	TEST (NNEvaluator, RequestEvaluation) {
@@ -93,7 +94,7 @@ namespace oaz::nn {
 			"policy"
 		);
 		auto pool = std::make_shared<oaz::thread_pool::ThreadPool>(1);
-		NNEvaluator evaluator(model, pool, {6, 7, 2}, 64);
+		NNEvaluator evaluator(model, nullptr, pool, {6, 7, 2}, 64);
 		
 		oaz::thread_pool::DummyTask task;
 		float value;
@@ -112,6 +113,100 @@ namespace oaz::nn {
 		);
 		
 		task.wait();
+	}
+	
+	TEST (NNEvaluator, EvaluationWithCache) {
+		std::unique_ptr<tensorflow::Session> session(
+			CreateSessionAndLoadGraph("frozen_model.pb")
+		);
+		auto model = CreateModel(
+			session.get(), 
+			"value",
+			"policy"
+		);
+		auto pool = std::make_shared<oaz::thread_pool::ThreadPool>(1);
+		auto cache = std::make_shared<oaz::cache::SimpleCache>(
+			ConnectFour(),
+			100
+		);
+		NNEvaluator evaluator(model, cache, pool, {6, 7, 2}, 64);
+		
+		oaz::thread_pool::DummyTask task;
+		float value;
+		boost::multi_array<float, 1> policy(boost::extents[7]);
+		boost::multi_array_ref<float, 1> policy_ref(
+			policy.origin(),
+			boost::extents[7]
+		);
+
+		ConnectFour game;
+		evaluator.RequestEvaluation(
+			&game,
+			&value,
+			policy_ref,
+			&task
+		);
+		
+		task.wait();
+
+		for(size_t i=0; i!=50; ++i) {
+			oaz::thread_pool::DummyTask task;
+			evaluator.RequestEvaluation(
+				&game,
+				&value,
+				policy_ref,
+				&task
+			);
+		}
+
+		ASSERT_EQ(cache->GetNumberOfHits(), 50);
+	}
+	
+	TEST (NNEvaluator, EvaluationWithCacheLargeNumberOfRequests) {
+		std::unique_ptr<tensorflow::Session> session(
+			CreateSessionAndLoadGraph("frozen_model.pb")
+		);
+		auto model = CreateModel(
+			session.get(), 
+			"value",
+			"policy"
+		);
+		auto pool = std::make_shared<oaz::thread_pool::ThreadPool>(1);
+		auto cache = std::make_shared<oaz::cache::SimpleCache>(
+			ConnectFour(),
+			100
+		);
+		NNEvaluator evaluator(model, cache, pool, {6, 7, 2}, 64);
+		
+		oaz::thread_pool::DummyTask task;
+		float value;
+		boost::multi_array<float, 1> policy(boost::extents[7]);
+		boost::multi_array_ref<float, 1> policy_ref(
+			policy.origin(),
+			boost::extents[7]
+		);
+
+		ConnectFour game;
+		evaluator.RequestEvaluation(
+			&game,
+			&value,
+			policy_ref,
+			&task
+		);
+		
+		task.wait();
+
+		for(size_t i=0; i!=1000000; ++i) {
+			oaz::thread_pool::DummyTask task;
+			evaluator.RequestEvaluation(
+				&game,
+				&value,
+				policy_ref,
+				&task
+			);
+		}
+
+		ASSERT_EQ(cache->GetNumberOfHits(), 1000000);
 	}
 
 	/* TEST (Inference, CheckResults) { */

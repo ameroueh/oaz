@@ -129,3 +129,7 @@ void TicTacToe::WriteStateToTensorMemory(float* destination) const {
 		for(size_t j=0; j!=3; ++j)
 			tensor[i][j][1] = player1_tokens.Get(i, j) ? 1. : 0.;
 }
+
+size_t TicTacToe::GetState() const {
+	return m_player0_tokens.GetBits() | (m_player1_tokens.GetBits() << 9);	
+}

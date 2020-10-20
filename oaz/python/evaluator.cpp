@@ -3,16 +3,20 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 
-#include "oaz/games/game.hpp"
+#include "oaz/evaluator/evaluator.hpp"
 
 namespace p = boost::python;
 
-BOOST_PYTHON_MODULE( game ) {
+
+BOOST_PYTHON_MODULE( evaluator ) {
 
 	PyEval_InitThreads();
-	p::class_<
-		oaz::games::Game,
-		boost::noncopyable
-	>( "Game", p::no_init);
 
+	p::class_<
+		oaz::evaluator::Evaluator,
+		boost::noncopyable
+	>(
+		"Evaluator",
+		p::no_init
+	);
 }

@@ -5,9 +5,11 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "stdint.h"
 
 #include "oaz/array/array.hpp"
 #include "oaz/games/game.hpp"
+#include "oaz/games/generic_game_map.hpp"
 
 namespace oaz::games {
 	class Bandits : public Game {
@@ -23,6 +25,9 @@ namespace oaz::games {
 					static const Class meta;
 					return meta;
 				};
+				GameMap* CreateGameMap() const {
+					return new GenericGameMap<Bandits, uint64_t>();
+				}
 
 				private:
 					const std::vector<int> m_board_shape {10};
@@ -43,6 +48,8 @@ namespace oaz::games {
 			std::unique_ptr<Game> Clone() const;
 
 			bool operator==(const Bandits&) const;	
+
+			uint64_t GetState() const;
 		private:
 			static constexpr std::bitset<10> WINNING_BITS = std::bitset<10>(0b101010101ll);
 			std::bitset<10> m_board;

@@ -20,6 +20,7 @@
 #include "oaz/queue/queue.hpp"
 #include "oaz/mutex/mutex.hpp"
 #include "oaz/evaluator/evaluator.hpp"
+#include "oaz/cache/cache.hpp"
 
 #include "boost/multi_array.hpp"
 #include "oaz/neural_network/model.hpp"
@@ -56,10 +57,18 @@ namespace oaz::nn {
 			void Lock();			
 			void Unlock();
 			bool IsFull();
+
+			boost::multi_array_ref<oaz::games::Game*, 1> GetGames();
+			boost::multi_array_ref<float*, 1> GetValues();
+			boost::multi_array_ref<
+				std::unique_ptr<boost::multi_array_ref<float, 1>>,
+			1> GetPolicies();
+
 		private:
 			oaz::mutex::SpinlockMutex m_lock;
 			tensorflow::Tensor m_batch;
 			boost::multi_array<oaz::thread_pool::Task*, 1> m_tasks;
+			boost::multi_array<oaz::games::Game*, 1> m_games;
 			boost::multi_array<float*, 1> m_values;
 			boost::multi_array<
 				std::unique_ptr<
@@ -80,7 +89,8 @@ namespace oaz::nn {
 
 		public: 
 			NNEvaluator(
-				std::shared_ptr<Model>, 
+				std::shared_ptr<oaz::nn::Model>, 
+				std::shared_ptr<oaz::cache::Cache>,
 				std::shared_ptr<oaz::thread_pool::ThreadPool>,
 				const std::vector<int>&,
 				size_t
@@ -94,7 +104,22 @@ namespace oaz::nn {
 
 			std::string GetStatus() const;
 			~NNEvaluator();
+
 		private:
+			bool EvaluateFromCache(
+				oaz::games::Game*, 
+				float*,
+				boost::multi_array_ref<float, 1>,
+				oaz::thread_pool::Task*
+			);
+			void EvaluateFromNN(
+				oaz::games::Game*, 
+				float*,
+				boost::multi_array_ref<float, 1>,
+				oaz::thread_pool::Task*
+			);
+
+
 			size_t GetBatchSize() const;
 			const std::vector<int>& GetElementDimensions() const;
 			void ForceEvaluation();
@@ -113,11 +138,11 @@ namespace oaz::nn {
 			std::thread m_worker;
 			std::promise<void> m_exit_signal;
 			std::atomic<bool> m_evaluation_completed;
-
-
 			std::vector<int> m_element_dimensions;
+
 			std::shared_ptr<Model> m_model;
 			std::shared_ptr<oaz::thread_pool::ThreadPool> m_thread_pool;
+			std::shared_ptr<oaz::cache::Cache> m_cache;
 	};
 }
 
