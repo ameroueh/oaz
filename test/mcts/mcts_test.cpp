@@ -96,7 +96,7 @@ TEST (Selection, Default) {
 	 node.AddChild(1, 0, 1.);
 	 node.GetChild(1)->IncrementNVisits();
 
-	 UCTSelector<SearchNode> selector;
+	 UCTSelector selector;
 	 ASSERT_EQ(0, selector(&node));
 
 	 node.GetChild(1)->AddValue(1.);

@@ -18,22 +18,22 @@ TEST (InstantiationTest, Default) {
 
 TEST (LockTest, Default) {
 	 SpinlockMutex m;
-	 m.lock();
+	 m.Lock();
 }
 
 TEST (LockUnlockTest, Default) {
 	 SpinlockMutex m;
-	 m.lock();
-	 m.unlock();
+	 m.Lock();
+	 m.Unlock();
 }
 
 void addOne(int* var, SpinlockMutex* mutex, int n_iterations) {
 
 
 	for(int i=0; i!= n_iterations; ++i) {
-		mutex->lock();
+		mutex->Lock();
 		*var += 1;
-		mutex->unlock();
+		mutex->Unlock();
 	}
 
 }
