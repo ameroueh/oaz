@@ -25,7 +25,9 @@ using namespace oaz::games;
 namespace oaz::mcts {
 	TEST (Instantiation, Default) {
 		std::unique_ptr<tensorflow::Session> session(
-			CreateSessionAndLoadGraph("frozen_model.pb")
+			CreateSessionAndLoadGraph(
+				"frozen_model.pb"
+			)
 		);
 		auto model = CreateModel(
 			session.get(), 
@@ -36,6 +38,7 @@ namespace oaz::mcts {
 		std::shared_ptr<NNEvaluator> evaluator(
 			new NNEvaluator(
 				model, 
+				nullptr,
 				pool, 
 				{6, 7, 2}, 
 				64
@@ -55,7 +58,9 @@ namespace oaz::mcts {
 	
 	TEST (Search, CheckSearchTree) {
 		std::unique_ptr<tensorflow::Session> session(
-			CreateSessionAndLoadGraph("frozen_model.pb")
+			CreateSessionAndLoadGraph(
+				"frozen_model.pb"
+			)
 		);
 		auto model = CreateModel(
 			session.get(), 
@@ -66,6 +71,7 @@ namespace oaz::mcts {
 		std::shared_ptr<NNEvaluator> evaluator(
 			new NNEvaluator(
 				model, 
+				nullptr,
 				pool, 
 				{6, 7, 2}, 
 				1
@@ -89,7 +95,9 @@ namespace oaz::mcts {
 	
 	TEST (MultithreadedSearch, CheckSearchTree) {
 		std::unique_ptr<tensorflow::Session> session(
-			CreateSessionAndLoadGraph("frozen_model.pb")
+			CreateSessionAndLoadGraph(
+				"frozen_model.pb"
+			)
 		);
 		auto model = CreateModel(
 			session.get(), 
@@ -100,6 +108,7 @@ namespace oaz::mcts {
 		std::shared_ptr<NNEvaluator> evaluator(
 			new NNEvaluator(
 				model, 
+				nullptr,
 				pool, 
 				{6, 7, 2}, 
 				8	
@@ -121,7 +130,9 @@ namespace oaz::mcts {
 	
 	TEST (MultithreadedSearch, WithNoiseCheckSearchTree) {
 		std::unique_ptr<tensorflow::Session> session(
-			CreateSessionAndLoadGraph("frozen_model.pb")
+			CreateSessionAndLoadGraph(
+				"frozen_model.pb"
+			)
 		);
 		auto model = CreateModel(
 			session.get(), 
@@ -132,6 +143,7 @@ namespace oaz::mcts {
 		std::shared_ptr<NNEvaluator> evaluator(
 			new NNEvaluator(
 				model, 
+				nullptr,
 				pool, 
 				{6, 7, 2}, 
 				8	
@@ -155,7 +167,9 @@ namespace oaz::mcts {
 	
 	TEST (MultithreadedSearch, Performance) {
 		std::unique_ptr<tensorflow::Session> session(
-			CreateSessionAndLoadGraph("frozen_model.pb")
+			CreateSessionAndLoadGraph(
+				"frozen_model.pb"
+			)
 		);
 		auto model = CreateModel(
 			session.get(), 
@@ -166,6 +180,7 @@ namespace oaz::mcts {
 		std::shared_ptr<NNEvaluator> evaluator(
 			new NNEvaluator(
 				model, 
+				nullptr,
 				pool, 
 				{6, 7, 2}, 
 				100	

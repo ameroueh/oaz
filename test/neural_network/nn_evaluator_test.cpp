@@ -150,13 +150,14 @@ namespace oaz::nn {
 		task.wait();
 
 		for(size_t i=0; i!=50; ++i) {
-			oaz::thread_pool::DummyTask task;
+			oaz::thread_pool::DummyTask task(1);
 			evaluator.RequestEvaluation(
 				&game,
 				&value,
 				policy_ref,
 				&task
 			);
+			task.wait();
 		}
 
 		ASSERT_EQ(cache->GetNumberOfHits(), 50);
@@ -196,15 +197,16 @@ namespace oaz::nn {
 		
 		task.wait();
 
+		oaz::thread_pool::DummyTask task2(1000000);
 		for(size_t i=0; i!=1000000; ++i) {
-			oaz::thread_pool::DummyTask task;
 			evaluator.RequestEvaluation(
 				&game,
 				&value,
 				policy_ref,
-				&task
+				&task2
 			);
 		}
+		task2.wait();
 
 		ASSERT_EQ(cache->GetNumberOfHits(), 1000000);
 	}

@@ -3,137 +3,115 @@
 
 #include "oaz/games/connect_four.hpp"
 #include "oaz/simulation/simulation_evaluator.hpp"
-#include "oaz/queue/queue.hpp"
 #include "oaz/thread_pool/dummy_task.hpp"
+#include "oaz/queue/queue.hpp"
 
-#include <thread>
-#include <vector>
+/* #include <thread> */
+/* #include <vector> */
 
 using namespace std;
 
-using Game = ConnectFour;
-using TestEvaluator = SimulationEvaluator<Game>;
-
 TEST (Instantiation, Default) {
-	oaz::thread_pool::ThreadPool pool(1);
-	TestEvaluator evaluator(&pool);
+	auto pool = make_shared<oaz::thread_pool::ThreadPool>(1);
+	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
 }
 
 TEST (RequestEvaluation, Default) {
-	oaz::thread_pool::ThreadPool pool(1);
-	TestEvaluator evaluator(&pool);
+	auto pool = make_shared<oaz::thread_pool::ThreadPool>(1);
+	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
+	ConnectFour game;
+	boost::multi_array<float, 1> policy(boost::extents[7]);
+	float value;
 	
-	Game game;
-	Game game2(game);
+	oaz::thread_pool::DummyTask task(1);
 
-	Game::Value value;
-	Game::Policy policy;
-	
-	oaz::thread_pool::DummyTask task(2);
-
-	evaluator.requestEvaluation(
+	evaluator->RequestEvaluation(
 		&game,
 		&value,
-		&policy,
+		policy,
 		&task
 	);
-
-	ASSERT_TRUE(game2 == game);
-
-	game.playMove(0);
-	game2.playMove(0);
-
-	evaluator.requestEvaluation(
-		&game,
-		&value,
-		&policy,
-		&task
-	);
-	ASSERT_TRUE(game2 == game);
 
 	task.wait();
 }
 
-void evaluateGames(
-	std::vector<Game>* games,
+void EvaluateGames(
+	std::vector<ConnectFour>* games,
 	oaz::queue::SafeQueue<size_t>* indices_q, 
 	oaz::thread_pool::Task* task, 
-	oaz::evaluator::Evaluator<Game>* evaluator, 
+	std::shared_ptr<oaz::simulation::SimulationEvaluator> evaluator, 
 	size_t thread_id) {
 	std::string moves = "021302130213465640514455662233001144552636";
 	size_t n_moves = moves.size();
 
-	indices_q->lock();
+	indices_q->Lock();
 	while(!indices_q->empty()) {
 		size_t index = indices_q->front();
 		indices_q->pop();
-		indices_q->unlock();
+		indices_q->Unlock();
 		
-		Game& game = (*games)[index];
-		typename Game::Value value;
-		typename Game::Policy policy;
+		ConnectFour& game = (*games)[index];
 	
 		size_t len = index % (moves.size() + 1);
 
-		game.playFromString(moves.substr(0, len));
-		Game temp_game = game;
-
-		evaluator->requestEvaluation(
+		game.PlayFromString(moves.substr(0, len));
+		
+		boost::multi_array<float, 1> policy(boost::extents[7]);
+		float value;
+		
+		evaluator->RequestEvaluation(
 			&game,
 			&value,
-			&policy,
+			policy,
 			task
 		);
 	
-		ASSERT_TRUE(game == temp_game);
-
-		indices_q->lock();
+		indices_q->Lock();
 	}
-	indices_q->unlock();
+	indices_q->Unlock();
 		
 }
 
 TEST (RandomGames, Default) {
+	
+	auto pool = make_shared<oaz::thread_pool::ThreadPool>(1);
+	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
 
-	oaz::thread_pool::ThreadPool pool(1);
-	std::vector<Game> games(1000);
+	std::vector<ConnectFour> games(10000);
 	oaz::queue::SafeQueue<size_t> indices;
-	for(size_t i=0; i!=1000; ++i) 
+	for(size_t i=0; i!=10000; ++i) 
 		indices.push(i);
 
-	oaz::thread_pool::DummyTask task(1000);
-	TestEvaluator evaluator(&pool);
+	oaz::thread_pool::DummyTask task(10000);
 	
-	evaluateGames(
+	EvaluateGames(
 		&games, 
 		&indices, 
 		&task, 
-		&evaluator,
+		evaluator,
 		0
 	);
 	task.wait();
 }
 
 TEST (MultithreadedRandomGames, Default) {
-	
-	oaz::thread_pool::ThreadPool pool(1);
-	std::vector<Game> games(1000);
+	auto pool = make_shared<oaz::thread_pool::ThreadPool>(2);
+	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
+	std::vector<ConnectFour> games(10000);
 	oaz::queue::SafeQueue<size_t> indices;
-	for(size_t i=0; i!=1000; ++i) 
+	for(size_t i=0; i!=10000; ++i) 
 		indices.push(i);
+	oaz::thread_pool::DummyTask task(10000);
 	
-	oaz::thread_pool::DummyTask task(1000);
-	TestEvaluator evaluator(&pool);
-
 	vector<thread> threads; 
 	for(size_t i=0; i!=2; ++i) {
 		threads.push_back(
 			thread(
-				&evaluateGames, 
+				&EvaluateGames, 
 				&games,
 				&indices,
 				&task,
-				&evaluator,
+				evaluator,
 				0
 			)
 		);
