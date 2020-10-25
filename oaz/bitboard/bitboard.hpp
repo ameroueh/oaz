@@ -15,24 +15,24 @@ namespace oaz::bitboard {
 	template <size_t NROWS, size_t NCOLS>
 	class BitBoard {
 		public:
-			constexpr BitBoard(): m_board(0ll) {}
+			constexpr BitBoard(): m_board(0ull) {}
 			constexpr BitBoard(
 				const std::initializer_list<std::pair<size_t, size_t>>& token_positions
-			): m_board(0ll) {
+			): m_board(0ull) {
 				for(auto position: token_positions)
 					Set(position.first, position.second);
 			}
 			constexpr BitBoard(const BitBoard& board): m_board(board.m_board) {}
 
 			constexpr size_t Get(size_t i, size_t j) const {
-				return (m_board >> (i * NCOLS + j)) & 1ll;
+				return (m_board >> (i * NCOLS + j)) & 1ull;
 			}
 			constexpr void Set(size_t i, size_t j) {
-				m_board |= (1ll << (i * NCOLS + j));
+				m_board |= (1ull << (i * NCOLS + j));
 				m_board &= BOARD_MASK;
 			}
 			constexpr void Unset(size_t i, size_t j) {
-				m_board &= (~1ll << (i * NCOLS + j));
+				m_board &= (~1ull << (i * NCOLS + j));
 			}
 			constexpr size_t Sum() const {
 				return std::bitset<64>(m_board).count();
@@ -91,7 +91,11 @@ namespace oaz::bitboard {
 				uint64_t lhs_filled_masked_board = filled_masked_board >> bit_position;
 				uint64_t rhs_filled_masked_board = filled_masked_board << (64 - bit_position);
 				uint64_t lhs_lead_mask = (1ll << tocount_ll(lhs_filled_masked_board)) - 1;
-				uint64_t rhs_lead_mask = ~((1ll << (64 - locount_ll(rhs_filled_masked_board))) - 1);
+
+				uint64_t locount_rhs_filled_masked_board = locount_ll(rhs_filled_masked_board);
+				uint64_t rhs_lead_mask = locount_rhs_filled_masked_board == 0 ? 0ull
+					: ~((1ull << (64 - locount_rhs_filled_masked_board)) - 1);
+
 				return popcount_ll(lhs_masked_board & lhs_lead_mask) 
 					+ popcount_ll(rhs_masked_board & rhs_lead_mask);
 			}
@@ -113,9 +117,9 @@ namespace oaz::bitboard {
 				return (COLUMN_MASK << j) - COLUMN_MASK;
 			}
 
-			static constexpr uint64_t ROW_MASK = (0b1ll << NCOLS) - 1;
-			static constexpr uint64_t COLUMN_MASK = ColumnMask<NROWS, NCOLS>::value;
-			static constexpr uint64_t BOARD_MASK = (1ll << NCOLS*NROWS) - 1;
+			static constexpr uint64_t ROW_MASK = (NCOLS == 64) ? ~0ull : ((1ull << NCOLS) - 1);
+			static constexpr uint64_t COLUMN_MASK = (NROWS == 64) ? ~0ull : ColumnMask<NROWS, NCOLS>::value;
+			static constexpr uint64_t BOARD_MASK = (NCOLS * NROWS == 64) ? ~0ull : ((1ull << NCOLS*NROWS) - 1);
 
 			uint64_t m_board;
 	};
