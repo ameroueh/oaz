@@ -47,16 +47,14 @@ def test_az_search():
 
         # AZ search definition
         model = Model(
-            session=session,
-            value_node_name="value",
-            policy_node_name="policy"
+            session=session, value_node_name="value", policy_node_name="policy"
         )
         thread_pool = ThreadPool(n_workers=1)
         evaluator = NNEvaluator(
-                model=model,
-                thread_pool=thread_pool,
-                dimensions=(6, 7, 2),
-                batch_size=1
+            model=model,
+            thread_pool=thread_pool,
+            dimensions=(6, 7, 2),
+            batch_size=1,
         )
         selector = AZSelector()
         game = ConnectFour()
@@ -68,8 +66,9 @@ def test_az_search():
             n_concurrent_workers=1,
             n_iterations=100,
             noise_epsilon=0.25,
-            noise_alpha=1
+            noise_alpha=1,
         )
+
 
 def test_az_search_with_cache():
     with tf.Session() as session:
@@ -110,18 +109,16 @@ def test_az_search_with_cache():
 
         # AZ search definition
         model = Model(
-            session=session,
-            value_node_name="value",
-            policy_node_name="policy"
+            session=session, value_node_name="value", policy_node_name="policy"
         )
         thread_pool = ThreadPool(n_workers=1)
         cache = SimpleCache(ConnectFour(), 100)
         evaluator = NNEvaluator(
-                model=model,
-                cache=cache,
-                thread_pool=thread_pool,
-                dimensions=(6, 7, 2),
-                batch_size=1
+            model=model,
+            cache=cache,
+            thread_pool=thread_pool,
+            dimensions=(6, 7, 2),
+            batch_size=1,
         )
         selector = AZSelector()
         game = ConnectFour()
@@ -133,8 +130,9 @@ def test_az_search_with_cache():
             n_concurrent_workers=1,
             n_iterations=100,
             noise_epsilon=0.25,
-            noise_alpha=1
+            noise_alpha=1,
         )
+
 
 if __name__ == "__main__":
     test_az_search()
