@@ -21,4 +21,4 @@ with tf.Session() as session:
         n_threads=4,
         evaluator_batch_size=4,
     )
-    dataset = self_play.self_play(session)
+    dataset = self_play.self_play(session, debug=True)

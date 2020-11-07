@@ -2,13 +2,18 @@
     made game-agnostic.
 """
 
-import importlib
 import logging
 from threading import Thread
 from typing import Dict, List, Tuple
-from tqdm import tqdm
 
 import numpy as np
+from tqdm import tqdm
+
+from pyoaz.cache.simple_cache import SimpleCache
+from pyoaz.evaluator.nn_evaluator import Model, NNEvaluator
+from pyoaz.search import Search
+from pyoaz.selection import AZSelector
+from pyoaz.thread_pool import ThreadPool
 
 LOGGER = logging.getLogger(__name__)
 # logging.basicConfig(
@@ -30,6 +35,7 @@ class SelfPlay:
         evaluator_batch_size: int = 32,
         epsilon: float = 0.25,
         alpha: float = 1.0,
+        cache_size: int = None,
     ):
         # TODO should this take an already made c_model????
 
@@ -43,41 +49,47 @@ class SelfPlay:
         self.epsilon = epsilon
         self.alpha = alpha
         self._import_game_module(game)
-        self._create_model()
+        self.selector = AZSelector()
+        self.thread_pool = ThreadPool(self.n_search_worker)
+        self.cache_size = cache_size
+
         self.discount_factor = 1.0
 
     def _import_game_module(self, game):
         if game == "connect_four":
-            self.game_module = importlib.import_module(
-                "pyoaz.games.connect_four"
-            )
-            self.game = self.game_module.ConnectFour
+            from pyoaz.games.connect_four import ConnectFour
+
+            self.game = ConnectFour
+            self.dimensions = (6, 7, 2)
         elif game == "tic_tac_toe":
-            self.game_module = importlib.import_module(
-                "pyoaz.games.tic_tac_toe"
-            )
-            self.game = self.game_module.TicTacToe
+            from pyoaz.games.tic_tac_toe import TicTacToe
+
+            self.game = TicTacToe
+            self.dimensions = (3, 3, 2)
         else:
             raise NotImplementedError
 
-    def _create_model(self):
+    def self_play(self, session, discount_factor=1.0, debug=False) -> Dict:
 
-        # Check if I need to first run a session or something
-        self.c_model = self.game_module.Model()
+        self.discount_factor = discount_factor
 
-        # TODO make this automatic
-        self.c_model.set_value_node_name("value/Tanh")
-        self.c_model.set_policy_node_name("policy/Softmax")
-
-        self.pool = self.game_module.Pool(self.n_search_worker)
-
-        self.evaluator = self.game_module.Evaluator(
-            self.c_model, self.pool, self.evaluator_batch_size
+        model = Model(
+            session=session,
+            value_node_name="value/Tanh",
+            policy_node_name="policy/Softmax",
+        )
+        cache = None
+        if self.cache_size:
+            cache = SimpleCache(self.game(), self.cache_size)
+        self.evaluator = NNEvaluator(
+            model=model,
+            cache=cache,
+            thread_pool=self.thread_pool,
+            dimensions=self.dimensions,
+            batch_size=self.evaluator_batch_size,
         )
 
-    def self_play(self, session, discount_factor=1.0, debug=False) -> Dict:
-        self.discount_factor = discount_factor
-        self.c_model.set_session(session._session)
+        # self.c_model.set_session(session._session)
 
         all_datasets = [
             {"Boards": [], "Values": [], "Policies": []}
@@ -173,15 +185,19 @@ class SelfPlay:
         #             game.play_move(move)
 
         while not game.finished:
-
-            search = self.game_module.Search(
-                game,
-                self.evaluator,
-                self.pool,
-                self.search_batch_size,
-                self.n_simulations_per_move,
-                self.epsilon,
-                self.alpha,
+            game = self.game()
+            search = Search(
+                game=game,
+                selector=self.selector,
+                evaluator=self.evaluator,
+                thread_pool=self.thread_pool,
+                # Do we need this argument? Can't it be inferred from thread
+                # pool?
+                n_concurrent_workers=self.n_search_workers,
+                n_iterations=self.n_simulations_per_move,
+                noise_epsilon=self.epsilon,
+                noise_alpha=self.alpha,
+                # No search batch_size?
             )
             search.search()
             root = search.get_root()
@@ -224,4 +240,9 @@ class SelfPlay:
         # LOGGER.info("Game is finished!")
         scores = [game.score] * len(boards)
         scores *= np.power(self.discount_factor, np.arange(len(boards)))
+
+        import pdb
+
+        pdb.set_trace()
+
         return boards, scores, policies

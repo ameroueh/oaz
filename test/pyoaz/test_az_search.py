@@ -8,7 +8,7 @@ from pyoaz.games.connect_four import ConnectFour
 from pyoaz.cache.simple_cache import SimpleCache
 
 
-def test_az_search():
+def _test_az_search():
     with tf.Session() as session:
 
         # Neural network definition
@@ -70,7 +70,7 @@ def test_az_search():
         )
 
 
-def test_az_search_with_cache():
+def _test_az_search_with_cache():
     with tf.Session() as session:
 
         # Neural network definition
@@ -135,5 +135,5 @@ def test_az_search_with_cache():
 
 
 if __name__ == "__main__":
-    test_az_search()
-    test_az_search_with_cache()
+    _test_az_search()
+    _test_az_search_with_cache()
