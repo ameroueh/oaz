@@ -11,7 +11,10 @@ BOOST_PYTHON_MODULE( search ) {
 
 	PyEval_InitThreads();
 
-	p::class_<SearchNode, boost::noncopyable>(
+	p::class_<
+		oaz::mcts::SearchNode,
+		std::shared_ptr<oaz::mcts::SearchNode>, 
+		boost::noncopyable>(
 		"SearchNode",
 		p::init<>()
 	)
@@ -32,7 +35,7 @@ BOOST_PYTHON_MODULE( search ) {
 		p::return_value_policy<p::reference_existing_object>()
 	);
 
-	p::class_<Search, std::shared_ptr<Search>, boost::noncopyable>(
+	p::class_<Search, std::shared_ptr<oaz::mcts::Search>, boost::noncopyable>(
 		"Search", 
 		p::init<
 			const oaz::games::Game&, 
