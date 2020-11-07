@@ -28,3 +28,20 @@ class Search:
     @property
     def core(self):
         return self._core
+
+    @property
+    def tree_root(self):
+        return self.core.get_tree_root()
+
+
+def select_best_move_by_visit_count(search):
+    root = search.tree_root
+    best_move = -1
+    best_n_visits = -1
+    for i in range(root.n_children):
+        child = root.get_child(i)
+        if child.n_visits > best_n_visits:
+            best_n_visits = child.n_visits
+            best_move = child.move
+    return best_move
+
