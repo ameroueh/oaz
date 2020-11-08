@@ -16,11 +16,6 @@ from pyoaz.selection import AZSelector
 from pyoaz.thread_pool import ThreadPool
 
 LOGGER = logging.getLogger(__name__)
-# logging.basicConfig(
-#     format="%(asctime)s %(levelname)-8s %(message)s",
-#     level=logging.INFO,
-#     datefmt="%Y-%m-%d %H:%M:%S",
-# )
 
 
 class SelfPlay:
@@ -30,27 +25,25 @@ class SelfPlay:
         search_batch_size: int = 4,
         n_games_per_worker: int = 800,
         n_simulations_per_move: int = 200,
-        n_search_worker: int = 4,
+        n_search_workers: int = 4,
         n_threads: int = 32,
         evaluator_batch_size: int = 32,
         epsilon: float = 0.25,
         alpha: float = 1.0,
         cache_size: int = None,
     ):
-        # TODO should this take an already made c_model????
 
-        # self.model_dir = Path(model_dir)
         self.search_batch_size = search_batch_size
         self.n_games_per_worker = n_games_per_worker
         self.n_simulations_per_move = n_simulations_per_move
-        self.n_search_worker = n_search_worker
+        self.n_search_workers = n_search_workers
         self.n_threads = n_threads
         self.evaluator_batch_size = evaluator_batch_size
         self.epsilon = epsilon
         self.alpha = alpha
         self._import_game_module(game)
         self.selector = AZSelector()
-        self.thread_pool = ThreadPool(self.n_search_worker)
+        self.thread_pool = ThreadPool(self.n_search_workers)
         self.cache_size = cache_size
 
         self.discount_factor = 1.0
@@ -199,8 +192,7 @@ class SelfPlay:
                 noise_alpha=self.alpha,
                 # No search batch_size?
             )
-            search.search()
-            root = search.get_root()
+            root = search.tree_root
 
             # best_visit_count = -1
             # best_child = None
