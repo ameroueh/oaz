@@ -15,6 +15,7 @@ import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 import toml
 from keras_contrib.callbacks import CyclicLR
+from logzero import setup_logger
 from pyoaz.bots import LeftmostBot, OazBot, RandomBot
 
 # from pyoaz.games.tic_tac_toe import boards_to_bin
@@ -35,23 +36,12 @@ os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 # os.environ["OAZ_LOGGING"] = "true"
 os.environ["OAZ_LOGGING"] = "false"
 
-LOGGER = logging.getLogger(__name__)
+logger = setup_logger()
 
 
 def set_logging(debug_mode=False):
     if debug_mode:
-
-        logging.basicConfig(
-            format="%(asctime)s %(levelname)-8s %(message)s",
-            level=logging.DEBUG,
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-    else:
-        logging.basicConfig(
-            format="%(asctime)s %(levelname)-8s %(message)s",
-            level=logging.INFO,
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
+        logger.level = logging.DEBUG
 
 
 def overwrite_config(configuration, args_dict):
@@ -105,7 +95,7 @@ def play_tournament(game, model, n_games=100):
     oaz_wins, oaz_losses = win_loss[0, :].sum(), win_loss[:, 0].sum()
     draws = 2 * n_games * 2 - oaz_wins - oaz_losses
 
-    LOGGER.info(f"WINS: {oaz_wins} LOSSES: {oaz_losses} DRAWS: {draws}")
+    logger.info(f"WINS: {oaz_wins} LOSSES: {oaz_losses} DRAWS: {draws}")
 
     return oaz_wins, oaz_losses, draws
 
@@ -215,7 +205,7 @@ class Trainer:
         total_generations = sum(total_generations)
 
         for stage_params in self.configuration["stages"][self.stage_idx :]:
-            LOGGER.info(f"Starting stage  {self.stage_idx}")
+            logger.info(f"Starting stage  {self.stage_idx}")
             stage_params = self.configuration["stages"][self.stage_idx]
             optimizer = self._get_optimizer(stage_params)
             self.model.compile(
@@ -231,7 +221,7 @@ class Trainer:
             self.memory.set_maxlen(stage_params["buffer_length"])
 
             for _ in range(self.gen_in_stage, stage_params["n_generations"]):
-                LOGGER.info(
+                logger.info(
                     f"Training cycle {self.generation} / {total_generations}"
                 )
 
@@ -303,7 +293,7 @@ class Trainer:
                     )
                     == 0
                 ):
-                    LOGGER.info(
+                    logger.info(
                         f"Checkpointing model generation {self.generation}"
                     )
                     self.model.save(
@@ -341,6 +331,7 @@ class Trainer:
             step_size=4 * len(train_boards) // 64,
             mode="triangular",
         )
+
         train_history = self.model.fit(
             train_boards,
             {"value": train_values, "policy": train_policies},
@@ -376,7 +367,7 @@ class Trainer:
         accuracy = (
             np.where(pred_values > 0, 1.0, -1.0) == benchmark_values
         ).mean()
-        LOGGER.info(f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}")
+        logger.info(f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}")
         return mse, accuracy
 
     def evaluate_self_play_dataset(self, benchmark_path, boards, values):
@@ -386,7 +377,7 @@ class Trainer:
                 self_play_accuracy = (values == gt_values).mean()
                 self_play_mse = ((values - gt_values) ** 2).mean()
 
-                LOGGER.info(
+                logger.info(
                     f"Self-Play MSE: {self_play_mse} "
                     f"Self-Play ACCURACY: {self_play_accuracy}"
                 )
@@ -395,7 +386,7 @@ class Trainer:
             return None, None
 
     def save(self):
-        LOGGER.info(f"Saving model at {self.save_path / 'model.pb'}")
+        logger.info(f"Saving model at {self.save_path / 'model.pb'}")
         self.model.save(str(self.save_path / "model.pb"))
         joblib.dump(self.memory, self.save_path / "memory.joblib")
         self._save_plots()
@@ -406,10 +397,10 @@ class Trainer:
         if debug_mode:
             self_play_controller = SelfPlay(
                 game=self.configuration["game"],
-                search_batch_size=2,
+                n_tree_workers=2,
                 n_games_per_worker=3,
                 n_simulations_per_move=16,
-                n_search_worker=4,
+                n_workers=4,
                 n_threads=4,
                 evaluator_batch_size=4,
                 epsilon=0.25,
@@ -419,14 +410,12 @@ class Trainer:
         else:
             self_play_controller = SelfPlay(
                 game=self.configuration["game"],
-                search_batch_size=self.configuration["self_play"][
+                n_tree_workers=self.configuration["self_play"][
                     "search_batch_size"
                 ],
                 n_games_per_worker=n_games_per_worker,
                 n_simulations_per_move=n_simulations_per_move,
-                n_search_worker=self.configuration["self_play"][
-                    "n_search_workers"
-                ],
+                n_workers=self.configuration["self_play"]["n_search_workers"],
                 n_threads=self.configuration["self_play"]["n_threads"],
                 evaluator_batch_size=self.configuration["self_play"][
                     "evaluator_batch_size"
