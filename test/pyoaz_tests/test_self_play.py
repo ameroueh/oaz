@@ -16,10 +16,10 @@ def test_self_play():
         self_play = SelfPlay(
             game="connect_four",
             search_batch_size=4,
-            n_games_per_worker=10,
-            n_simulations_per_move=20,
+            n_games_per_worker=4,
+            n_simulations_per_move=2,
             n_search_workers=4,
             n_threads=4,
-            evaluator_batch_size=4,
+            evaluator_batch_size=1,
         )
         _ = self_play.self_play(session, debug=True)
