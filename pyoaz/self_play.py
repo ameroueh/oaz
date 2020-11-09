@@ -2,10 +2,10 @@
     made game-agnostic.
 """
 
-import logging
 from threading import Thread
 from typing import Dict, List, Tuple
 
+from logzero import logger
 import numpy as np
 from tqdm import tqdm
 
@@ -14,8 +14,6 @@ from pyoaz.evaluator.nn_evaluator import Model, NNEvaluator
 from pyoaz.search import Search
 from pyoaz.selection import AZSelector
 from pyoaz.thread_pool import ThreadPool
-
-LOGGER = logging.getLogger(__name__)
 
 
 class SelfPlay:
@@ -71,8 +69,10 @@ class SelfPlay:
             value_node_name="value/Tanh",
             policy_node_name="policy/Softmax",
         )
+
         cache = None
         if self.cache_size:
+            logger.debug("Setting up cache")
             cache = SimpleCache(self.game(), self.cache_size)
         self.evaluator = NNEvaluator(
             model=model,
@@ -82,15 +82,13 @@ class SelfPlay:
             batch_size=self.evaluator_batch_size,
         )
 
-        # self.c_model.set_session(session._session)
-
         all_datasets = [
             {"Boards": [], "Values": [], "Policies": []}
             for _ in range(self.n_threads)
         ]
 
         if debug:
-            LOGGER.debug("DEBUG MODE")
+            logger.debug("DEBUG MODE")
             # Debugging: skip the threading:
             self._worker_self_play(all_datasets, 0, None)
 
@@ -99,7 +97,7 @@ class SelfPlay:
             all_datasets[0]["Policies"] = np.array(all_datasets[0]["Policies"])
             return all_datasets[0]
 
-        LOGGER.debug("THREADING MODE")
+        logger.debug("THREADING MODE")
         # Threading Mode:
 
         with tqdm(
@@ -136,7 +134,7 @@ class SelfPlay:
         return final_dataset
 
     def _worker_self_play(self, dataset, id, update_progress=None):
-        LOGGER.debug(f"Starting thread {id}")
+        logger.debug(f"Starting thread {id}")
         self._self_play(dataset[id], update_progress)
 
     def _self_play(self, dataset, update_progress=None):
@@ -165,20 +163,21 @@ class SelfPlay:
 
         # Sometimes act randomly for the first few moves
         # if np.random.uniform() < 0.1:
-        #     LOGGER.debug("random")
+        #     logger.debug("random")
         #     move = int(np.random.choice(game.available_moves))
         #     game.play_move(move)
         #     if np.random.uniform() < 0.1:
-        #         LOGGER.debug("random 2")
+        #         logger.debug("random 2")
         #         move = int(np.random.choice(game.available_moves))
         #         game.play_move(move)
         #         if np.random.uniform() < 0.1:
-        #             LOGGER.debug("random 3")
+        #             logger.debug("random 3")
         #             move = int(np.random.choice(game.available_moves))
         #             game.play_move(move)
 
         while not game.finished:
-            game = self.game()
+
+            logger.debug(f"Game board {game.board.sum()}")
             search = Search(
                 game=game,
                 selector=self.selector,
@@ -198,6 +197,7 @@ class SelfPlay:
             # best_child = None
             policy = np.zeros(shape=policy_size, dtype=np.float32)
             for i in range(root.n_children):
+
                 child = root.get_child(i)
                 move = child.move
                 n_visits = child.n_visits
@@ -211,15 +211,11 @@ class SelfPlay:
             policy = policy / (self.n_simulations_per_move - 1)
             policies.append(policy)
 
-            # import pdb
-
-            # pdb.set_trace()
-
             move = int(np.random.choice(np.arange(policy_size), p=policy))
             # move = best_child.move
 
-            # LOGGER.info(f"Playing move {move}")
-            # LOGGER.info(f"availalbe move {game.available_moves} ")
+            # logger.info(f"Playing move {move}")
+            # logger.info(f"availalbe move {game.available_moves} ")
 
             boards.append(game.board.copy())
             game.play_move(move)
@@ -229,12 +225,8 @@ class SelfPlay:
         policy = policy / policy.sum()
         policies.append(policy)
 
-        # LOGGER.info("Game is finished!")
+        # logger.info("Game is finished!")
         scores = [game.score] * len(boards)
         scores *= np.power(self.discount_factor, np.arange(len(boards)))
-
-        import pdb
-
-        pdb.set_trace()
 
         return boards, scores, policies
