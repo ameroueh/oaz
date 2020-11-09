@@ -66,7 +66,7 @@ def residual_block(
 def create_connect_four_model(depth=3, activation="relu", policy_factor=1.0):
     return create_alpha_zero_model(
         depth=depth,
-        input_shape=(7, 6, 2),
+        input_shape=(6, 7, 2),
         policy_output_size=7,
         activation=activation,
         policy_factor=policy_factor,
