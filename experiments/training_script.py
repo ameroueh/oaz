@@ -42,6 +42,8 @@ logger = setup_logger()
 def set_logging(debug_mode=False):
     if debug_mode:
         logger.level = logging.DEBUG
+    else:
+        logger.level = logging.INFO
 
 
 def overwrite_config(configuration, args_dict):
@@ -411,11 +413,11 @@ class Trainer:
             self_play_controller = SelfPlay(
                 game=self.configuration["game"],
                 n_tree_workers=self.configuration["self_play"][
-                    "search_batch_size"
+                    "n_tree_workers"
                 ],
                 n_games_per_worker=n_games_per_worker,
                 n_simulations_per_move=n_simulations_per_move,
-                n_workers=self.configuration["self_play"]["n_search_workers"],
+                n_workers=self.configuration["self_play"]["n_workers"],
                 n_threads=self.configuration["self_play"]["n_threads"],
                 evaluator_batch_size=self.configuration["self_play"][
                     "evaluator_batch_size"
