@@ -5,8 +5,8 @@
 from threading import Thread
 from typing import Dict, List, Tuple
 
-from logzero import logger
 import numpy as np
+from logzero import logger
 from tqdm import tqdm
 
 from pyoaz.cache.simple_cache import SimpleCache
@@ -177,7 +177,6 @@ class SelfPlay:
 
         while not game.finished:
 
-            logger.debug(f"Game board {game.board.sum()}")
             search = Search(
                 game=game,
                 selector=self.selector,
