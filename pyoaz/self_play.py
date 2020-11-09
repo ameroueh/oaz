@@ -20,10 +20,10 @@ class SelfPlay:
     def __init__(
         self,
         game: str,
-        search_batch_size: int = 4,
+        n_tree_workers: int = 4,
         n_games_per_worker: int = 800,
         n_simulations_per_move: int = 200,
-        n_search_workers: int = 4,
+        n_workers: int = 4,
         n_threads: int = 32,
         evaluator_batch_size: int = 32,
         epsilon: float = 0.25,
@@ -31,17 +31,17 @@ class SelfPlay:
         cache_size: int = None,
     ):
 
-        self.search_batch_size = search_batch_size
+        self.n_tree_workers = n_tree_workers
         self.n_games_per_worker = n_games_per_worker
         self.n_simulations_per_move = n_simulations_per_move
-        self.n_search_workers = n_search_workers
+        self.n_workers = n_workers
         self.n_threads = n_threads
         self.evaluator_batch_size = evaluator_batch_size
         self.epsilon = epsilon
         self.alpha = alpha
         self._import_game_module(game)
         self.selector = AZSelector()
-        self.thread_pool = ThreadPool(self.n_search_workers)
+        self.thread_pool = ThreadPool(n_workers)
         self.cache_size = cache_size
 
         self.discount_factor = 1.0
@@ -185,7 +185,7 @@ class SelfPlay:
                 thread_pool=self.thread_pool,
                 # Do we need this argument? Can't it be inferred from thread
                 # pool?
-                n_concurrent_workers=self.n_search_workers,
+                n_concurrent_workers=self.n_tree_workers,
                 n_iterations=self.n_simulations_per_move,
                 noise_epsilon=self.epsilon,
                 noise_alpha=self.alpha,
