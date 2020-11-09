@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import numpy as np
-from pyoaz.games.connect_four import ConnectFour
+from . import ConnectFour
 
 
 def apply_symmetry(boards, policies):

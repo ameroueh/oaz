@@ -4,3 +4,4 @@ from .connect_four import ConnectFour as ConnectFourCore
 
 
 ConnectFour = game_factory(ConnectFourCore, "ConnectFour")
+from pyoaz.games.connect_four.utils import *
