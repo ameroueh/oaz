@@ -15,10 +15,10 @@ tournament_frequency = 5
 benchmark_path = "benchmark/connect_four"
 
 [self_play]
-search_batch_size = 8
-n_threads = 256
-n_search_workers = 4
-evaluator_batch_size = 256
+n_tree_workers = 4
+n_threads = 64
+n_workers = 4
+evaluator_batch_size = 64
 epsilon = 0.25
 alpha = 1.0
 
