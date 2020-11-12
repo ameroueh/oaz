@@ -17,7 +17,6 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/numpy.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include XSTRINGIFY(GAME_HEADER)
 
@@ -51,10 +50,6 @@ BOOST_PYTHON_MODULE( MODULE_NAME ) {
 
 	PyEval_InitThreads();
 	np::initialize();
-
-	p::class_<std::vector<int> >("IntVec")
-		.def(p::vector_indexing_suite<std::vector<int> >())
-	;
 
 	p::class_<
 		GameImpl,
