@@ -37,9 +37,10 @@ namespace oaz::cache {
 				float& value,
 				boost::multi_array_ref<float, 1> policy) {
 				size_t object_id;
+				bool success;
 				{
 					std::shared_lock<std::shared_mutex> l(m_shared_mutex);
-					bool success = m_map->Get(game, object_id);
+					success = m_map->Get(game, object_id);
 				}
 				if(!success) 
 					return false;
