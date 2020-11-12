@@ -426,6 +426,7 @@ class Trainer:
                 ],
                 epsilon=self.configuration["self_play"]["epsilon"],
                 alpha=self.configuration["self_play"]["alpha"],
+                logger=logger,
             )
         return self_play_controller
 
