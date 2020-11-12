@@ -6,8 +6,8 @@ from threading import Thread
 from typing import Dict, List, Tuple
 
 import numpy as np
-from logzero import logger
 from tqdm import tqdm
+from logzero import setup_logger
 
 from pyoaz.cache.simple_cache import SimpleCache
 from pyoaz.evaluator.nn_evaluator import Model, NNEvaluator
@@ -29,6 +29,7 @@ class SelfPlay:
         epsilon: float = 0.25,
         alpha: float = 1.0,
         cache_size: int = None,
+        logger=None,
     ):
 
         self.n_tree_workers = n_tree_workers
@@ -45,6 +46,9 @@ class SelfPlay:
         self.cache_size = cache_size
 
         self.discount_factor = 1.0
+        self.logger = logger
+        if logger is None:
+            self.logger = setup_logger()
 
     def _import_game_module(self, game):
         if game == "connect_four":
@@ -72,7 +76,7 @@ class SelfPlay:
 
         cache = None
         if self.cache_size:
-            logger.debug("Setting up cache")
+            self.logger.debug("Setting up cache")
             cache = SimpleCache(self.game(), self.cache_size)
         self.evaluator = NNEvaluator(
             model=model,
@@ -88,7 +92,7 @@ class SelfPlay:
         ]
 
         if debug:
-            logger.debug("DEBUG MODE")
+            self.logger.debug("DEBUG MODE")
             # Debugging: skip the threading:
             self._worker_self_play(all_datasets, 0, None)
 
@@ -97,7 +101,7 @@ class SelfPlay:
             all_datasets[0]["Policies"] = np.array(all_datasets[0]["Policies"])
             return all_datasets[0]
 
-        logger.debug("THREADING MODE")
+        self.logger.debug("THREADING MODE")
         # Threading Mode:
 
         with tqdm(
@@ -134,7 +138,7 @@ class SelfPlay:
         return final_dataset
 
     def _worker_self_play(self, dataset, id, update_progress=None):
-        logger.debug(f"Starting thread {id}")
+        self.logger.debug(f"Starting thread {id}")
         self._self_play(dataset[id], id, update_progress=update_progress)
 
     def _self_play(self, dataset, thread_id, update_progress=None):
@@ -155,7 +159,7 @@ class SelfPlay:
         dataset["Policies"].extend(all_policies)
 
     def _play_one_game(self, game_idx, thread_id) -> Tuple[List, List, List]:
-        logger.debug(f"Thread {thread_id} starting game {game_idx}...")
+        self.logger.debug(f"Thread {thread_id} starting game {game_idx}...")
         boards = []
         policies = []
         game = self.game()
@@ -163,20 +167,20 @@ class SelfPlay:
 
         # Sometimes act randomly for the first few moves
         # if np.random.uniform() < 0.1:
-        #     logger.debug("random")
+        #     self.logger.debug("random")
         #     move = int(np.random.choice(game.available_moves))
         #     game.play_move(move)
         #     if np.random.uniform() < 0.1:
-        #         logger.debug("random 2")
+        #         self.logger.debug("random 2")
         #         move = int(np.random.choice(game.available_moves))
         #         game.play_move(move)
         #         if np.random.uniform() < 0.1:
-        #             logger.debug("random 3")
+        #             self.logger.debug("random 3")
         #             move = int(np.random.choice(game.available_moves))
         #             game.play_move(move)
 
         while not game.finished:
-            logger.debug(
+            self.logger.debug(
                 f"Thread {thread_id} game {game_idx} move {game.board.sum()}"
             )
 
@@ -216,8 +220,8 @@ class SelfPlay:
             move = int(np.random.choice(np.arange(policy_size), p=policy))
             # move = best_child.move
 
-            # logger.info(f"Playing move {move}")
-            # logger.info(f"availalbe move {game.available_moves} ")
+            # self.logger.info(f"Playing move {move}")
+            # self.logger.info(f"availalbe move {game.available_moves} ")
 
             boards.append(game.board.copy())
             game.play_move(move)
@@ -227,7 +231,7 @@ class SelfPlay:
         policy = policy / policy.sum()
         policies.append(policy)
 
-        # logger.info("Game is finished!")
+        # self.logger.info("Game is finished!")
         scores = [game.score] * len(boards)
         scores *= np.power(self.discount_factor, np.arange(len(boards)))
 
