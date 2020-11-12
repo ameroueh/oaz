@@ -135,15 +135,15 @@ class SelfPlay:
 
     def _worker_self_play(self, dataset, id, update_progress=None):
         logger.debug(f"Starting thread {id}")
-        self._self_play(dataset[id], update_progress)
+        self._self_play(dataset[id], id, update_progress=update_progress)
 
-    def _self_play(self, dataset, update_progress=None):
+    def _self_play(self, dataset, thread_id, update_progress=None):
 
         all_boards = []
         all_scores = []
         all_policies = []
-        for _ in range(self.n_games_per_worker):
-            boards, scores, policies = self._play_one_game()
+        for i in range(self.n_games_per_worker):
+            boards, scores, policies = self._play_one_game(i, thread_id)
             all_boards.extend(boards)
             all_scores.extend(scores)
             all_policies.extend(policies)
@@ -154,8 +154,8 @@ class SelfPlay:
         dataset["Values"].extend(all_scores)
         dataset["Policies"].extend(all_policies)
 
-    def _play_one_game(self) -> Tuple[List, List, List]:
-
+    def _play_one_game(self, game_idx, thread_id) -> Tuple[List, List, List]:
+        logger.debug(f"Thread {thread_id} starting game {game_idx}...")
         boards = []
         policies = []
         game = self.game()
@@ -176,6 +176,9 @@ class SelfPlay:
         #             game.play_move(move)
 
         while not game.finished:
+            logger.debug(
+                f"Thread {thread_id} game {game_idx} move {game.board.sum()}"
+            )
 
             search = Search(
                 game=game,
