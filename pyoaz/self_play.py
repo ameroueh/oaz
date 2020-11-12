@@ -44,6 +44,9 @@ class SelfPlay:
         self.selector = AZSelector()
         self.thread_pool = ThreadPool(n_workers)
         self.cache_size = cache_size
+        if self.cache_size == -1:
+            # hard coding ~ 30 moves per game on average
+            self.cache_size = n_games_per_worker * n_threads * 30
 
         self.discount_factor = 1.0
         self.logger = logger
@@ -75,8 +78,8 @@ class SelfPlay:
         )
 
         cache = None
-        if self.cache_size:
-            self.logger.debug("Setting up cache")
+        if self.cache_size is not None:
+            self.logger.info(f"Setting up cache of size {self.cache_size}")
             cache = SimpleCache(self.game(), self.cache_size)
         self.evaluator = NNEvaluator(
             model=model,

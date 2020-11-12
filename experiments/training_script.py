@@ -409,6 +409,7 @@ class Trainer:
                 evaluator_batch_size=4,
                 epsilon=0.25,
                 alpha=1.0,
+                cache_size=-1,
             )
 
         else:
@@ -426,6 +427,7 @@ class Trainer:
                 ],
                 epsilon=self.configuration["self_play"]["epsilon"],
                 alpha=self.configuration["self_play"]["alpha"],
+                cache_size=-1,
                 logger=logger,
             )
         return self_play_controller
