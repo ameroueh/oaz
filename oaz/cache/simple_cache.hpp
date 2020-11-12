@@ -40,9 +40,9 @@ namespace oaz::cache {
 				{
 					std::shared_lock<std::shared_mutex> l(m_shared_mutex);
 					bool success = m_map->Get(game, object_id);
-					if(!success) 
-						return false;
 				}
+				if(!success) 
+					return false;
 				IncrementNumberOfHits();
 				value = m_values[object_id];
 				policy = m_policies[object_id];
@@ -52,13 +52,12 @@ namespace oaz::cache {
 				const oaz::games::Game& game, 
 				float value,
 				boost::multi_array_ref<float, 1> policy) {
-				if(GetNumberOfObjects() >= GetSize())
-					return;
 				size_t object_id;
 				{
 					std::unique_lock<std::shared_mutex> l(m_shared_mutex);
-					bool success = m_map->Get(game, object_id);  
-					if(success)
+					if(GetNumberOfObjects() >= GetSize())
+						return;
+					if(m_map->Get(game, object_id))
 						return;
 					object_id = GetObjectID();
 					m_map->Insert(game, object_id);
@@ -74,11 +73,11 @@ namespace oaz::cache {
 				size_t n_elements
 			) {
 				std::unique_lock<std::shared_mutex> l(m_shared_mutex);
+				size_t object_id;
 				for(size_t i=0; i!=n_elements; ++i) {
 					const oaz::games::Game& game = *(games[i]);
-					if(GetNumberOfObjects() > GetSize())
+					if(GetNumberOfObjects() >= GetSize())
 						return;
-					size_t object_id;
 					if(m_map->Get(game, object_id))
 						continue;
 					object_id = GetObjectID();
