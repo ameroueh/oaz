@@ -16,9 +16,9 @@ benchmark_path = "benchmark/connect_four"
 
 [self_play]
 n_tree_workers = 4
-n_threads = 64
-n_workers = 4
-evaluator_batch_size = 64
+n_threads = 4
+n_workers = 256
+evaluator_batch_size = 2048
 epsilon = 0.25
 alpha = 1.0
 
