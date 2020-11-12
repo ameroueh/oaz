@@ -30,7 +30,7 @@ from tensorflow.keras.models import load_model
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Useful for RTX cards
-os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+# os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
 # turn on C++ logging
 # os.environ["OAZ_LOGGING"] = "true"
@@ -236,7 +236,9 @@ class Trainer:
 
                 start_time = time.time()
                 dataset = self_play_controller.self_play(
-                    session, discount_factor=stage_params["discount_factor"],
+                    session,
+                    discount_factor=stage_params["discount_factor"],
+                    debug=debug_mode,
                 )
                 self.history["generation_duration"].append(
                     time.time() - start_time
