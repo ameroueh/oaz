@@ -7,6 +7,46 @@
 
 namespace p = boost::python;
 
+
+namespace oaz::mcts {
+	class SearchWrapper {
+
+		public:
+			SearchWrapper(
+				const oaz::games::Game& game,
+				const oaz::mcts::Selector& selector,
+				std::shared_ptr<oaz::evaluator::Evaluator> evaluator,
+				std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool, 
+				size_t batch_size, 
+				size_t n_iterations,
+				float noise_epsilon,
+				float noise_alpha
+
+			): m_search(nullptr) {
+				PyThreadState* save_state = PyEval_SaveThread();	
+				m_search = std::make_shared<oaz::mcts::Search>(
+					game,
+					selector,
+					evaluator,
+					thread_pool,
+					batch_size,
+					n_iterations,
+					noise_epsilon,
+					noise_alpha
+				);
+				PyEval_RestoreThread(save_state);
+
+			}
+			std::shared_ptr<oaz::mcts::SearchNode> GetTreeRoot() {
+				return m_search->GetTreeRoot();
+
+			}
+		private:
+			std::shared_ptr<oaz::mcts::Search> m_search;
+
+	};
+}
+
 BOOST_PYTHON_MODULE( search ) {
 
 	PyEval_InitThreads();
@@ -35,7 +75,7 @@ BOOST_PYTHON_MODULE( search ) {
 		p::return_value_policy<p::reference_existing_object>()
 	);
 
-	p::class_<Search, std::shared_ptr<oaz::mcts::Search>, boost::noncopyable>(
+	p::class_<SearchWrapper, std::shared_ptr<oaz::mcts::SearchWrapper>, boost::noncopyable>(
 		"Search", 
 		p::init<
 			const oaz::games::Game&, 
@@ -48,5 +88,5 @@ BOOST_PYTHON_MODULE( search ) {
 			float
 		>()
 	)
-	.def("get_tree_root", &Search::GetTreeRoot);
+	.def("get_tree_root", &SearchWrapper::GetTreeRoot);
 }
