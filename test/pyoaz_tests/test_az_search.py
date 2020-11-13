@@ -132,8 +132,3 @@ def _test_az_search_with_cache():
             noise_epsilon=0.25,
             noise_alpha=1,
         )
-
-
-if __name__ == "__main__":
-    _test_az_search()
-    _test_az_search_with_cache()
