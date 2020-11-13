@@ -186,6 +186,7 @@ class SelfPlay:
             self.logger.debug(
                 f"Thread {thread_id} game {game_idx} move {game.board.sum()}"
             )
+            self.logger.debug(f"\n{game.board.sum(-1)}")
 
             search = Search(
                 game=game,
@@ -227,6 +228,7 @@ class SelfPlay:
             # self.logger.info(f"availalbe move {game.available_moves} ")
 
             boards.append(game.board.copy())
+            self.logger.debug(f"Playing move {move}")
             game.play_move(move)
 
         boards.append(game.board.copy())
