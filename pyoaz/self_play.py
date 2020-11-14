@@ -19,7 +19,7 @@ from pyoaz.thread_pool import ThreadPool
 class SelfPlay:
     def __init__(
         self,
-        game: str,
+        game,
         n_tree_workers: int = 4,
         n_games_per_worker: int = 800,
         n_simulations_per_move: int = 200,
@@ -31,7 +31,8 @@ class SelfPlay:
         cache_size: int = None,
         logger=None,
     ):
-
+        self.game = game
+        self.dimensions = self.game().board.shape
         self.n_tree_workers = n_tree_workers
         self.n_games_per_worker = n_games_per_worker
         self.n_simulations_per_move = n_simulations_per_move
@@ -40,7 +41,7 @@ class SelfPlay:
         self.evaluator_batch_size = evaluator_batch_size
         self.epsilon = epsilon
         self.alpha = alpha
-        self._import_game_module(game)
+        # self._import_game_module(game)
         self.selector = AZSelector()
         self.thread_pool = ThreadPool(n_workers)
         self.cache_size = cache_size
@@ -53,19 +54,19 @@ class SelfPlay:
         if logger is None:
             self.logger = setup_logger()
 
-    def _import_game_module(self, game):
-        if game == "connect_four":
-            from pyoaz.games.connect_four import ConnectFour
+    # def _import_game_module(self, game):
+    #     if game == "connect_four":
+    #         from pyoaz.games.connect_four import ConnectFour
 
-            self.game = ConnectFour
-            self.dimensions = (6, 7, 2)
-        elif game == "tic_tac_toe":
-            from pyoaz.games.tic_tac_toe import TicTacToe
+    #         self.game = ConnectFour
+    #         self.dimensions = (6, 7, 2)
+    #     elif game == "tic_tac_toe":
+    #         from pyoaz.games.tic_tac_toe import TicTacToe
 
-            self.game = TicTacToe
-            self.dimensions = (3, 3, 2)
-        else:
-            raise NotImplementedError
+    #         self.game = TicTacToe
+    #         self.dimensions = (3, 3, 2)
+    #     else:
+    #         raise NotImplementedError
 
     def self_play(self, session, discount_factor=1.0, debug=False) -> Dict:
 

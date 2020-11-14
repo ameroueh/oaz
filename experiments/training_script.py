@@ -36,14 +36,14 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 # os.environ["OAZ_LOGGING"] = "true"
 os.environ["OAZ_LOGGING"] = "false"
 
-logger = setup_logger()
+LOGGER = setup_logger()
 
 
 def set_logging(debug_mode=False):
     if debug_mode:
-        logger.level = logging.DEBUG
+        LOGGER.level = logging.DEBUG
     else:
-        logger.level = logging.INFO
+        LOGGER.level = logging.INFO
 
 
 def overwrite_config(configuration, args_dict):
@@ -97,7 +97,7 @@ def play_tournament(game, model, n_games=100):
     oaz_wins, oaz_losses = win_loss[0, :].sum(), win_loss[:, 0].sum()
     draws = 2 * n_games * 2 - oaz_wins - oaz_losses
 
-    logger.info(f"WINS: {oaz_wins} LOSSES: {oaz_losses} DRAWS: {draws}")
+    LOGGER.info(f"WINS: {oaz_wins} LOSSES: {oaz_losses} DRAWS: {draws}")
 
     return oaz_wins, oaz_losses, draws
 
@@ -207,7 +207,12 @@ class Trainer:
         total_generations = sum(total_generations)
 
         for stage_params in self.configuration["stages"][self.stage_idx :]:
-            logger.info(f"Starting stage  {self.stage_idx}")
+            LOGGER.info(f"Starting stage  {self.stage_idx}.")
+            LOGGER.info(
+                f"Playing {stage_params['n_simulations_per_move']} simulations"
+                " per move"
+            )
+
             stage_params = self.configuration["stages"][self.stage_idx]
             optimizer = self._get_optimizer(stage_params)
             self.model.compile(
@@ -223,7 +228,7 @@ class Trainer:
             self.memory.set_maxlen(stage_params["buffer_length"])
 
             for _ in range(self.gen_in_stage, stage_params["n_generations"]):
-                logger.info(
+                LOGGER.info(
                     f"Training cycle {self.generation} / {total_generations}"
                 )
 
@@ -297,7 +302,7 @@ class Trainer:
                     )
                     == 0
                 ):
-                    logger.info(
+                    LOGGER.info(
                         f"Checkpointing model generation {self.generation}"
                     )
                     self.model.save(
@@ -371,7 +376,7 @@ class Trainer:
         accuracy = (
             np.where(pred_values > 0, 1.0, -1.0) == benchmark_values
         ).mean()
-        logger.info(f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}")
+        LOGGER.info(f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}")
         return mse, accuracy
 
     def evaluate_self_play_dataset(self, benchmark_path, boards, values):
@@ -381,7 +386,7 @@ class Trainer:
                 self_play_accuracy = (values == gt_values).mean()
                 self_play_mse = ((values - gt_values) ** 2).mean()
 
-                logger.info(
+                LOGGER.info(
                     f"Self-Play MSE: {self_play_mse} "
                     f"Self-Play ACCURACY: {self_play_accuracy}"
                 )
@@ -390,7 +395,7 @@ class Trainer:
             return None, None
 
     def save(self):
-        logger.info(f"Saving model at {self.save_path / 'model.pb'}")
+        LOGGER.info(f"Saving model at {self.save_path / 'model.pb'}")
         self.model.save(str(self.save_path / "model.pb"))
         joblib.dump(self.memory, self.save_path / "memory.joblib")
         self._save_plots()
@@ -400,7 +405,7 @@ class Trainer:
     ):
         if debug_mode:
             self_play_controller = SelfPlay(
-                game=self.configuration["game"],
+                game=self.game,
                 n_tree_workers=2,
                 n_games_per_worker=3,
                 n_simulations_per_move=16,
@@ -410,11 +415,12 @@ class Trainer:
                 epsilon=0.25,
                 alpha=1.0,
                 cache_size=-1,
+                logger=LOGGER,
             )
 
         else:
             self_play_controller = SelfPlay(
-                game=self.configuration["game"],
+                game=self.game,
                 n_tree_workers=self.configuration["self_play"][
                     "n_tree_workers"
                 ],
@@ -427,8 +433,8 @@ class Trainer:
                 ],
                 epsilon=self.configuration["self_play"]["epsilon"],
                 alpha=self.configuration["self_play"]["alpha"],
-                # cache_size=-1,
-                logger=logger,
+                cache_size=-1,
+                logger=LOGGER,
             )
         return self_play_controller
 
