@@ -3,6 +3,7 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/stl_iterator.hpp>
+#include <boost/python/numpy.hpp>
 
 #include "swiglabels.swg"
 #include "swigrun.swg"
@@ -18,6 +19,31 @@
 #include "oaz/neural_network/nn_evaluator.hpp"
 
 namespace p = boost::python;
+namespace np = boost::python::numpy;
+
+
+namespace oaz::nn {
+
+	np::ndarray GetStatistics(oaz::nn::NNEvaluator& evaluator) {
+		std::vector<EvaluationBatchStatistics> stats = evaluator.GetStatistics();
+		np::ndarray array = np::zeros(
+			p::make_tuple(stats.size(), 6),
+			np::dtype::get_builtin<size_t>()
+		);
+		for(size_t i=0; i!=stats.size(); ++i) {
+
+			array[i][0] = stats[i].time_created;
+			array[i][1] = stats[i].time_evaluation_start;
+			array[i][2] = stats[i].time_evaluation_end;
+			array[i][3] = stats[i].n_elements;
+			array[i][4] = stats[i].size;
+			array[i][5] = stats[i].evaluation_forced ? 1 : 0;
+		}
+		return array;
+	}
+}
+
+
 
 void SetSession(Model& model, PyObject* obj) {
 	void* ptr = nullptr;
@@ -66,6 +92,7 @@ BOOST_PYTHON_MODULE( nn_evaluator ) {
 	.def("set_value_node_name", &oaz::nn::Model::SetValueNodeName)
 	.def("set_policy_node_name", &oaz::nn::Model::SetPolicyNodeName);
 
+
 	p::class_<
 		oaz::nn::NNEvaluator, 
 		p::bases<oaz::evaluator::Evaluator>,
@@ -77,5 +104,6 @@ BOOST_PYTHON_MODULE( nn_evaluator ) {
 	).def(
 		"__init__",
 		p::make_constructor(&ConstructNNEvaluator)
-	);
+	)
+	.add_property("statistics", &oaz::nn::GetStatistics);
 }

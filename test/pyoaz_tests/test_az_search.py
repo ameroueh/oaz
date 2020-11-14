@@ -8,7 +8,7 @@ from pyoaz.games.connect_four import ConnectFour
 from pyoaz.cache.simple_cache import SimpleCache
 
 
-def _test_az_search():
+def test_az_search():
     with tf.Session() as session:
 
         # Neural network definition
@@ -49,7 +49,7 @@ def _test_az_search():
         model = Model(
             session=session, value_node_name="value", policy_node_name="policy"
         )
-        thread_pool = ThreadPool(n_workers=1)
+        thread_pool = ThreadPool(n_workers=2)
         evaluator = NNEvaluator(
             model=model,
             thread_pool=thread_pool,
@@ -63,14 +63,14 @@ def _test_az_search():
             selector=selector,
             evaluator=evaluator,
             thread_pool=thread_pool,
-            n_concurrent_workers=1,
+            n_concurrent_workers=2,
             n_iterations=100,
             noise_epsilon=0.25,
             noise_alpha=1,
         )
 
 
-def _test_az_search_with_cache():
+def test_az_search_with_cache():
     with tf.Session() as session:
 
         # Neural network definition
@@ -132,3 +132,6 @@ def _test_az_search_with_cache():
             noise_epsilon=0.25,
             noise_alpha=1,
         )
+
+if __name__ == '__main__':
+    test_az_search()
