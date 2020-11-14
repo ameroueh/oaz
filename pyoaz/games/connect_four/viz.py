@@ -1,6 +1,5 @@
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 def view_board(board):
@@ -35,7 +34,7 @@ def view_board(board):
 
     for x in range(width):
         for y in range(height):
-            if board[x][y][0] == 1.0:
+            if board[y][x][0] == 1.0:
                 ax.plot(
                     x + 0.5,
                     y + 0.5,
@@ -45,7 +44,7 @@ def view_board(board):
                     markerfacecolor="k",
                     markeredgewidth=2,
                 )
-            elif board[x][y][1] == 1.0:
+            elif board[y][x][1] == 1.0:
                 ax.plot(
                     x + 0.5,
                     y + 0.5,

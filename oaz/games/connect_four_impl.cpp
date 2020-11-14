@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <string>
 
-#include <bit>
+#include <bitset>
 
 
 using namespace oaz::games;
