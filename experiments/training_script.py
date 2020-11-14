@@ -15,6 +15,7 @@ import tensorflow as tf
 import tensorflow.compat.v1.keras.backend as K
 import toml
 from keras_contrib.callbacks import CyclicLR
+from logzero import setup_logger
 from pyoaz.bots import LeftmostBot, OazBot, RandomBot
 
 # from pyoaz.games.tic_tac_toe import boards_to_bin
@@ -29,29 +30,20 @@ from tensorflow.keras.models import load_model
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Useful for RTX cards
-os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+# os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
 # turn on C++ logging
 # os.environ["OAZ_LOGGING"] = "true"
 os.environ["OAZ_LOGGING"] = "false"
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = setup_logger()
 
 
 def set_logging(debug_mode=False):
     if debug_mode:
-
-        logging.basicConfig(
-            format="%(asctime)s %(levelname)-8s %(message)s",
-            level=logging.DEBUG,
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
+        LOGGER.level = logging.DEBUG
     else:
-        logging.basicConfig(
-            format="%(asctime)s %(levelname)-8s %(message)s",
-            level=logging.INFO,
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
+        LOGGER.level = logging.INFO
 
 
 def overwrite_config(configuration, args_dict):
@@ -215,7 +207,12 @@ class Trainer:
         total_generations = sum(total_generations)
 
         for stage_params in self.configuration["stages"][self.stage_idx :]:
-            LOGGER.info(f"Starting stage  {self.stage_idx}")
+            LOGGER.info(f"Starting stage  {self.stage_idx}.")
+            LOGGER.info(
+                f"Playing {stage_params['n_simulations_per_move']} simulations"
+                " per move"
+            )
+
             stage_params = self.configuration["stages"][self.stage_idx]
             optimizer = self._get_optimizer(stage_params)
             self.model.compile(
@@ -244,7 +241,9 @@ class Trainer:
 
                 start_time = time.time()
                 dataset = self_play_controller.self_play(
-                    session, discount_factor=stage_params["discount_factor"],
+                    session,
+                    discount_factor=stage_params["discount_factor"],
+                    debug=debug_mode,
                 )
                 self.history["generation_duration"].append(
                     time.time() - start_time
@@ -341,6 +340,7 @@ class Trainer:
             step_size=4 * len(train_boards) // 64,
             mode="triangular",
         )
+
         train_history = self.model.fit(
             train_boards,
             {"value": train_values, "policy": train_policies},
@@ -405,34 +405,36 @@ class Trainer:
     ):
         if debug_mode:
             self_play_controller = SelfPlay(
-                game=self.configuration["game"],
-                search_batch_size=2,
+                game=self.game,
+                n_tree_workers=2,
                 n_games_per_worker=3,
                 n_simulations_per_move=16,
-                n_search_worker=4,
+                n_workers=4,
                 n_threads=4,
                 evaluator_batch_size=4,
                 epsilon=0.25,
                 alpha=1.0,
+                cache_size=-1,
+                logger=LOGGER,
             )
 
         else:
             self_play_controller = SelfPlay(
-                game=self.configuration["game"],
-                search_batch_size=self.configuration["self_play"][
-                    "search_batch_size"
+                game=self.game,
+                n_tree_workers=self.configuration["self_play"][
+                    "n_tree_workers"
                 ],
                 n_games_per_worker=n_games_per_worker,
                 n_simulations_per_move=n_simulations_per_move,
-                n_search_worker=self.configuration["self_play"][
-                    "n_search_workers"
-                ],
+                n_workers=self.configuration["self_play"]["n_workers"],
                 n_threads=self.configuration["self_play"]["n_threads"],
                 evaluator_batch_size=self.configuration["self_play"][
                     "evaluator_batch_size"
                 ],
                 epsilon=self.configuration["self_play"]["epsilon"],
                 alpha=self.configuration["self_play"]["alpha"],
+                cache_size=-1,
+                logger=LOGGER,
             )
         return self_play_controller
 
