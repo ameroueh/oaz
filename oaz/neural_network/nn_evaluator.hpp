@@ -5,6 +5,7 @@
 #define TEST_FRIENDS
 #endif
 
+#include <chrono>
 #include <algorithm>
 #include <mutex>
 #include <string>
@@ -27,6 +28,23 @@
 #include "oaz/thread_pool/thread_pool.hpp"
 
 namespace oaz::nn {
+
+	class EvaluationBatchStatistics {
+		public:
+			EvaluationBatchStatistics():
+				evaluation_forced(false),
+				n_elements(0),
+				size(0)
+			{}
+
+			size_t time_created;
+			size_t time_evaluation_start;
+			size_t time_evaluation_end;
+			size_t size;
+			size_t n_elements;
+			bool evaluation_forced;
+	};
+	
 	class EvaluationBatch {
 		
 		TEST_FRIENDS;
@@ -64,6 +82,8 @@ namespace oaz::nn {
 				std::unique_ptr<boost::multi_array_ref<float, 1>>,
 			1> GetPolicies();
 
+			EvaluationBatchStatistics& GetStatistics();
+
 		private:
 			oaz::mutex::SpinlockMutex m_lock;
 			tensorflow::Tensor m_batch;
@@ -81,6 +101,7 @@ namespace oaz::nn {
 			size_t m_element_size;
 			std::atomic<size_t> m_n_reads;
 
+			std::unique_ptr<EvaluationBatchStatistics> m_statistics;
 	};
 
 	class NNEvaluator : public oaz::evaluator::Evaluator { 
@@ -103,6 +124,8 @@ namespace oaz::nn {
 			);
 
 			std::string GetStatus() const;
+			std::vector<EvaluationBatchStatistics> GetStatistics();
+
 			~NNEvaluator();
 
 		private:
@@ -126,6 +149,7 @@ namespace oaz::nn {
 			void EvaluateBatch(EvaluationBatch*);
 			void AddNewBatch();
 			void Monitor(std::future<void>);
+			void ArchiveBatchStatistics(const EvaluationBatchStatistics&);
 			
 			oaz::queue::SafeDeque<std::unique_ptr<EvaluationBatch>> m_batches;
 			oaz::mutex::SpinlockMutex m_requests_lock;
@@ -143,6 +167,9 @@ namespace oaz::nn {
 			std::shared_ptr<Model> m_model;
 			std::shared_ptr<oaz::thread_pool::ThreadPool> m_thread_pool;
 			std::shared_ptr<oaz::cache::Cache> m_cache;
+
+			oaz::mutex::SpinlockMutex m_archive_lock;
+			std::vector<EvaluationBatchStatistics> m_archive;
 	};
 }
 

@@ -1,3 +1,5 @@
+import pandas
+
 from ..evaluator import *
 from .nn_evaluator import (
     Model as ModelCore,
@@ -53,3 +55,19 @@ class NNEvaluator:
     @property
     def core(self):
         return self._core
+
+    @property
+    def statistics(self):
+        array = self.core.statistics
+        return pandas.DataFrame(
+            data=array,
+            columns=
+            [
+                "time_created_ns", 
+                "time_evaluation_start_ns", 
+                "time_evaluation_end_ns", 
+                "n_elements", 
+                "size", 
+                "evaluation_forced"
+            ]
+        )

@@ -4,6 +4,7 @@
 
 #include "tensorflow/core/framework/tensor.h"
 #include "oaz/neural_network/nn_evaluator.hpp"
+#include "oaz/utils/time.hpp"
 #include "boost/multi_array.hpp"
 
 #include <iostream>
@@ -17,7 +18,6 @@
 using namespace oaz::nn;
 using namespace tensorflow;
 using namespace std;
-
 
 
 EvaluationBatch::EvaluationBatch(
@@ -37,7 +37,9 @@ EvaluationBatch::EvaluationBatch(
 	m_games(boost::extents[size]),
 	m_values(boost::extents[size]),
 	m_policies(boost::extents[size]),
-	m_tasks(boost::extents[size]) {
+	m_tasks(boost::extents[size]),
+	m_statistics(std::make_unique<EvaluationBatchStatistics>()) {
+	
 
 		std::vector<long long int> tensor_dimensions = {(long long int) size};
 		tensor_dimensions.insert(
@@ -49,8 +51,14 @@ EvaluationBatch::EvaluationBatch(
 			tensorflow::DT_FLOAT,
 			tensorflow::TensorShape(tensor_dimensions)
 		);
+		
+		GetStatistics().time_created = oaz::utils::time_now_ns();
+		GetStatistics().size = GetSize();
 }
 
+EvaluationBatchStatistics& EvaluationBatch::GetStatistics() {
+	return *m_statistics;
+}
 
 void EvaluationBatch::InitialiseElement(
 	size_t index, 
@@ -280,12 +288,14 @@ void NNEvaluator::EvaluateFromNN(
 
 void NNEvaluator::EvaluateBatch(EvaluationBatch* batch) {
 
-	/* spdlog::debug("Evaluating batch of size {}", batch->getNElements()); */
+	batch->GetStatistics().time_evaluation_start = oaz::utils::time_now_ns();
+	batch->GetStatistics().n_elements = batch->GetNumberOfElements();
+
 	std::vector<tensorflow::Tensor> outputs;
 
 	m_n_evaluation_requests++;
 	m_model->Run(
-		{{"input:0", batch->GetBatchTensor()}}, 
+		{{"input:0", batch->GetBatchTensor().Slice(0, batch->GetNumberOfElements())}}, 
 		{m_model->GetValueNodeName(), m_model->GetPolicyNodeName()},
 		{},
 		&outputs
@@ -320,9 +330,26 @@ void NNEvaluator::EvaluateBatch(EvaluationBatch* batch) {
 
 	for(size_t i=0; i!= batch->GetNumberOfElements(); ++i)
 		m_thread_pool->enqueue(batch->GetTask(i));
+	
+	batch->GetStatistics().time_evaluation_end = oaz::utils::time_now_ns();
 
+	ArchiveBatchStatistics(batch->GetStatistics());
 }
 
+
+void NNEvaluator::ArchiveBatchStatistics(const EvaluationBatchStatistics& stats) {
+
+	m_archive_lock.Lock();
+	m_archive.push_back(stats);
+	m_archive_lock.Unlock();
+}
+
+std::vector<EvaluationBatchStatistics> NNEvaluator::GetStatistics() {
+	m_archive_lock.Lock();
+	std::vector<EvaluationBatchStatistics> archive(m_archive);
+	m_archive_lock.Unlock();
+	return archive;
+}
 
 void NNEvaluator::ForceEvaluation() {
 
@@ -336,11 +363,15 @@ void NNEvaluator::ForceEvaluation() {
 			m_batches.pop_front();
 			earliest_batch->Unlock();
 			m_batches.Unlock();
+			earliest_batch_uptr.get()->GetStatistics().evaluation_forced = true;
 			EvaluateBatch(earliest_batch_uptr.get());
+
 		}
 		else {
 			earliest_batch->Unlock();
 			m_batches.Unlock();
 		}
 	} else m_batches.Unlock();
+
+
 }
