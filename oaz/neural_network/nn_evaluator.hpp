@@ -151,7 +151,7 @@ namespace oaz::nn {
 			void Monitor(std::future<void>);
 			void ArchiveBatchStatistics(const EvaluationBatchStatistics&);
 			
-			oaz::queue::SafeDeque<std::unique_ptr<EvaluationBatch>> m_batches;
+			oaz::queue::SafeDeque<std::shared_ptr<EvaluationBatch>> m_batches;
 			oaz::mutex::SpinlockMutex m_requests_lock;
 
 			size_t m_batch_size;
