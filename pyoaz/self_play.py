@@ -139,6 +139,31 @@ class SelfPlay:
             "Policies": np.vstack(all_policies),
         }
 
+        stats = self.evaluator.statistics
+        avg_duration = (
+            stats["time_evaluation_end_ns"] - stats["time_evaluation_start_ns"]
+        ).mean()
+        self.logger.info(
+            f"Average evaluation time in ms: {avg_duration / 1e6}"
+        )
+        self.logger.info(
+            "Proportion of forced evaluations: "
+            f"{stats['evaluation_forced'].mean()}"
+        )
+        self.logger.info(
+            "Average size of batches sent to evaluator: "
+            f"{stats['n_elements'].mean()}"
+        )
+        self.logger.info(
+            "Proportion of empty batches sent: "
+            f" {(stats['n_elements'] == 0).mean()} "
+        )
+
+        self.logger.info(
+            "Average filled proportion of each evaluation batch: "
+            f"{(stats['n_elements'].sum() / stats['size'].sum())}"
+        )
+
         return final_dataset
 
     def _worker_self_play(self, dataset, id, update_progress=None):
