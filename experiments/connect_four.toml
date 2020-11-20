@@ -15,7 +15,7 @@ tournament_frequency = 5
 benchmark_path = "benchmark/connect_four"
 
 [self_play]
-n_tree_workers = 2
+n_tree_workers = 4
 n_threads = 256
 n_workers = 4
 evaluator_batch_size = 256
@@ -23,7 +23,7 @@ epsilon = 0.25
 alpha = 1.0
 
 [[stages]]
-n_generations = 10
+n_generations = 1
 learning_rate = 0.001
 momentum = 0.9
 buffer_length = 600000
@@ -34,7 +34,7 @@ n_games_per_worker = 30
 
 
 [[stages]]
-n_generations = 15
+n_generations = 8
 learning_rate = 0.001
 momentum = 0.9
 buffer_length = 1200000
