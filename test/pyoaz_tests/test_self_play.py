@@ -5,6 +5,7 @@ import os
 import tensorflow as tf
 from pyoaz.models import create_connect_four_model
 from pyoaz.self_play import SelfPlay
+from pyoaz.games.connect_four import ConnectFour
 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
@@ -14,7 +15,7 @@ def test_self_play():
     with tf.Session() as session:
         session.run(tf.global_variables_initializer())
         self_play = SelfPlay(
-            game="connect_four",
+            game=ConnectFour,
             n_tree_workers=4,
             n_games_per_worker=4,
             n_simulations_per_move=2,
