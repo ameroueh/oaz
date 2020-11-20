@@ -69,6 +69,9 @@ class SelfPlay:
     #         raise NotImplementedError
 
     def self_play(self, session, discount_factor=1.0, debug=False) -> Dict:
+        self.logger.debug(
+            f"N_SIMULATIONS_PER_MOVE{self.n_simulations_per_move}"
+        )
 
         self.discount_factor = discount_factor
 
@@ -213,14 +216,11 @@ class SelfPlay:
                 f"Thread {thread_id} game {game_idx} move {game.board.sum()}"
             )
             self.logger.debug(f"\n{game.board.sum(-1)}")
-
             search = Search(
                 game=game,
                 selector=self.selector,
                 evaluator=self.evaluator,
                 thread_pool=self.thread_pool,
-                # Do we need this argument? Can't it be inferred from thread
-                # pool?
                 n_concurrent_workers=self.n_tree_workers,
                 n_iterations=self.n_simulations_per_move,
                 noise_epsilon=self.epsilon,
