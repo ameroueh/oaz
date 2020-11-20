@@ -69,6 +69,9 @@ class SelfPlay:
     #         raise NotImplementedError
 
     def self_play(self, session, discount_factor=1.0, debug=False) -> Dict:
+        self.logger.debug(
+            f"n_simulations_per_move: {self.n_simulations_per_move}"
+        )
 
         self.discount_factor = discount_factor
 
@@ -139,6 +142,31 @@ class SelfPlay:
             "Policies": np.vstack(all_policies),
         }
 
+        stats = self.evaluator.statistics
+        avg_duration = (
+            stats["time_evaluation_end_ns"] - stats["time_evaluation_start_ns"]
+        ).mean()
+        self.logger.info(
+            f"Average evaluation time in ms: {avg_duration / 1e6}"
+        )
+        self.logger.info(
+            "Proportion of forced evaluations: "
+            f"{stats['evaluation_forced'].mean()}"
+        )
+        self.logger.info(
+            "Average size of batches sent to evaluator: "
+            f"{stats['n_elements'].mean()}"
+        )
+        self.logger.info(
+            "Proportion of empty batches sent: "
+            f" {(stats['n_elements'] == 0).mean()} "
+        )
+
+        self.logger.info(
+            "Average filled proportion of each evaluation batch: "
+            f"{(stats['n_elements'].sum() / stats['size'].sum())}"
+        )
+
         return final_dataset
 
     def _worker_self_play(self, dataset, id, update_progress=None):
@@ -188,14 +216,11 @@ class SelfPlay:
                 f"Thread {thread_id} game {game_idx} move {game.board.sum()}"
             )
             self.logger.debug(f"\n{game.board.sum(-1)}")
-
             search = Search(
                 game=game,
                 selector=self.selector,
                 evaluator=self.evaluator,
                 thread_pool=self.thread_pool,
-                # Do we need this argument? Can't it be inferred from thread
-                # pool?
                 n_concurrent_workers=self.n_tree_workers,
                 n_iterations=self.n_simulations_per_move,
                 noise_epsilon=self.epsilon,
