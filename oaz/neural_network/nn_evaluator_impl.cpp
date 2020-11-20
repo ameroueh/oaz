@@ -189,7 +189,7 @@ void NNEvaluator::Monitor(std::future<void> future_exit_signal) {
 
 
 void NNEvaluator::AddNewBatch() {
-	std::unique_ptr<EvaluationBatch> batch = std::make_unique<EvaluationBatch>(
+	std::shared_ptr<EvaluationBatch> batch = std::make_shared<EvaluationBatch>(
 		GetElementDimensions(), GetBatchSize()
 	);
 	m_batches.push_back(std::move(batch));
@@ -240,39 +240,32 @@ void NNEvaluator::EvaluateFromNN(
 	) {
 	m_batches.Lock();
 	if(!m_batches.empty()) {
-		EvaluationBatch* current_batch = m_batches.back().get();
+		
+		auto current_batch = m_batches.back();
 		current_batch->Lock();
-		if(!current_batch->IsFull()) {
-			size_t index = current_batch->AcquireIndex();
-			current_batch->Unlock();
-			m_batches.Unlock();
 		
-			current_batch->InitialiseElement(
-				index,
-				game,
-				value,
-				policy,
-				task
-			);
-		}
-		else {
-			std::unique_ptr<EvaluationBatch> current_batch_uniqueptr = std::move(m_batches.back());
+		size_t index = current_batch->AcquireIndex();
+		
+		bool evaluate_batch = current_batch->IsFull();
+		if(evaluate_batch)
 			m_batches.pop_back();
-			AddNewBatch();
-			current_batch->Unlock();
-			m_batches.Unlock();
 		
+		current_batch->Unlock();
+		m_batches.Unlock();
+	
+		current_batch->InitialiseElement(
+			index,
+			game,
+			value,
+			policy,
+			task
+		);
+
+		if(evaluate_batch) {
 			while(!current_batch->IsAvailableForEvaluation());
-
-			EvaluateBatch(current_batch);
-
-			EvaluateFromNN(
-				game, 
-				value,
-				policy,
-				task
-			);
+			EvaluateBatch(current_batch.get());
 		}
+	
 	} else {
 		AddNewBatch();
 		m_batches.Unlock();
@@ -353,18 +346,16 @@ std::vector<EvaluationBatchStatistics> NNEvaluator::GetStatistics() {
 
 void NNEvaluator::ForceEvaluation() {
 
-	/* spdlog::debug("Forced evaluation"); */
 	m_batches.Lock();
 	if (!m_batches.empty()) {
-		EvaluationBatch* earliest_batch = m_batches.front().get();
+		auto earliest_batch = m_batches.front();
 		earliest_batch->Lock();
 		if(earliest_batch->IsAvailableForEvaluation()) {
-			std::unique_ptr<EvaluationBatch> earliest_batch_uptr = std::move(m_batches.front());
 			m_batches.pop_front();
 			earliest_batch->Unlock();
 			m_batches.Unlock();
-			earliest_batch_uptr.get()->GetStatistics().evaluation_forced = true;
-			EvaluateBatch(earliest_batch_uptr.get());
+			earliest_batch->GetStatistics().evaluation_forced = true;
+			EvaluateBatch(earliest_batch.get());
 
 		}
 		else {
@@ -372,6 +363,4 @@ void NNEvaluator::ForceEvaluation() {
 			m_batches.Unlock();
 		}
 	} else m_batches.Unlock();
-
-
 }
