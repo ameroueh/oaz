@@ -9,9 +9,13 @@ from pyoaz.tournament import Participant, Tournament
 
 
 def load_benchmark(benchmark_path):
-    boards = np.load(benchmark_path / "benchmark_boards.npy")
-    values = np.load(benchmark_path / "benchmark_values.npy")
-    return boards, values
+    boards_path = benchmark_path / "benchmark_boards.npy"
+    values_path = benchmark_path / "benchmark_boards.npy"
+    if boards_path.exists():
+        boards = np.load(boards_path)
+        values = np.load(values_path)
+        return boards, values
+    return None, None
 
 
 def get_gt_values(benchmark_path, boards):

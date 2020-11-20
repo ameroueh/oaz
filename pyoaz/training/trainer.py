@@ -76,9 +76,11 @@ class Trainer:
         """
 
         self.configuration = configuration
-
+        self.logger = logger
         if logger is None:
             self.logger = setup_logger()
+
+        self._set_game_class()
 
         self.memory = MemoryBuffer(maxlen=1)
         self.history = defaultdict(list)
@@ -97,46 +99,6 @@ class Trainer:
 
         with open(self.save_path / "config.toml", "w") as f:
             f.write(toml.dumps(self.configuration))
-
-    def _create_model(self):
-        if self.configuration["game"] == "connect_four":
-            self.model = create_connect_four_model(
-                depth=self.configuration["model"]["n_resnet_blocks"],
-                activation=self.configuration["model"]["activation"],
-                policy_factor=self.configuration["model"]["policy_factor"],
-            )
-
-        elif self.configuration["game"] == "tic_tac_toe":
-            self.model = create_tic_tac_toe_model(
-                depth=self.configuration["model"]["n_resnet_blocks"],
-                activation=self.configuration["model"]["activation"],
-            )
-
-    def _load_model(self, load_path):
-        """ Loads a model. Also loads associated memories and history, and sets
-            the generation index in the right place
-        """
-        self.model = load_model(load_path)
-        hist_path = Path(load_path).parent / "history.joblib"
-        memory_path = Path(load_path).parent / "memory.joblib"
-        if hist_path.exists():
-            logging.debug("Loading history...")
-            self.history = joblib.load(hist_path)
-        if memory_path.exists():
-            logging.debug("Loading experience buffer...")
-            self.memory = joblib.load(memory_path)
-
-        self.generation = len(self.history["mse"])
-        self.gen_in_stage = 0
-        generation_tracker = 0
-        for stage_params in self.configuration["stages"]:
-            stage_length = stage_params["n_generations"]
-            if self.generation < generation_tracker + stage_length:
-                self.gen_in_stage = self.generation - generation_tracker
-                break
-            self.stage_idx += 1
-            generation_tracker += stage_length
-        self._set_game_class()
 
     def train(self, debug_mode=False):
         try:
@@ -194,7 +156,7 @@ class Trainer:
 
             dataset = self.perform_self_play(stage_params, debug_mode)
             self.memory.update(dataset)
-            train_history = self.train_model(stage_params)
+            train_history = self.update_model(stage_params)
             self.history["val_value_loss"].append(
                 train_history.history["val_value_loss"]
             )
@@ -224,7 +186,7 @@ class Trainer:
             self.generation += 1
             self.gen_in_stage = 0
 
-    def perform_self_play(self, stage_params, session, debug_mode):
+    def perform_self_play(self, stage_params, debug_mode):
 
         session = K.get_session()
 
@@ -241,7 +203,7 @@ class Trainer:
         )
         self.history["generation_duration"].append(time.time() - start_time)
 
-        dataset = self.dataset_apply_symmetry(dataset)
+        dataset = self._dataset_apply_symmetry(dataset)
         return dataset
 
     def update_model(self, stage_params):
@@ -249,7 +211,7 @@ class Trainer:
         dataset_size = dataset["Boards"].shape[0]
 
         train_select = np.random.choice(
-            a=[False, True], size=dataset_size, p=[0.001, 0.999]
+            a=[False, True], size=dataset_size, p=[0.01, 0.99]
         )
         validation_select = ~train_select
 
@@ -309,17 +271,19 @@ class Trainer:
             self.history["draws"].extend([draws] * tournament_frequency)
 
     def benchmark_model(self, benchmark_boards, benchmark_values, model):
-        _, pred_values = model.predict(benchmark_boards)
-        mse = ((pred_values - benchmark_values) ** 2).mean()
-        # For now only works with +1 or -1 values doesn't evaluate accuracy of
-        # games with draws well
-        accuracy = (
-            np.where(pred_values > 0, 1.0, -1.0) == benchmark_values
-        ).mean()
-        self.logger.info(
-            f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}"
-        )
-        return mse, accuracy
+        if benchmark_boards and benchmark_values:
+            _, pred_values = model.predict(benchmark_boards)
+            mse = ((pred_values - benchmark_values) ** 2).mean()
+            # For now only works with +1 or -1 values doesn't evaluate accuracy of
+            # games with draws well
+            accuracy = (
+                np.where(pred_values > 0, 1.0, -1.0) == benchmark_values
+            ).mean()
+            self.logger.info(
+                f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}"
+            )
+            return mse, accuracy
+        return 0, 0
 
     def evaluate_self_play_dataset(self, benchmark_path, boards, values):
         try:
@@ -354,6 +318,45 @@ class Trainer:
         }
 
         return sym_dataset
+
+    def _create_model(self):
+        if self.configuration["game"] == "connect_four":
+            self.model = create_connect_four_model(
+                depth=self.configuration["model"]["n_resnet_blocks"],
+                activation=self.configuration["model"]["activation"],
+                policy_factor=self.configuration["model"]["policy_factor"],
+            )
+
+        elif self.configuration["game"] == "tic_tac_toe":
+            self.model = create_tic_tac_toe_model(
+                depth=self.configuration["model"]["n_resnet_blocks"],
+                activation=self.configuration["model"]["activation"],
+            )
+
+    def _load_model(self, load_path):
+        """ Loads a model. Also loads associated memories and history, and sets
+            the generation index in the right place
+        """
+        self.model = load_model(load_path)
+        hist_path = Path(load_path).parent / "history.joblib"
+        memory_path = Path(load_path).parent / "memory.joblib"
+        if hist_path.exists():
+            logging.debug("Loading history...")
+            self.history = joblib.load(hist_path)
+        if memory_path.exists():
+            logging.debug("Loading experience buffer...")
+            self.memory = joblib.load(memory_path)
+
+        self.generation = len(self.history["mse"])
+        self.gen_in_stage = 0
+        generation_tracker = 0
+        for stage_params in self.configuration["stages"]:
+            stage_length = stage_params["n_generations"]
+            if self.generation < generation_tracker + stage_length:
+                self.gen_in_stage = self.generation - generation_tracker
+                break
+            self.stage_idx += 1
+            generation_tracker += stage_length
 
     def _get_self_play_controller(
         self, n_games_per_worker, n_simulations_per_move, debug_mode=False
