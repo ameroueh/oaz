@@ -70,7 +70,7 @@ class SelfPlay:
 
     def self_play(self, session, discount_factor=1.0, debug=False) -> Dict:
         self.logger.debug(
-            f"N_SIMULATIONS_PER_MOVE{self.n_simulations_per_move}"
+            f"n_simulations_per_move: {self.n_simulations_per_move}"
         )
 
         self.discount_factor = discount_factor
