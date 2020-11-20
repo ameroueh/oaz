@@ -313,6 +313,7 @@ class Trainer:
                 self._save_plots()
                 self.generation += 1
                 self.gen_in_stage = 0
+            self.stage_idx += 1
 
     def train_model(self, stage_params):
         dataset = self.memory.recall(shuffle=True)
@@ -402,6 +403,7 @@ class Trainer:
     def _get_self_play_controller(
         self, n_games_per_worker, n_simulations_per_move, debug_mode=False
     ):
+        LOGGER.info(f"HERE   {n_simulations_per_move}")
         if debug_mode:
             self_play_controller = SelfPlay(
                 game=self.game,
