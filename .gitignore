@@ -43,7 +43,7 @@ dist/
 __pycache__/
 
 #compiled libraries
-externs/
+extern/
 
 
 #Models, logging and configs
