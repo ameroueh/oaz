@@ -42,9 +42,15 @@ build/
 dist/
 __pycache__/
 
+#compiled libraries
+externs/
 
-#Models
+
+#Models, logging and configs
 models/
 bin/
 experiments/runs
+experiments/*.toml
+experiments/*.txt
+
 
