@@ -10,7 +10,7 @@ from pyoaz.tournament import Participant, Tournament
 
 def load_benchmark(benchmark_path):
     boards_path = benchmark_path / "benchmark_boards.npy"
-    values_path = benchmark_path / "benchmark_boards.npy"
+    values_path = benchmark_path / "benchmark_values.npy"
     if boards_path.exists():
         boards = np.load(boards_path)
         values = np.load(values_path)
