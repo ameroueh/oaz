@@ -271,7 +271,7 @@ class Trainer:
             self.history["draws"].extend([draws] * tournament_frequency)
 
     def benchmark_model(self, benchmark_boards, benchmark_values, model):
-        if benchmark_boards and benchmark_values:
+        if (benchmark_boards is not None) and (benchmark_values is not None):
             _, pred_values = model.predict(benchmark_boards)
             mse = ((pred_values - benchmark_values) ** 2).mean()
             # For now only works with +1 or -1 values doesn't evaluate accuracy of
