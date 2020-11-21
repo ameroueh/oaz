@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from pyoaz.bots import LeftmostBot, OazBot, RandomBot
 
-# from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.tournament import Participant, Tournament
 
 
