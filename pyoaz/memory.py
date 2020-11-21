@@ -40,7 +40,7 @@ class ArrayBuffer:
     def purge(self, n_purge: int) -> None:
         """ Purge the first n parameters
         """
-        if n_purge > 0:
+        if (n_purge > 0) and (len(self._array) > 0):
             if len(self._array[0]) > n_purge:
                 self._array = [self._array[0][n_purge:]]
 
