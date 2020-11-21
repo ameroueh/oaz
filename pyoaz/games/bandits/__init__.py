@@ -1,5 +1,5 @@
 from ..game import *
-from ..game.game_factory import game_factory
+from ..game_factory import game_factory
 from .bandits import Bandits as BanditsCore
 
 
