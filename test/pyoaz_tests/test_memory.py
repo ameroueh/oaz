@@ -112,6 +112,10 @@ def test_memory_recall():
 
 def test_memory_purge():
     buffer = MemoryBuffer(maxlen=MAXLEN)
+
+    # Test that pruging the empty buffer doesn't crash
+    buffer.purge(N_PURGE)
+
     buffer.update(DATASET_1)
     buffer.update(DATASET_2)
 
