@@ -176,14 +176,14 @@ namespace oaz::mcts {
 			"value",
 			"policy"
 		);
-		auto pool = std::make_shared<oaz::thread_pool::ThreadPool>(8);
+		auto pool = std::make_shared<oaz::thread_pool::ThreadPool>(4);
 		std::shared_ptr<NNEvaluator> evaluator(
 			new NNEvaluator(
 				model, 
 				nullptr,
 				pool, 
 				{6, 7, 2}, 
-				100	
+				50	
 			)
 		);
 		ConnectFour game;
