@@ -240,7 +240,7 @@ class Trainer:
                 {"value": validation_values, "policy": validation_policies},
             ),
             batch_size=512,
-            epochs=1,
+            epochs=stage_params["update_epochs"],
             verbose=1,
             callbacks=[clr],
         )
