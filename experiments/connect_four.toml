@@ -31,6 +31,7 @@ n_purge = 0
 n_simulations_per_move = 200
 discount_factor = 0.99
 n_games_per_worker = 30
+update_epochs = 10
 
 
 [[stages]]
@@ -42,6 +43,7 @@ n_purge = 300000
 n_simulations_per_move = 400
 discount_factor = 0.999
 n_games_per_worker = 30
+update_epochs = 10
 
 
 [[stages]]
@@ -53,6 +55,7 @@ n_purge = 600000
 n_simulations_per_move = 800
 discount_factor =1.0
 n_games_per_worker = 30
+update_epochs = 10
 
 
 [[stages]]
@@ -64,6 +67,7 @@ n_purge = 300000
 n_simulations_per_move = 800
 discount_factor = 1.0
 n_games_per_worker = 30
+update_epochs = 10
 
 
 [[stages]]
@@ -75,6 +79,7 @@ n_purge = 300000
 n_simulations_per_move = 800
 discount_factor = 1.0
 n_games_per_worker = 30
+update_epochs = 10
 
 [[stages]]
 n_generations = 10
@@ -85,3 +90,4 @@ n_purge = 0
 n_simulations_per_move = 800
 discount_factor = 1.0
 n_games_per_worker = 30
+update_epochs = 10
