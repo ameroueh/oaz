@@ -163,14 +163,8 @@ NNEvaluator::NNEvaluator(
 	m_n_evaluations(0),
 	m_thread_pool(thread_pool),
 	m_element_dimensions(element_dimensions) {
-		std::future<void> future_exit_signal = m_exit_signal.get_future();
-		m_worker = std::thread(	
-			&NNEvaluator::Monitor,
-			this,
-			std::move(future_exit_signal)
-		);
+		StartMonitor();
 }
-
 
 NNEvaluator::~NNEvaluator() {
 	m_exit_signal.set_value();
@@ -180,12 +174,18 @@ NNEvaluator::~NNEvaluator() {
 
 void NNEvaluator::Monitor(std::future<void> future_exit_signal) {
 	while(future_exit_signal.wait_for(std::chrono::milliseconds(10)) == std::future_status::timeout) {
-		if(!m_evaluation_completed) {
-			ForceEvaluation();
-		}
-		m_evaluation_completed = false;
+		ForceEvaluation();
 	}
-};
+}
+
+void NNEvaluator::StartMonitor() {
+	std::future<void> future_exit_signal = m_exit_signal.get_future();
+	m_worker = std::thread(
+		&NNEvaluator::Monitor, 
+		this, 
+		std::move(future_exit_signal)
+	);
+}
 
 
 void NNEvaluator::AddNewBatch() {
@@ -202,11 +202,6 @@ const std::vector<int>& NNEvaluator::GetElementDimensions() const {
 size_t NNEvaluator::GetBatchSize() const {
 	return m_batch_size;
 }
-
-std::string NNEvaluator::GetStatus() const {
-	return "Evaluator status: " + std::to_string(m_n_evaluations * m_batch_size) + "/" + std::to_string(m_n_evaluation_requests * m_batch_size);
-}
-
 
 void NNEvaluator::RequestEvaluation(
 	oaz::games::Game* game, 
@@ -269,6 +264,7 @@ void NNEvaluator::EvaluateFromNN(
 	} else {
 		AddNewBatch();
 		m_batches.Unlock();
+		
 		EvaluateFromNN(
 			game, 
 			value,

@@ -39,7 +39,7 @@ namespace oaz::nn {
 
 			size_t time_created;
 			size_t time_evaluation_start;
-			size_t time_evaluation_end;
+			ssize_t time_evaluation_end;
 			size_t size;
 			size_t n_elements;
 			bool evaluation_forced;
@@ -123,7 +123,6 @@ namespace oaz::nn {
 				oaz::thread_pool::Task*
 			);
 
-			std::string GetStatus() const;
 			std::vector<EvaluationBatchStatistics> GetStatistics();
 
 			~NNEvaluator();
@@ -149,6 +148,7 @@ namespace oaz::nn {
 			void EvaluateBatch(EvaluationBatch*);
 			void AddNewBatch();
 			void Monitor(std::future<void>);
+			void StartMonitor();
 			void ArchiveBatchStatistics(const EvaluationBatchStatistics&);
 			
 			oaz::queue::SafeDeque<std::shared_ptr<EvaluationBatch>> m_batches;
@@ -161,7 +161,6 @@ namespace oaz::nn {
 
 			std::thread m_worker;
 			std::promise<void> m_exit_signal;
-			std::atomic<bool> m_evaluation_completed;
 			std::vector<int> m_element_dimensions;
 
 			std::shared_ptr<Model> m_model;
@@ -170,6 +169,7 @@ namespace oaz::nn {
 
 			oaz::mutex::SpinlockMutex m_archive_lock;
 			std::vector<EvaluationBatchStatistics> m_archive;
+
 	};
 }
 
