@@ -157,14 +157,15 @@ class Trainer:
             dataset = self.perform_self_play(stage_params, debug_mode)
             self.memory.update(dataset)
             train_history = self.update_model(stage_params)
-            self.history["val_value_loss"].append(
+
+            self.history["val_value_loss"].extend(
                 train_history.history["val_value_loss"]
             )
-            self.history["val_policy_loss"].append(
+            self.history["val_policy_loss"].extend(
                 train_history.history["val_policy_loss"]
             )
 
-            self.history["val_loss"].append(train_history.history["val_loss"])
+            self.history["val_loss"].extend(train_history.history["val_loss"])
             self.evaluation_step(dataset)
 
             is_checkpoint_gen = (
