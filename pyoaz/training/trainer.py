@@ -277,7 +277,7 @@ class Trainer:
             # For now only works with +1 or -1 values doesn't evaluate accuracy of
             # games with draws well
             accuracy = (
-                np.where(pred_values > 0, 1.0, -1.0) == benchmark_values
+                np.where(pred_values > 0, 1.0, -1.0) == self.benchmark_values
             ).mean()
             self.logger.info(
                 f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}"
