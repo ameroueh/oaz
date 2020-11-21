@@ -102,27 +102,29 @@ class MemoryBuffer:
             dataset["Values"], keep_indices=keep_indices
         )
 
-    def recall(self, shuffle: bool = False) -> Mapping[str, np.ndarray]:
+    def recall(
+        self, shuffle: bool = False, sample=1.0
+    ) -> Mapping[str, np.ndarray]:
         """ Return all stored memories
-            TODO should probably subsample
         """
-        if shuffle:
-            boards = self.board_buffer.get_array()
-            policies = self.policy_buffer.get_array()
-            values = self.value_buffer.get_array()
-            shuffled_idx = np.random.permutation(len(boards))
-            dataset = {
-                "Boards": boards[shuffled_idx],
-                "Policies": policies[shuffled_idx],
-                "Values": values[shuffled_idx],
-            }
 
+        boards = self.board_buffer.get_array()
+        policies = self.policy_buffer.get_array()
+        values = self.value_buffer.get_array()
+        max_sampling_index = int(len(boards) // sample)
+
+        if shuffle:
+            sampling_indices = np.random.permutation(len(boards))
         else:
-            dataset = {
-                "Boards": self.board_buffer.get_array(),
-                "Policies": self.policy_buffer.get_array(),
-                "Values": self.value_buffer.get_array(),
-            }
+            sampling_indices = np.arange(len(boards))
+
+        sampling_indices = sampling_indices[-max_sampling_index:]
+        dataset = {
+            "Boards": boards[sampling_indices],
+            "Policies": policies[sampling_indices],
+            "Values": values[sampling_indices],
+        }
+
         return dataset
 
     def purge(self, n_purge: int) -> None:

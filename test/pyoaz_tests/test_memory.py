@@ -3,7 +3,8 @@ from pyoaz.memory import ArrayBuffer, MemoryBuffer
 
 MAXLEN = 6
 
-
+# Create some simple boards and associated policies and values
+# These will be added to the buffer in turn
 BOARDS_1 = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2],])
 POLICIES_1 = np.array([[0.5, 0.5], [1.0, 0.0], [0, 1.0],])
 VALUES_1 = np.array([0.0, 1.0, -1.0])
@@ -16,15 +17,6 @@ POLICIES_2 = np.array(
 VALUES_2 = np.array([0.0, -1.0, 1.0, 1.0, -1.0])
 DATASET_2 = {"Boards": BOARDS_2, "Policies": POLICIES_2, "Values": VALUES_2}
 
-# Dataset 1 + Dataset 2 go over the memory buffer limit - some positions will
-# be forgotten.
-ENQUEUED_BOARDS = np.array(
-    [[2, 2, 2], [0, 0, 0], [2, 2, 2], [3, 3, 3], [4, 4, 4], [4, 5, 5],]
-)
-ENQUEUED_POLICIES = np.array(
-    [[0, 1.0], [0.5, 0.5], [0, 1.0], [0.2, 0.8], [0.6, 0.4], [0.1, 0.9]]
-)
-ENQUEUED_VALUES = np.array([-1.0, 0.0, -1.0, 1.0, 1.0, -1.0])
 
 # Indices of the unique array to keep. Keep the latest one if there's a
 # duplicate
@@ -46,7 +38,23 @@ EXPECTED_DATASET = {
     "Policies": EXPECTED_POLICIES,
     "Values": EXPECTED_VALUES,
 }
+# Testing sampling: return a subsampled set of the moves
+SAMPLING_FRAC = 4 / MAXLEN
+EXPECTED_SAMPLED_BOARDS = np.array(
+    [ [2, 2, 2], [3, 3, 3], [4, 4, 4], [4, 5, 5],]
+)
+EXPECTED_SAMPLED_POLICIES = np.array(
+    [ [0, 1.0], [0.2, 0.8], [0.6, 0.4], [0.1, 0.9]]
+)
+EXPECTED_SAMPLED_VALUES = np.array( -1.0, 1.0, 1.0, -1.0])
+EXPECTED_SAMPLED_DATASET = {
+    "Boards": EXPECTED_SAMPLED_BOARDS,
+    "Policies": EXPECTED_SAMPLED_POLICIES,
+    "Values": EXPECTED_SAMPLED_VALUES,
+}
 
+
+# Testing purging, drop the oldest N memories
 N_PURGE = 3
 EXPECTED_PURGED_BOARDS = np.array([[3, 3, 3], [4, 4, 4], [4, 5, 5],])
 EXPECTED_PURGED_POLICIES = np.array([[0.2, 0.8], [0.6, 0.4], [0.1, 0.9]])
@@ -90,17 +98,26 @@ def test_MemoyBuffer():
     buffer.update(DATASET_1)
     buffer.update(DATASET_2)
 
+    #Test recall
     ret = buffer.recall()
     for key, value in ret.items():
 
         np.testing.assert_array_equal(value, EXPECTED_DATASET[key])
-
+    
+    #Test purge
     buffer.purge(N_PURGE)
     ret = buffer.recall()
     for key, value in ret.items():
 
         np.testing.assert_array_equal(value, EXPECTED_PURGED_DATASET[key])
+    
+    #Test sampling
+    ret = buffer.recall(sample=SAMPLING_FRAC)
+    for key, value in ret.items():
 
+        np.testing.assert_array_equal(value, EXPECTED_SAMPLED_DATASET[key])
+    
+    #Test that this works with large datasets
     buffer = MemoryBuffer(maxlen=LARGE_DATASET_LENGTH)
     buffer.update(LARGE_DATASET)
     buffer.purge(LARGE_DATASET_LENGTH // 2)
