@@ -8,7 +8,6 @@ from collections import deque
 from pathlib import Path
 
 import joblib
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -314,6 +313,7 @@ class Trainer:
                 self._save_plots()
                 self.generation += 1
                 self.gen_in_stage = 0
+            self.stage_idx += 1
 
     def train_model(self, stage_params):
         dataset = self.memory.recall(shuffle=True)
@@ -453,6 +453,12 @@ class Trainer:
             raise NotImplementedError("Wrong optimizer")
 
     def _save_plots(self):
+        # Need to do some funky import ordreing to avoid tkinter bug, see:
+        # https://stackoverflow.com/questions/27147300/matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
 
         joblib.dump(self.history, self.save_path / "history.joblib")
 
