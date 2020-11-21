@@ -4,7 +4,7 @@ class Game:
         self._core = core
 
     def play_move(self, move):
-        if more not in self.available_moves:
+        if move not in self.available_moves:
             raise ValueError(
                 f"Move {move} is not available (available moves: {self.available_moves}"
             )
