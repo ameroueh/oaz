@@ -254,9 +254,7 @@ class Trainer:
         self.history["self_play_mse"].append(self_play_mse)
         self.history["self_play_accuracy"].append(self_play_accuracy)
 
-        mse, accuracy = self.benchmark_model(
-            self.benchmark_boards, self.benchmark_values, self.model
-        )
+        mse, accuracy = self.benchmark_model()
         self.history["mse"].append(mse)
         self.history["accuracy"].append(accuracy)
         tournament_frequency = self.configuration["benchmark"][
@@ -270,10 +268,12 @@ class Trainer:
             self.history["losses"].extend([losses] * tournament_frequency)
             self.history["draws"].extend([draws] * tournament_frequency)
 
-    def benchmark_model(self, benchmark_boards, benchmark_values, model):
-        if (benchmark_boards is not None) and (benchmark_values is not None):
-            _, pred_values = model.predict(benchmark_boards)
-            mse = ((pred_values - benchmark_values) ** 2).mean()
+    def benchmark_model(self):
+        if (self.benchmark_boards is not None) and (
+            self.benchmark_values is not None
+        ):
+            _, pred_values = self.model.predict(self.benchmark_boards)
+            mse = ((pred_values - self.benchmark_values) ** 2).mean()
             # For now only works with +1 or -1 values doesn't evaluate accuracy of
             # games with draws well
             accuracy = (
