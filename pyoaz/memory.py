@@ -111,7 +111,7 @@ class MemoryBuffer:
         boards = self.board_buffer.get_array()
         policies = self.policy_buffer.get_array()
         values = self.value_buffer.get_array()
-        max_sampling_index = int(len(boards) // sample)
+        max_sampling_index = int(len(boards) * sample)
 
         if shuffle:
             sampling_indices = np.random.permutation(len(boards))

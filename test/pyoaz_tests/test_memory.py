@@ -38,15 +38,16 @@ EXPECTED_DATASET = {
     "Policies": EXPECTED_POLICIES,
     "Values": EXPECTED_VALUES,
 }
+
 # Testing sampling: return a subsampled set of the moves
-SAMPLING_FRAC = 4 / MAXLEN
+SAMPLING_FRAC = 4 / (MAXLEN - 0.01)
 EXPECTED_SAMPLED_BOARDS = np.array(
-    [ [2, 2, 2], [3, 3, 3], [4, 4, 4], [4, 5, 5],]
+    [[2, 2, 2], [3, 3, 3], [4, 4, 4], [4, 5, 5],]
 )
 EXPECTED_SAMPLED_POLICIES = np.array(
-    [ [0, 1.0], [0.2, 0.8], [0.6, 0.4], [0.1, 0.9]]
+    [[0, 1.0], [0.2, 0.8], [0.6, 0.4], [0.1, 0.9]]
 )
-EXPECTED_SAMPLED_VALUES = np.array( -1.0, 1.0, 1.0, -1.0])
+EXPECTED_SAMPLED_VALUES = np.array([-1.0, 1.0, 1.0, -1.0])
 EXPECTED_SAMPLED_DATASET = {
     "Boards": EXPECTED_SAMPLED_BOARDS,
     "Policies": EXPECTED_SAMPLED_POLICIES,
@@ -93,31 +94,39 @@ def test_ArrayBuffer():
     np.testing.assert_array_equal(unique_array, EXPECTED_BOARDS)
 
 
-def test_MemoyBuffer():
+def test_memory_recall():
     buffer = MemoryBuffer(maxlen=MAXLEN)
     buffer.update(DATASET_1)
     buffer.update(DATASET_2)
 
-    #Test recall
+    # Test recall
     ret = buffer.recall()
     for key, value in ret.items():
 
         np.testing.assert_array_equal(value, EXPECTED_DATASET[key])
-    
-    #Test purge
+    # Test sampling
+    ret = buffer.recall(sample=SAMPLING_FRAC)
+    for key, value in ret.items():
+        np.testing.assert_array_equal(value, EXPECTED_SAMPLED_DATASET[key])
+
+
+def test_memory_purge():
+    buffer = MemoryBuffer(maxlen=MAXLEN)
+    buffer.update(DATASET_1)
+    buffer.update(DATASET_2)
+
     buffer.purge(N_PURGE)
     ret = buffer.recall()
     for key, value in ret.items():
-
         np.testing.assert_array_equal(value, EXPECTED_PURGED_DATASET[key])
-    
-    #Test sampling
-    ret = buffer.recall(sample=SAMPLING_FRAC)
-    for key, value in ret.items():
 
-        np.testing.assert_array_equal(value, EXPECTED_SAMPLED_DATASET[key])
-    
-    #Test that this works with large datasets
+
+def test_memory_large_dataset():
+    buffer = MemoryBuffer(maxlen=MAXLEN)
+    buffer.update(DATASET_1)
+    buffer.update(DATASET_2)
+
+    # Test that this works with large datasets
     buffer = MemoryBuffer(maxlen=LARGE_DATASET_LENGTH)
     buffer.update(LARGE_DATASET)
     buffer.purge(LARGE_DATASET_LENGTH // 2)
