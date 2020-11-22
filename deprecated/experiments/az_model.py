@@ -211,9 +211,9 @@ def create_model():
             "policy": "categorical_crossentropy",
             "value": "mean_squared_error",
         },
-        optimizer = tf.keras.optimizers.Adadelta(
-                learning_rate=0.1, rho=0.95, epsilon=1e-07, name="Adadelta"
-        )
+        optimizer=tf.keras.optimizers.Adadelta(
+            learning_rate=0.1, rho=0.95, epsilon=1e-07, name="Adadelta"
+        ),
     )
     return model
 
