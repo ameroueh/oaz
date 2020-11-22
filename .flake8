@@ -1,3 +1,4 @@
 [flake8]
+exclude = extern/*, build/*, data/*, deprecated/*, .git/, test/*
 extend-ignore = E203, E501, W503, E231
-per-file-ignore = '*/__init__.py :E402, F401, F403'
+per-file-ignores = */__init__.py :E402, F401, F403
