@@ -21,6 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: update pip
-        run: python3 -m pip-install flake8==3.8.3
+        run: python3 -m pip install flake8==3.8.3
       - name: check
         run: python3 -m flake8 .
