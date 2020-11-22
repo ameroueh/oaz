@@ -46,6 +46,7 @@ class ConnectFour : public Game {
     void GetAvailableMoves(std::vector<size_t>&) const;
     float GetScore() const;
     void WriteStateToTensorMemory(float*) const;
+    void WriteCanonicalStateToTensorMemory(float*) const;
     std::unique_ptr<Game> Clone() const;
 
     bool operator==(const ConnectFour&) const;
