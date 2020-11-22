@@ -2,7 +2,7 @@ import logging
 
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Iterable, List, Tuple
+from typing import Iterable, Tuple
 
 import numpy as np
 from pyoaz.bots.bot import Bot
@@ -36,7 +36,7 @@ class Tournament:
         """ Start a tournament. Each participant plays against every other
             participant and tally of wins and losses is returned. If a
             prioritised participant is provided, only play games that involve
-            that participant. 
+            that participant.
 
         Parameters
         ----------
