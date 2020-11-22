@@ -2,7 +2,9 @@ from collections import deque
 
 import numpy as np
 import pandas as pd
-from pyoaz.bots import LeftmostBot, OazBot, RandomBot
+from pyoaz.bots.leftmost_bot import LeftmostBot
+from pyoaz.bots.random_bot import RandomBot
+from pyoaz.bots.nn_bot import NNBot
 
 from pyoaz.tournament import Participant, Tournament
 
@@ -38,7 +40,7 @@ def get_gt_values(benchmark_path, boards):
 
 def play_tournament(game, model, n_games=100):
 
-    oazbot = Participant(OazBot(model), name="oaz")
+    oazbot = Participant(NNBot(model), name="oaz")
     left_bot = Participant(LeftmostBot(), name="left")
     random_bot = Participant(RandomBot(), name="random")
 
