@@ -214,6 +214,12 @@ class Trainer:
         train_select = np.random.choice(
             a=[False, True], size=dataset_size, p=[0.01, 0.99]
         )
+        # Protect against the case when the val split means there is no val
+        # data
+        if train_select.sum() == dataset_size:
+            train_select[0] = False
+            self.logger.debug("Validation size is 0, setting 1 example.")
+
         validation_select = ~train_select
 
         train_boards = dataset["Boards"][train_select]
@@ -223,6 +229,11 @@ class Trainer:
         validation_boards = dataset["Boards"][validation_select]
         validation_policies = dataset["Policies"][validation_select]
         validation_values = dataset["Values"][validation_select]
+
+        validation_data = (
+            validation_boards,
+            {"value": validation_values, "policy": validation_policies},
+        )
 
         # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
 
@@ -236,10 +247,7 @@ class Trainer:
         train_history = self.model.fit(
             train_boards,
             {"value": train_values, "policy": train_policies},
-            validation_data=(
-                validation_boards,
-                {"value": validation_values, "policy": validation_policies},
-            ),
+            validation_data=validation_data,
             batch_size=512,
             epochs=stage_params["update_epochs"],
             verbose=1,
