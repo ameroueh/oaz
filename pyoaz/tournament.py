@@ -5,7 +5,7 @@ from itertools import combinations
 from typing import Iterable, List, Tuple
 
 import numpy as np
-from pyoaz.bots import Bot
+from pyoaz.bots.bot import Bot
 from tqdm.auto import tqdm
 
 
@@ -108,9 +108,7 @@ class Tournament:
         turn = 0
         while not game.finished:
             player_idx = turn % 2
-            board = game.board.copy()
-            available_moves = game.available_moves
-            move = participants[player_idx].bot.play(board, available_moves)
+            move = participants[player_idx].bot.play(game)
             game.play_move(move)
             turn += 1
 
