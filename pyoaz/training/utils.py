@@ -58,7 +58,7 @@ def play_tournament(game, model, n_games=100):
     )
 
     oaz_wins, oaz_losses = win_loss[0, :].sum(), win_loss[:, 0].sum()
-    draws = 2 * n_games * len(participants - 1) - oaz_wins - oaz_losses
+    draws = 2 * n_games * (len(participants) - 1) - oaz_wins - oaz_losses
 
     return oaz_wins, oaz_losses, draws
 
