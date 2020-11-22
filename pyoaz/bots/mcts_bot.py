@@ -5,7 +5,7 @@ from pyoaz.evaluator.simulation_evaluator import SimulationEvaluator
 from .bot import Bot
 
 
-class MCTSBot:
+class MCTSBot(Bot):
 
     def __init__(
             self, 
