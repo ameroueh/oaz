@@ -2,7 +2,6 @@ from .search import Search as SearchCore
 
 
 class Search:
-    
     def __init__(
         self,
         game,
@@ -11,8 +10,9 @@ class Search:
         thread_pool,
         n_iterations,
         n_concurrent_workers=1,
-        noise_epsilon=0.,
-        noise_alpha=1.):
+        noise_epsilon=0.0,
+        noise_alpha=1.0,
+    ):
 
         self._core = SearchCore(
             game.core,
@@ -22,7 +22,7 @@ class Search:
             n_concurrent_workers,
             n_iterations,
             noise_epsilon,
-            noise_alpha
+            noise_alpha,
         )
 
     @property
@@ -44,4 +44,3 @@ def select_best_move_by_visit_count(search):
             best_n_visits = child.n_visits
             best_move = child.move
     return best_move
-

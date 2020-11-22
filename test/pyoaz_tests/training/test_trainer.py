@@ -15,4 +15,3 @@ def test_trainer():
 
         trainer = Trainer(configuration=CONFIG)
         trainer.train()
-

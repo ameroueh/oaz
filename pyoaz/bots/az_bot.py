@@ -6,7 +6,6 @@ from .bot import Bot
 
 
 class AZBot(Bot):
-  
     @classmethod
     def load_model(cls, model_path: str):
         from tensorflow.keras.models import load_model

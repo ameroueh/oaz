@@ -6,24 +6,16 @@ from .bot import Bot
 
 
 class MCTSBot(Bot):
-
     def __init__(
-            self, 
-            n_iterations=100,
-            n_concurrent_workers=1,
-            thread_pool=None
-        ):
+        self, n_iterations=100, n_concurrent_workers=1, thread_pool=None
+    ):
         self._n_iterations = n_iterations
         self._n_concurrent_workers = n_concurrent_workers
         if thread_pool is not None:
             self._thread_pool = thread_pool
         else:
-            self._thread_pool = ThreadPool(
-                n_workers=n_concurrent_workers
-            )
-        self._evaluator = SimulationEvaluator(
-            self.thread_pool
-        )
+            self._thread_pool = ThreadPool(n_workers=n_concurrent_workers)
+        self._evaluator = SimulationEvaluator(self.thread_pool)
         self._selector = UCTSelector()
 
     @property
@@ -54,7 +46,7 @@ class MCTSBot(Bot):
             thread_pool=self.thread_pool,
             n_concurrent_workers=self.n_concurrent_workers,
             n_iterations=self.n_iterations,
-            noise_epsilon=0.,
-            noise_alpha=0.
+            noise_epsilon=0.0,
+            noise_alpha=0.0,
         )
-        return select_best_move_by_visit_count(search) 
+        return select_best_move_by_visit_count(search)
