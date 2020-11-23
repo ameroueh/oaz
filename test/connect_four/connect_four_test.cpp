@@ -139,6 +139,21 @@ TEST(WriteStateToTensorMemory, Default) {
                 ASSERT_EQ(tensor[i][j][1], 0.);
 }
 
+TEST(WriteCanonicalStateToTensorMemory, Default) {
+    ConnectFour game;
+    game.PlayMove(0);
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteCanonicalStateToTensorMemory(tensor.origin());
+    for (size_t i = 0; i != 6; ++i)
+        for (size_t j = 0; j != 7; ++j) {
+            if (i == 0 && j == 0)
+                ASSERT_EQ(tensor[i][j][1], 1.);
+            else
+                ASSERT_EQ(tensor[i][j][1], 0.);
+            ASSERT_EQ(tensor[i][j][0], 0.);
+        }
+}
+
 TEST(GameMap, Instantiation) {
     ConnectFour game;
     std::unique_ptr<oaz::games::Game::GameMap> game_map(

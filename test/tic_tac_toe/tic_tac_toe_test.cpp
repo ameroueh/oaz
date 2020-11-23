@@ -143,13 +143,15 @@ TEST(WriteCanonicalStateToTensorMemory, Default) {
     TicTacToe game;
     game.PlayMove(0);
     boost::multi_array<float, 3> tensor(boost::extents[3][3][2]);
-    game.WriteStateToTensorMemory(tensor.origin());
+    game.WriteCanonicalStateToTensorMemory(tensor.origin());
     for (size_t i = 0; i != 3; ++i)
-        for (size_t j = 0; j != 3; ++j)
+        for (size_t j = 0; j != 3; ++j) {
             if (i == 0 && j == 0)
-                ASSERT_EQ(tensor[i][j][1], 1.);
+                ASSERT_EQ(tensor[i][j][1], 1.0);
             else
-                ASSERT_EQ(tensor[i][j][1], 0.);
+                ASSERT_EQ(tensor[i][j][1], 0.0);
+            ASSERT_EQ(tensor[i][j][0], 0.0);
+        }
 }
 
 TEST(GameMap, Instantiation) {

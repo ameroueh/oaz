@@ -55,6 +55,10 @@ void Bandits::WriteStateToTensorMemory(float* destination) const {
         tensor[i] = m_board.test(i) ? 1. : 0.;
 }
 
+void Bandits::WriteCanonicalStateToTensorMemory(float* destination) const {
+    WriteStateToTensorMemory(destination);
+}
+
 uint64_t Bandits::GetState() const {
     return m_board.to_ulong();
 }
