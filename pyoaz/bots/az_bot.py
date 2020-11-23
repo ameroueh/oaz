@@ -26,7 +26,7 @@ class AZBot(Bot):
         self.model = model
 
     def play(self, game):
-        _board = game.board[np.newaxis, ...]
+        _board = game.canonical_board[np.newaxis, ...]
         policy, value = self.model.predict(_board)
 
         policy = np.squeeze(policy)

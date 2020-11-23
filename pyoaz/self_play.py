@@ -253,11 +253,11 @@ class SelfPlay:
             # self.logger.info(f"Playing move {move}")
             # self.logger.info(f"availalbe move {game.available_moves} ")
 
-            boards.append(game.board.copy())
+            boards.append(game.canonical_board.copy())
             self.logger.debug(f"Playing move {move}")
             game.play_move(move)
 
-        boards.append(game.board.copy())
+        boards.append(game.canonical_board.copy())
         policy = np.ones(shape=policy_size, dtype=np.float32)
         policy = policy / policy.sum()
         policies.append(policy)
