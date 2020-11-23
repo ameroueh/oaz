@@ -16,8 +16,19 @@ def load_benchmark(benchmark_path):
     if boards_path.exists():
         boards = np.load(boards_path)
         values = np.load(values_path)
-        return boards, values
+
+        return to_canonical(boards), values
     return None, None
+
+
+def to_canonical(boards):
+    canonical_boards = boards.copy()
+    flip_idx = boards[..., 0].sum(axis=(1, 2)) != boards[..., 1].sum(
+        axis=(1, 2)
+    )
+    canonical_boards[flip_idx, ..., 0] = boards[flip_idx, ..., 1]
+    canonical_boards[flip_idx, ..., 1] = boards[flip_idx, ..., 0]
+    return canonical_boards
 
 
 def get_gt_values(benchmark_path, boards):
