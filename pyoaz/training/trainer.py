@@ -22,8 +22,10 @@ from pyoaz.training.utils import (
     load_benchmark,
     play_tournament,
     running_mean,
+    play_best_self,
 )
 from tensorflow.keras.models import load_model
+
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -90,6 +92,7 @@ class Trainer:
         self.generation = 0
         self.stage_idx = 0
         self.gen_in_stage = 0
+        self.best_generation = 0
 
         if load_path:
             self._load_model(load_path)
@@ -184,6 +187,11 @@ class Trainer:
                     )
                 )
             self._save_plots()
+
+            self._update_best_self()
+
+            self.history["best_generation"].append(self.best_generation)
+
             self.generation += 1
             self.gen_in_stage = 0
 
@@ -366,6 +374,8 @@ class Trainer:
                 break
             self.stage_idx += 1
             generation_tracker += stage_length
+        if len(self.history["best_generation"] > 0):
+            self.best_generation = self.history["best_generation"][-1]
 
     def _get_self_play_controller(
         self, n_games_per_worker, n_simulations_per_move, debug_mode=False
@@ -509,3 +519,17 @@ class Trainer:
             self.game_module = importlib.import_module(
                 "pyoaz.games.tic_tac_toe"
             )
+
+    def _update_best_self(self):
+        best_path = self.checkpoint_path / "best_model.pb"
+
+        self.logger.info(
+            f"Playing generation {self.generation} versus "
+            f"{self.best_generation}"
+        )
+        wins, losses = play_best_self(self.game, self.model, best_path)
+        self.logger.info(f"Wins: {wins} Losses: {losses}")
+        if wins > losses:
+            self.logger.info("Saving new best model")
+            self.model.save(str(best_path))
+            self.best_generation = self.generation

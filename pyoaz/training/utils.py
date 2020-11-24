@@ -1,4 +1,5 @@
 from collections import deque
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -61,6 +62,25 @@ def play_tournament(game, model, n_games=100):
     draws = 2 * n_games * (len(participants) - 1) - oaz_wins - oaz_losses
 
     return oaz_wins, oaz_losses, draws
+
+
+def play_best_self(game, model, save_path, n_games=100):
+
+    if not Path(save_path).exists():
+        return 1, 0
+
+    current_bot = NNBot(model, use_cpu=False)
+    best_bot = NNBot.load_model(save_path, use_cpu=True)
+
+    current = Participant(current_bot, name="Current model")
+    best = Participant(best_bot, name="Best Model")
+
+    tournament = Tournament(game)
+    win_loss = tournament.start_tournament([current, best], n_games=n_games)
+
+    current_wins, current_losses = win_loss[0, :].sum(), win_loss[:, 0].sum()
+
+    return current_wins, current_losses
 
 
 def running_mean(arr, window=10):
