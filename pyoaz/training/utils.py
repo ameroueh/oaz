@@ -69,8 +69,8 @@ def play_best_self(game, model, save_path, n_games=100):
     if not Path(save_path).exists():
         return 1, 0
 
-    current_bot = NNBot(model, use_cpu=False)
-    best_bot = NNBot.load_model(save_path, use_cpu=True)
+    current_bot = NNBot(model, use_cpu=False, greedy=False)
+    best_bot = NNBot.load_model(save_path, use_cpu=True, greedy=False)
 
     current = Participant(current_bot, name="Current model")
     best = Participant(best_bot, name="Best Model")
