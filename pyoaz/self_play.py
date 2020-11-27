@@ -41,7 +41,6 @@ class SelfPlay:
         self.evaluator_batch_size = evaluator_batch_size
         self.epsilon = epsilon
         self.alpha = alpha
-        # self._import_game_module(game)
         self.selector = AZSelector()
         self.thread_pool = ThreadPool(n_workers)
         self.cache_size = cache_size
@@ -53,20 +52,6 @@ class SelfPlay:
         self.logger = logger
         if logger is None:
             self.logger = setup_logger()
-
-    # def _import_game_module(self, game):
-    #     if game == "connect_four":
-    #         from pyoaz.games.connect_four import ConnectFour
-
-    #         self.game = ConnectFour
-    #         self.dimensions = (6, 7, 2)
-    #     elif game == "tic_tac_toe":
-    #         from pyoaz.games.tic_tac_toe import TicTacToe
-
-    #         self.game = TicTacToe
-    #         self.dimensions = (3, 3, 2)
-    #     else:
-    #         raise NotImplementedError
 
     def self_play(self, session, discount_factor=1.0, debug=False) -> Dict:
         self.logger.debug(
@@ -210,7 +195,6 @@ class SelfPlay:
         #             self.logger.debug("random 3")
         #             move = int(np.random.choice(game.available_moves))
         #             game.play_move(move)
-
         while not game.finished:
             self.logger.debug(
                 f"Thread {thread_id} game {game_idx} move {game.board.sum()}"
@@ -225,12 +209,9 @@ class SelfPlay:
                 n_iterations=self.n_simulations_per_move,
                 noise_epsilon=self.epsilon,
                 noise_alpha=self.alpha,
-                # No search batch_size?
             )
             root = search.tree_root
 
-            # best_visit_count = -1
-            # best_child = None
             policy = np.zeros(shape=policy_size, dtype=np.float32)
             for i in range(root.n_children):
 
@@ -253,17 +234,23 @@ class SelfPlay:
             # self.logger.info(f"Playing move {move}")
             # self.logger.info(f"availalbe move {game.available_moves} ")
 
-            boards.append(game.canonical_board.copy())
+            boards.append(game.canonical_board)
             self.logger.debug(f"Playing move {move}")
             game.play_move(move)
 
-        boards.append(game.canonical_board.copy())
+        boards.append(game.canonical_board)
         policy = np.ones(shape=policy_size, dtype=np.float32)
         policy = policy / policy.sum()
         policies.append(policy)
 
         # self.logger.info("Game is finished!")
-        scores = [game.score] * len(boards)
+
+        # A position's score depends on the winnder of the game and the active
+        # player for that position
+        player_array = np.empty(len(boards))
+        player_array[::2] = 1
+        player_array[1::2] = -1
+        scores = game.score * player_array
         scores *= np.power(self.discount_factor, np.arange(len(boards)))
 
         return boards, scores, policies
