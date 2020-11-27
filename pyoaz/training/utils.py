@@ -26,7 +26,7 @@ def load_benchmark(benchmark_path):
 
 def static_score_to_value(boards, values):
     for i in range(len(boards)):
-        if sum(boards[i]) % 2 != 0:
+        if boards[i].sum() % 2 != 0:
             values[i] = 1 - values[i]
     return values
 
