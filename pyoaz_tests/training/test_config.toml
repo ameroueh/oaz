@@ -31,3 +31,4 @@ n_purge = 0
 n_simulations_per_move = 5
 discount_factor = 0.99
 n_games_per_worker = 5
+training_samples = 40000
