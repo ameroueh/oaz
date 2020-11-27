@@ -318,16 +318,11 @@ void Search::BackpropagateNode(
 
     // value is wrt current player
     while (!node->IsRoot()) {
-        // float value = GetValueFromScore(
-        // 	normalised_score,
-        // 	node->GetPlayer()
-        // );
+	value = 1. - value;
         node->Lock();
         node->AddValue(value);
         node->Unlock();
         node = node->GetParent();
-        // switch player
-        value = 1 - value;
     }
 
     /* spdlog::debug("Search {:p} node {:p} backpropagateNode returning", (void*)this, (void*)node); */
