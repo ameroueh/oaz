@@ -158,7 +158,7 @@ class Trainer:
             )
 
             dataset = self.perform_self_play(stage_params, debug_mode)
-            self.memory.update(dataset)
+            self.memory.update(dataset, logger=self.logger)
             train_history = self.update_model(stage_params)
 
             self.history["val_value_loss"].extend(
@@ -216,11 +216,13 @@ class Trainer:
         return dataset
 
     def update_model(self, stage_params):
-        dataset = self.memory.recall(shuffle=True)
+        dataset = self.memory.recall(
+            shuffle=True, n_sample=stage_params["training_samples"]
+        )
         dataset_size = dataset["Boards"].shape[0]
 
         train_select = np.random.choice(
-            a=[False, True], size=dataset_size, p=[0.01, 0.99]
+            a=[False, True], size=dataset_size, p=[0.1, 0.9]
         )
         # Protect against the case when the val split means there is no val
         # data
@@ -242,8 +244,10 @@ class Trainer:
             validation_boards,
             {"value": validation_values, "policy": validation_policies},
         )
-
-        # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
+        patience = stage_params["update_epochs"] // 5
+        early_stopping = tf.keras.callbacks.EarlyStopping(
+            patience=patience, restore_best_weights=True
+        )
 
         clr = CyclicLR(
             base_lr=stage_params["learning_rate"],
@@ -259,7 +263,7 @@ class Trainer:
             batch_size=512,
             epochs=stage_params["update_epochs"],
             verbose=1,
-            callbacks=[clr],
+            callbacks=[clr, early_stopping],
         )
         return train_history
 
@@ -374,7 +378,7 @@ class Trainer:
                 break
             self.stage_idx += 1
             generation_tracker += stage_length
-        if len(self.history["best_generation"] > 0):
+        if len(self.history["best_generation"]) > 0:
             self.best_generation = self.history["best_generation"][-1]
 
     def _get_self_play_controller(
