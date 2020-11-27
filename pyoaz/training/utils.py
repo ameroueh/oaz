@@ -17,8 +17,18 @@ def load_benchmark(benchmark_path):
         boards = np.load(boards_path)
         values = np.load(values_path)
 
-        return to_canonical(boards), values
+        boards = to_canonical(boards)
+        values = static_score_to_value(boards, values)
+
+        return boards, values
     return None, None
+
+
+def static_score_to_value(boards, values):
+    for i in range(len(boards)):
+        if sum(boards[i]) % 2 != 0:
+            values[i] = 1 - values[i]
+    return values
 
 
 def to_canonical(boards):
