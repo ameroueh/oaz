@@ -22,8 +22,10 @@ from pyoaz.training.utils import (
     load_benchmark,
     play_tournament,
     running_mean,
+    play_best_self,
 )
 from tensorflow.keras.models import load_model
+
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -90,6 +92,7 @@ class Trainer:
         self.generation = 0
         self.stage_idx = 0
         self.gen_in_stage = 0
+        self.best_generation = 0
 
         if load_path:
             self._load_model(load_path)
@@ -155,7 +158,7 @@ class Trainer:
             )
 
             dataset = self.perform_self_play(stage_params, debug_mode)
-            self.memory.update(dataset)
+            self.memory.update(dataset, logger=self.logger)
             train_history = self.update_model(stage_params)
 
             self.history["val_value_loss"].extend(
@@ -184,6 +187,11 @@ class Trainer:
                     )
                 )
             self._save_plots()
+
+            self._update_best_self()
+
+            self.history["best_generation"].append(self.best_generation)
+
             self.generation += 1
             self.gen_in_stage = 0
 
@@ -208,11 +216,13 @@ class Trainer:
         return dataset
 
     def update_model(self, stage_params):
-        dataset = self.memory.recall(shuffle=True)
+        dataset = self.memory.recall(
+            shuffle=True, n_sample=stage_params["training_samples"]
+        )
         dataset_size = dataset["Boards"].shape[0]
 
         train_select = np.random.choice(
-            a=[False, True], size=dataset_size, p=[0.01, 0.99]
+            a=[False, True], size=dataset_size, p=[0.1, 0.9]
         )
         # Protect against the case when the val split means there is no val
         # data
@@ -234,8 +244,10 @@ class Trainer:
             validation_boards,
             {"value": validation_values, "policy": validation_policies},
         )
-
-        # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
+        patience = stage_params["update_epochs"] // 5
+        early_stopping = tf.keras.callbacks.EarlyStopping(
+            patience=patience, restore_best_weights=True
+        )
 
         clr = CyclicLR(
             base_lr=stage_params["learning_rate"],
@@ -251,7 +263,7 @@ class Trainer:
             batch_size=512,
             epochs=stage_params["update_epochs"],
             verbose=1,
-            callbacks=[clr],
+            callbacks=[clr, early_stopping],
         )
         return train_history
 
@@ -366,6 +378,8 @@ class Trainer:
                 break
             self.stage_idx += 1
             generation_tracker += stage_length
+        if len(self.history["best_generation"]) > 0:
+            self.best_generation = self.history["best_generation"][-1]
 
     def _get_self_play_controller(
         self, n_games_per_worker, n_simulations_per_move, debug_mode=False
@@ -509,3 +523,17 @@ class Trainer:
             self.game_module = importlib.import_module(
                 "pyoaz.games.tic_tac_toe"
             )
+
+    def _update_best_self(self):
+        best_path = self.checkpoint_path / "best_model.pb"
+
+        self.logger.info(
+            f"Playing generation {self.generation} versus "
+            f"{self.best_generation}"
+        )
+        wins, losses = play_best_self(self.game, self.model, best_path)
+        self.logger.info(f"Wins: {wins} Losses: {losses}")
+        if wins > losses:
+            self.logger.info("Saving new best model")
+            self.model.save(str(best_path))
+            self.best_generation = self.generation
