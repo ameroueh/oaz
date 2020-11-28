@@ -197,9 +197,10 @@ class SelfPlay:
         #             game.play_move(move)
         while not game.finished:
             self.logger.debug(
-                f"Thread {thread_id} game {game_idx} move {game.board.sum()}"
+                f"Thread {thread_id} game {game_idx} move number "
+                f"{int(game.board.sum())}"
             )
-            self.logger.debug(f"\n{game.board.sum(-1)}")
+            self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
             search = Search(
                 game=game,
                 selector=self.selector,
@@ -227,6 +228,7 @@ class SelfPlay:
             # There's an off-by-one error in the Search's n_sim_per_move
             policy = policy / (self.n_simulations_per_move - 1)
             policies.append(policy)
+            self.logger.debug(f"policy: \n{policy}")
 
             move = int(np.random.choice(np.arange(policy_size), p=policy))
             # move = best_child.move
@@ -243,14 +245,19 @@ class SelfPlay:
         policy = policy / policy.sum()
         policies.append(policy)
 
-        # self.logger.info("Game is finished!")
+        self.logger.debug(f"Game is finished! Final board score: {game.score}")
 
-        # A position's score depends on the winnder of the game and the active
+        # A position's score depends on the winner of the game and the active
         # player for that position
         player_array = np.empty(len(boards))
         player_array[::2] = 1
         player_array[1::2] = -1
         scores = game.score * player_array
-        scores *= np.power(self.discount_factor, np.arange(len(boards)))
+        scores *= np.power(self.discount_factor, np.arange(len(boards))[::-1])
+
+        self.logger.debug(f"Final Board")
+        self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
+        self.logger.debug("Final list of board scores")
+        self.logger.debug(scores)
 
         return boards, scores, policies
