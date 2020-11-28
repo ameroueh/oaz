@@ -283,7 +283,11 @@ class Trainer:
         ]
         if self.generation % tournament_frequency == 0:
 
-            wins, losses, draws = play_tournament(self.game, self.model)
+            wins, losses, draws = play_tournament(
+                self.game,
+                self.model,
+                self.config["benchmark"]["mcts_bot_iterations"],
+            )
             self.logger.info(f"WINS: {wins} LOSSES: {losses} DRAWS: {draws}")
             self.history["wins"].extend([wins] * tournament_frequency)
             self.history["losses"].extend([losses] * tournament_frequency)
