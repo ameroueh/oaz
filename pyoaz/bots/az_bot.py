@@ -1,5 +1,5 @@
 from .bot import Bot
-    
+
 import tensorflow.compat.v1.keras.backend as K
 
 from pyoaz.evaluator.nn_evaluator import Model, NNEvaluator
@@ -11,19 +11,20 @@ from pyoaz.thread_pool import ThreadPool
 class AZBot(Bot):
     @classmethod
     def from_keras_model(
-            cls, 
-            game_class,
-            model, 
-            value_node_name, 
-            policy_node_name,
-            *args,
-            **kwargs):
-        
+        cls,
+        game_class,
+        model,
+        value_node_name,
+        policy_node_name,
+        *args,
+        **kwargs
+    ):
+
         session = K.get_session()
         model = Model(
             session=session,
             value_node_name=value_node_name,
-            policy_node_name=policy_node_name
+            policy_node_name=policy_node_name,
         )
         return cls(game_class, model, *args, **kwargs)
 

@@ -23,7 +23,9 @@ class Model:
 
 
 class NNEvaluator:
-    def __init__(self, model, thread_pool, dimensions, batch_size=1, cache=None):
+    def __init__(
+        self, model, thread_pool, dimensions, batch_size=1, cache=None
+    ):
 
         if cache is None:
             self._core = NNEvaluatorCore(
