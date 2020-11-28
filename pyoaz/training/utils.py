@@ -39,18 +39,20 @@ def get_gt_values(benchmark_path, boards):
     return values
 
 
-def play_tournament(game, model, n_games=100):
+def play_tournament(game, model, n_games=100, mcts_bot_iterations=None):
 
     oazbot = Participant(NNBot(model), name="oaz")
     left_bot = Participant(LeftmostBot(), name="left")
     random_bot = Participant(RandomBot(), name="random")
-    mcts_100_bot = Participant(
-        MCTSBot(n_iterations=100, n_concurrent_workers=16), name="mcts 100"
-    )
-    mcts_10000_bot = Participant(
-        MCTSBot(n_iterations=10000, n_concurrent_workers=16), name="mcts 10000"
-    )
-    participants = [oazbot, left_bot, random_bot, mcts_100_bot, mcts_10000_bot]
+    participants = [oazbot, left_bot, random_bot]
+    if mcts_bot_iterations is not None:
+        for iterations in mcts_bot_iterations:
+            participants.append(
+                Participant(
+                    MCTSBot(n_iterations=iterations, n_concurrent_workers=16),
+                    name=f"mcts {iterations}",
+                )
+            )
 
     tournament = Tournament(game)
     win_loss = tournament.start_tournament(
