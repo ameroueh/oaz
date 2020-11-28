@@ -7,8 +7,9 @@ from .nn_evaluator import Model as ModelCore, NNEvaluator as NNEvaluatorCore
 class Model:
     def __init__(self, session, value_node_name, policy_node_name):
 
+        self._session = session
         self._core = ModelCore()
-        self._core.set_session(session._session)
+        self._core.set_session(self.session._session)
         self._core.set_value_node_name(value_node_name)
         self._core.set_policy_node_name(policy_node_name)
 
@@ -16,9 +17,13 @@ class Model:
     def core(self):
         return self._core
 
+    @property
+    def session(self):
+        return self._session
+
 
 class NNEvaluator:
-    def __init__(self, model, thread_pool, dimensions, batch_size, cache=None):
+    def __init__(self, model, thread_pool, dimensions, batch_size=1, cache=None):
 
         if cache is None:
             self._core = NNEvaluatorCore(
