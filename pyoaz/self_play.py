@@ -255,7 +255,7 @@ class SelfPlay:
         scores = game.score * player_array
         scores *= np.power(self.discount_factor, np.arange(len(boards))[::-1])
 
-        self.logger.debug(f"Final Board")
+        self.logger.debug("Final Board")
         self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
         self.logger.debug("Final list of board scores")
         self.logger.debug(scores)
