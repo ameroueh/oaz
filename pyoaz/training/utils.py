@@ -27,10 +27,12 @@ def load_benchmark(benchmark_path):
 
 
 def static_score_to_value(boards, values):
-    for i in range(len(boards)):
-        if boards[i].sum() % 2 != 0:
-            values[i] = 1 - values[i]
-    return values
+    new_values = values.copy()
+    player_2_idx = boards[..., 0].sum(axis=(1, 2)) != boards[..., 1].sum(
+        axis=(1, 2)
+    )
+    new_values[player_2_idx] *= -1.0
+    return new_values
 
 
 def to_canonical(boards):
@@ -47,6 +49,8 @@ def get_gt_values(benchmark_path, boards):
 
     from pyoaz.games.tic_tac_toe import boards_to_bin
 
+    # raise NotImplementedError  # Quick hack: to_canonical is actually its own inverse.
+    # boards = to_canonical(canonical_boards)
     tic_tac_toe_df = pd.read_csv(
         benchmark_path / "tic_tac_toe_table.csv", index_col=False
     )
@@ -59,7 +63,7 @@ def get_gt_values(benchmark_path, boards):
     values = pd.merge(board_df, tic_tac_toe_df, on="board_num", how="left")[
         "reward"
     ].values
-    return values
+    return static_score_to_value(boards, values)
 
 
 def play_tournament(game, model, n_games=100, mcts_bot_iterations=None):
