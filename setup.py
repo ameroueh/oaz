@@ -6,6 +6,14 @@ from distutils.file_util import copy_file
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext as build_ext_orig
 
+REQUIREMENTS = [
+    line
+    for line in pathlib.Path("requirements.txt")
+    .read_text()
+    .strip()
+    .split("\n")
+]
+
 CPU_COUNT = multiprocessing.cpu_count()
 
 TARGETS = [
@@ -107,7 +115,7 @@ class build_ext(build_ext_orig):
         config = "Debug" if self.debug else "Release"
 
         os.chdir(str(build_temp))
-        self.spawn(['cmake', str(cwd)])
+        self.spawn(["cmake", str(cwd)])
         if not self.dry_run:
             self.spawn(
                 ["cmake"]
@@ -134,5 +142,9 @@ setup(
     version="0.1",
     packages=find_packages(),
     ext_modules=[CMakeExtension("pyoaz")],
+    install_requires=REQUIREMENTS,
+    dependency_links=[
+        "git+https://www.github.com/keras-team/keras-contrib.git"
+    ],
     cmdclass={"build_ext": build_ext},
 )

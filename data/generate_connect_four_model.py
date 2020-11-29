@@ -80,7 +80,9 @@ with graph.as_default():
 
         print("Saving model")
         session.run(tf.global_variables_initializer())
-        output_data = session.run([value, policy], feed_dict={input: input_data})
+        output_data = session.run(
+            [value, policy], feed_dict={input: input_data}
+        )
         frozen_graph = convert_variables_to_constants(
             session, session.graph.as_graph_def(), ["value", "policy"]
         )

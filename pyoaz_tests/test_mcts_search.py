@@ -9,7 +9,7 @@ def _test_mcts_search():
     evaluator = SimulationEvaluator(thread_pool=thread_pool)
     selector = UCTSelector()
     game = ConnectFour()
-    search = Search(
+    _ = Search(
         game=game,
         selector=selector,
         evaluator=evaluator,
