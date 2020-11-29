@@ -307,16 +307,19 @@ class Trainer:
 
             draw_idx = self.benchmark_values == 0
 
-            # See if the model leans the right way on non-drawn games
-            accuracy = (
-                np.where(pred_values[~draw_idx] > 0, 1.0, -1.0)
-                == self.benchmark_values[~draw_idx]
-            ).sum()
+            if len(draw_idx) > 0:
 
-            # See if you're close to 0 for drawn games
-            accuracy += (
-                (pred_values[draw_idx] < 0.5) & (pred_values[draw_idx] > -0.5)
-            ).sum()
+                # See if the model leans the right way on non-drawn games
+                accuracy = (
+                    np.where(pred_values[~draw_idx] > 0, 1.0, -1.0)
+                    == self.benchmark_values[~draw_idx]
+                ).sum()
+
+                # See if you're close to 0 for drawn games
+                accuracy += (
+                    (pred_values[draw_idx] < 0.5)
+                    & (pred_values[draw_idx] > -0.5)
+                ).sum()
 
             accuracy /= len(self.benchmark_values)
 
