@@ -103,10 +103,10 @@ def test_learning():
     assert n_improvements > min_improvements
 
     # Check that the agent wins sufficiently against naive bots towards the end
-    best_wins = max(history(["wins"][-extremity_index:]))
+    best_wins = max(history["wins"][-extremity_index:])
     assert best_wins > 50
 
     # Check that mse decreased and reached a certain threshold
-    mses = history(["mse"])
-    assert mses[:extremity_index].mean() > mses[-extremity_index:].mean()
-    assert mses[-extremity_index:].min() < 0.4
+    mses = history["mse"]
+    assert np.mean(mses[:extremity_index]) > np.mean(mses[-extremity_index:])
+    assert min(mses[-extremity_index:]) < 0.4
