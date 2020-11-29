@@ -1,4 +1,5 @@
-from pyoaz.bots import LeftmostBot, RandomBot
+from pyoaz.bots.leftmost_bot import LeftmostBot
+from pyoaz.bots.random_bot import RandomBot
 from pyoaz.games.connect_four import ConnectFour
 from pyoaz.tournament import Participant, Tournament
 
