@@ -5,7 +5,37 @@ import numpy as np
 import pandas as pd
 
 
-def apply_symmetry(boards: np.ndarray) -> Tuple[np.ndarray, int]:
+def apply_symmetry(boards, policies):
+    # TODO, implement this properly
+    # all_boards = _board_symmetry(boards)
+    # all_policies = _policy_symmetry(policies)
+    return boards, policies, 1
+
+
+def _policy_symmetry(policies: np.ndarray) -> Tuple[np.ndarray, int]:
+    """ Given a set of policies, return the policies corresponding to symmetric positions
+        and the order of symmetry.
+
+    Parameters
+    ----------
+    policies : np.ndarray
+        policies to flip
+
+    Returns
+    -------
+    np.ndarray
+        Array containing policies and policies of the symmetric positions.
+    """
+
+    lr_flip = np.flip(policies, axis=1)
+    ud_flip = np.flip(policies, axis=2)
+    both_flip = np.flip(np.flip(policies, axis=2), axis=1)
+
+    all_policies = np.concatenate([policies, lr_flip, ud_flip, both_flip])
+    return all_policies
+
+
+def _board_symmetry(boards: np.ndarray) -> Tuple[np.ndarray, int]:
     """ Given board positions, return all the equivalent symmetric positions
         and the order of symmetry.
 
@@ -16,9 +46,8 @@ def apply_symmetry(boards: np.ndarray) -> Tuple[np.ndarray, int]:
 
     Returns
     -------
-    Tuple[np.ndarray, int]
-        Array containing all equivalent positions, and the order of the applied
-        symmetry
+    np.ndarray
+        Array containing all equivalent positions
     """
 
     lr_flip = np.flip(boards, axis=1)
@@ -26,7 +55,8 @@ def apply_symmetry(boards: np.ndarray) -> Tuple[np.ndarray, int]:
     both_flip = np.flip(np.flip(boards, axis=2), axis=1)
 
     all_boards = np.concatenate([boards, lr_flip, ud_flip, both_flip])
-    return all_boards, 4
+
+    return all_boards
 
 
 def get_gt_values(benchmark_path, boards):

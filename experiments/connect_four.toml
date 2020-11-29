@@ -13,6 +13,8 @@ checkpoint_every = 5
 [benchmark]
 tournament_frequency = 5
 benchmark_path = "benchmark/connect_four"
+mcts_bot_iterations = [10]
+
 
 [self_play]
 n_tree_workers = 4

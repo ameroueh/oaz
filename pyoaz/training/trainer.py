@@ -269,11 +269,11 @@ class Trainer:
 
     def evaluation_step(self, dataset):
 
-        self_play_mse, self_play_accuracy = self.evaluate_self_play_dataset(
-            self.benchmark_path, dataset["Boards"], dataset["Values"]
-        )
-        self.history["self_play_mse"].append(self_play_mse)
-        self.history["self_play_accuracy"].append(self_play_accuracy)
+        # self_play_mse, self_play_accuracy = self.evaluate_self_play_dataset(
+        #     self.benchmark_path, dataset["Boards"], dataset["Values"]
+        # )
+        self.history["self_play_mse"].append(0)
+        self.history["self_play_accuracy"].append(0)
 
         mse, accuracy = self.benchmark_model()
         self.history["mse"].append(mse)
@@ -286,7 +286,10 @@ class Trainer:
             wins, losses, draws = play_tournament(
                 self.game,
                 self.model,
-                self.config["benchmark"]["mcts_bot_iterations"],
+                n_games=self.configuration["benchmark"]["n_tournament_games"],
+                mcts_bot_iterations=self.configuration["benchmark"][
+                    "mcts_bot_iterations"
+                ],
             )
             self.logger.info(f"WINS: {wins} LOSSES: {losses} DRAWS: {draws}")
             self.history["wins"].extend([wins] * tournament_frequency)
@@ -297,13 +300,26 @@ class Trainer:
         if (self.benchmark_boards is not None) and (
             self.benchmark_values is not None
         ):
+
             _, pred_values = self.model.predict(self.benchmark_boards)
+            pred_values = pred_values.squeeze()
             mse = ((pred_values - self.benchmark_values) ** 2).mean()
-            # For now only works with +1 or -1 values doesn't evaluate accuracy of
-            # games with draws well
+
+            draw_idx = self.benchmark_values == 0
+
+            # See if the model leans the right way on non-drawn games
             accuracy = (
-                np.where(pred_values > 0, 1.0, -1.0) == self.benchmark_values
-            ).mean()
+                np.where(pred_values[~draw_idx] > 0, 1.0, -1.0)
+                == self.benchmark_values[~draw_idx]
+            ).sum()
+
+            # See if you're close to 0 for drawn games
+            accuracy += (
+                (pred_values[draw_idx] < 0.5) & (pred_values[draw_idx] > -0.5)
+            ).sum()
+
+            accuracy /= len(self.benchmark_values)
+
             self.logger.info(
                 f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}"
             )
@@ -316,7 +332,6 @@ class Trainer:
             if gt_values is not None:
                 self_play_accuracy = (values == gt_values).mean()
                 self_play_mse = ((values - gt_values) ** 2).mean()
-
                 self.logger.info(
                     f"Self-Play MSE: {self_play_mse} "
                     f"Self-Play ACCURACY: {self_play_accuracy}"
@@ -493,6 +508,13 @@ class Trainer:
         plt.close()
 
         plt.figure()
+        plt.plot(self.history["best_generation"], label="Best generation")
+        plt.legend()
+        plot_path = self.save_path / "best_generation.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
         plt.plot(self.history["wins"], label="wins")
         plt.plot(self.history["losses"], label="losses")
         plt.plot(self.history["draws"], label="draws")
@@ -531,11 +553,20 @@ class Trainer:
     def _update_best_self(self):
         best_path = self.checkpoint_path / "best_model.pb"
 
+        if (self.generation == 0) and best_path.exists():
+            self.logger.info("REMOVING OLD BEST MODEL")
+            os.remove(best_path)
+
         self.logger.info(
             f"Playing generation {self.generation} versus "
             f"{self.best_generation}"
         )
-        wins, losses = play_best_self(self.game, self.model, best_path)
+        wins, losses = play_best_self(
+            self.game,
+            self.model,
+            best_path,
+            n_games=self.configuration["benchmark"]["n_best_self_games"],
+        )
         self.logger.info(f"Wins: {wins} Losses: {losses}")
         if wins > losses:
             self.logger.info("Saving new best model")
