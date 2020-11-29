@@ -12,6 +12,7 @@ checkpoint_every = 5
 
 [benchmark]
 tournament_frequency = 5
+n_tournament_games = 10
 benchmark_path = "benchmark/connect_four"
 mcts_bot_iterations = [10]
 
