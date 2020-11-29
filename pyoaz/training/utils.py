@@ -12,19 +12,45 @@ from pyoaz.tournament import Participant, Tournament
 
 
 def load_benchmark(benchmark_path):
+    benchmark_path = Path(benchmark_path)
     boards_path = benchmark_path / "benchmark_boards.npy"
     values_path = benchmark_path / "benchmark_values.npy"
     if boards_path.exists():
         boards = np.load(boards_path)
         values = np.load(values_path)
+
+        boards = to_canonical(boards)
+        values = static_score_to_value(boards, values)
+
         return boards, values
     return None, None
+
+
+def static_score_to_value(boards, values):
+    new_values = values.copy()
+    player_2_idx = boards[..., 0].sum(axis=(1, 2)) != boards[..., 1].sum(
+        axis=(1, 2)
+    )
+    new_values[player_2_idx] *= -1.0
+    return new_values
+
+
+def to_canonical(boards):
+    canonical_boards = boards.copy()
+    flip_idx = boards[..., 0].sum(axis=(1, 2)) != boards[..., 1].sum(
+        axis=(1, 2)
+    )
+    canonical_boards[flip_idx, ..., 0] = boards[flip_idx, ..., 1]
+    canonical_boards[flip_idx, ..., 1] = boards[flip_idx, ..., 0]
+    return canonical_boards
 
 
 def get_gt_values(benchmark_path, boards):
 
     from pyoaz.games.tic_tac_toe import boards_to_bin
 
+    # raise NotImplementedError  # Quick hack: to_canonical is actually its own inverse.
+    # boards = to_canonical(canonical_boards)
     tic_tac_toe_df = pd.read_csv(
         benchmark_path / "tic_tac_toe_table.csv", index_col=False
     )
@@ -37,21 +63,23 @@ def get_gt_values(benchmark_path, boards):
     values = pd.merge(board_df, tic_tac_toe_df, on="board_num", how="left")[
         "reward"
     ].values
-    return values
+    return static_score_to_value(boards, values)
 
 
-def play_tournament(game, model, n_games=100):
+def play_tournament(game, model, n_games=100, mcts_bot_iterations=None):
 
     oazbot = Participant(NNBot(model), name="oaz")
     left_bot = Participant(LeftmostBot(), name="left")
     random_bot = Participant(RandomBot(), name="random")
-    mcts_100_bot = Participant(
-        MCTSBot(n_iterations=100, n_concurrent_workers=16), name="mcts 100"
-    )
-    mcts_10000_bot = Participant(
-        MCTSBot(n_iterations=10000, n_concurrent_workers=16), name="mcts 10000"
-    )
-    participants = [oazbot, left_bot, random_bot, mcts_100_bot, mcts_10000_bot]
+    participants = [oazbot, left_bot, random_bot]
+    if mcts_bot_iterations is not None:
+        for iterations in mcts_bot_iterations:
+            participants.append(
+                Participant(
+                    MCTSBot(n_iterations=iterations, n_concurrent_workers=16),
+                    name=f"mcts {iterations}",
+                )
+            )
 
     tournament = Tournament(game)
     win_loss = tournament.start_tournament(

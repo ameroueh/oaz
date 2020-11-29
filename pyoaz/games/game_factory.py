@@ -30,6 +30,10 @@ class Game:
         return self._core.board
 
     @property
+    def canonical_board(self):
+        return self._core.canonical_board
+
+    @property
     def core(self):
         return self._core
 

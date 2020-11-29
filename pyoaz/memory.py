@@ -5,8 +5,6 @@ import numpy as np
 from typing import Mapping
 import logging
 
-LOGGER = logging.getLogger(__name__)
-
 
 class ArrayBuffer:
     """ Buffer class to store a numpy array in memory, with a maximum buffer
@@ -19,8 +17,13 @@ class ArrayBuffer:
         self.maxlen = maxlen
         self._array = []
 
+    def __len__(self):
+        if len(self._array) == 0:
+            return 0
+        return len(self._array[0])
+
     def enqueue(
-        self, array: np.ndarray, keep_indices: np.ndarray = None
+        self, array: np.ndarray, keep_indices: np.ndarray = None,
     ) -> np.ndarray:
         """ Add new data to the buffer, pushing out old data if necessary
         """
@@ -55,20 +58,12 @@ class ArrayBuffer:
     def _keep_indices(self, indices: np.ndarray):
         """
         """
-        LOGGER.info(
-            f"Throwing away {len(self._array[0]) - len(indices)} duplicate "
-            "positions"
-        )
         self._array = [self._array[0][indices]]
 
     def _truncate(self):
-        """ truncate excessive elemnts
+        """ truncate excessive elements
         """
         if len(self._array[0]) > self.maxlen:
-            LOGGER.info(
-                f"{len(self._array[0]) - self.maxlen} positions pushed out of "
-                "buffer"
-            )
             self._array = [self._array[0][: self.maxlen]]
 
     def _enqueue(self, array: np.ndarray):
@@ -90,10 +85,12 @@ class MemoryBuffer:
         self.policy_buffer.maxlen = maxlen
         self.value_buffer.maxlen = maxlen
 
-    def update(self, dataset: np.ndarray):
+    def update(self, dataset: np.ndarray, logger: logging.Logger = None):
         """ Add new data to the buffer, remove duplicates, and only then remove
             overflow elements.
         """
+        initial_size = len(self.board_buffer)
+
         keep_indices = self.board_buffer.enqueue(dataset["Boards"])
         _ = self.policy_buffer.enqueue(
             dataset["Policies"], keep_indices=keep_indices
@@ -101,28 +98,39 @@ class MemoryBuffer:
         _ = self.value_buffer.enqueue(
             dataset["Values"], keep_indices=keep_indices
         )
+        if logger:
+            logger.info(
+                f"Originally had {initial_size} boards in memory\n"
+                f"Collected {len(dataset['Boards'])} new board positions\n"
+            )
+            logger.info(
+                f"Replaced {len(keep_indices)} duplicate positions\n"
+                f"Kept {len(keep_indices)- initial_size } new positions"
+            )
 
-    def recall(self, shuffle: bool = False) -> Mapping[str, np.ndarray]:
-        """ Return all stored memories
-            TODO should probably subsample
+    def recall(
+        self, shuffle: bool = False, n_sample: int = None
+    ) -> Mapping[str, np.ndarray]:
+        """ Return all stored memories. Can return a subset of samples
         """
+
+        boards = self.board_buffer.get_array()
+        policies = self.policy_buffer.get_array()
+        values = self.value_buffer.get_array()
+
         if shuffle:
-            boards = self.board_buffer.get_array()
-            policies = self.policy_buffer.get_array()
-            values = self.value_buffer.get_array()
-            shuffled_idx = np.random.permutation(len(boards))
-            dataset = {
-                "Boards": boards[shuffled_idx],
-                "Policies": policies[shuffled_idx],
-                "Values": values[shuffled_idx],
-            }
+            indices = np.random.permutation(len(boards))
 
         else:
-            dataset = {
-                "Boards": self.board_buffer.get_array(),
-                "Policies": self.policy_buffer.get_array(),
-                "Values": self.value_buffer.get_array(),
-            }
+            indices = np.arange(len(boards))
+
+        if n_sample is not None and n_sample < len(indices):
+            indices = np.random.choice(indices, size=n_sample, replace=False)
+        dataset = {
+            "Boards": boards[indices],
+            "Policies": policies[indices],
+            "Values": values[indices],
+        }
         return dataset
 
     def purge(self, n_purge: int) -> None:
