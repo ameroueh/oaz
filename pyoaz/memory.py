@@ -55,13 +55,13 @@ class ArrayBuffer:
         _, indices = np.unique(array, return_index=True, axis=0)
         return np.sort(-indices + len(array) - 1)
 
-    def _keep_indices(self, indices: np.ndarray, logger=None):
+    def _keep_indices(self, indices: np.ndarray):
         """
         """
         self._array = [self._array[0][indices]]
 
     def _truncate(self):
-        """ truncate excessive elemnts
+        """ truncate excessive elements
         """
         if len(self._array[0]) > self.maxlen:
             self._array = [self._array[0][: self.maxlen]]
@@ -90,6 +90,7 @@ class MemoryBuffer:
             overflow elements.
         """
         initial_size = len(self.board_buffer)
+
         keep_indices = self.board_buffer.enqueue(dataset["Boards"])
         _ = self.policy_buffer.enqueue(
             dataset["Policies"], keep_indices=keep_indices
@@ -99,10 +100,12 @@ class MemoryBuffer:
         )
         if logger:
             logger.info(
-                f"Collected {len(dataset['Boards'])} new board positions "
+                f"Originally had {initial_size} boards in memory\n"
+                f"Collected {len(dataset['Boards'])} new board positions\n"
             )
             logger.info(
-                f"Kept {len(keep_indices)- initial_size } unique positions "
+                f"Replaced {len(keep_indices)} duplicate positions\n"
+                f"Kept {len(keep_indices)- initial_size } new positions"
             )
 
     def recall(
