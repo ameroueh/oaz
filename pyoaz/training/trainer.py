@@ -244,10 +244,15 @@ class Trainer:
             validation_boards,
             {"value": validation_values, "policy": validation_policies},
         )
+<<<<<<< HEAD
         patience = stage_params["update_epochs"] // 5
         early_stopping = tf.keras.callbacks.EarlyStopping(
             patience=patience, restore_best_weights=True
         )
+=======
+
+        # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
+>>>>>>> refactor
 
         clr = CyclicLR(
             base_lr=stage_params["learning_rate"],
@@ -286,10 +291,14 @@ class Trainer:
             wins, losses, draws = play_tournament(
                 self.game,
                 self.model,
+<<<<<<< HEAD
                 n_games=self.configuration["benchmark"]["n_tournament_games"],
                 mcts_bot_iterations=self.configuration["benchmark"][
                     "mcts_bot_iterations"
                 ],
+=======
+                self.config["benchmark"]["mcts_bot_iterations"],
+>>>>>>> refactor
             )
             self.logger.info(f"WINS: {wins} LOSSES: {losses} DRAWS: {draws}")
             self.history["wins"].extend([wins] * tournament_frequency)
