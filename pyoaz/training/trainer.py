@@ -22,8 +22,10 @@ from pyoaz.training.utils import (
     load_benchmark,
     play_tournament,
     running_mean,
+    play_best_self,
 )
 from tensorflow.keras.models import load_model
+
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -90,6 +92,7 @@ class Trainer:
         self.generation = 0
         self.stage_idx = 0
         self.gen_in_stage = 0
+        self.best_generation = 0
 
         if load_path:
             self._load_model(load_path)
@@ -155,7 +158,7 @@ class Trainer:
             )
 
             dataset = self.perform_self_play(stage_params, debug_mode)
-            self.memory.update(dataset)
+            self.memory.update(dataset, logger=self.logger)
             train_history = self.update_model(stage_params)
 
             self.history["val_value_loss"].extend(
@@ -184,6 +187,11 @@ class Trainer:
                     )
                 )
             self._save_plots()
+
+            self._update_best_self()
+
+            self.history["best_generation"].append(self.best_generation)
+
             self.generation += 1
             self.gen_in_stage = 0
 
@@ -208,11 +216,13 @@ class Trainer:
         return dataset
 
     def update_model(self, stage_params):
-        dataset = self.memory.recall(shuffle=True)
+        dataset = self.memory.recall(
+            shuffle=True, n_sample=stage_params["training_samples"]
+        )
         dataset_size = dataset["Boards"].shape[0]
 
         train_select = np.random.choice(
-            a=[False, True], size=dataset_size, p=[0.01, 0.99]
+            a=[False, True], size=dataset_size, p=[0.1, 0.9]
         )
         # Protect against the case when the val split means there is no val
         # data
@@ -234,8 +244,10 @@ class Trainer:
             validation_boards,
             {"value": validation_values, "policy": validation_policies},
         )
-
-        # early_stopping = tf.keras.callbacks.EarlyStopping(patience=3)
+        patience = stage_params["update_epochs"] // 5
+        early_stopping = tf.keras.callbacks.EarlyStopping(
+            patience=patience, restore_best_weights=True
+        )
 
         clr = CyclicLR(
             base_lr=stage_params["learning_rate"],
@@ -251,17 +263,17 @@ class Trainer:
             batch_size=512,
             epochs=stage_params["update_epochs"],
             verbose=1,
-            callbacks=[clr],
+            callbacks=[clr, early_stopping],
         )
         return train_history
 
     def evaluation_step(self, dataset):
 
-        self_play_mse, self_play_accuracy = self.evaluate_self_play_dataset(
-            self.benchmark_path, dataset["Boards"], dataset["Values"]
-        )
-        self.history["self_play_mse"].append(self_play_mse)
-        self.history["self_play_accuracy"].append(self_play_accuracy)
+        # self_play_mse, self_play_accuracy = self.evaluate_self_play_dataset(
+        #     self.benchmark_path, dataset["Boards"], dataset["Values"]
+        # )
+        self.history["self_play_mse"].append(0)
+        self.history["self_play_accuracy"].append(0)
 
         mse, accuracy = self.benchmark_model()
         self.history["mse"].append(mse)
@@ -274,7 +286,10 @@ class Trainer:
             wins, losses, draws = play_tournament(
                 self.game,
                 self.model,
-                self.config["benchmark"]["mcts_bot_iterations"],
+                n_games=self.configuration["benchmark"]["n_tournament_games"],
+                mcts_bot_iterations=self.configuration["benchmark"][
+                    "mcts_bot_iterations"
+                ],
             )
             self.logger.info(f"WINS: {wins} LOSSES: {losses} DRAWS: {draws}")
             self.history["wins"].extend([wins] * tournament_frequency)
@@ -285,13 +300,26 @@ class Trainer:
         if (self.benchmark_boards is not None) and (
             self.benchmark_values is not None
         ):
+
             _, pred_values = self.model.predict(self.benchmark_boards)
+            pred_values = pred_values.squeeze()
             mse = ((pred_values - self.benchmark_values) ** 2).mean()
-            # For now only works with +1 or -1 values doesn't evaluate accuracy of
-            # games with draws well
+
+            draw_idx = self.benchmark_values == 0
+
+            # See if the model leans the right way on non-drawn games
             accuracy = (
-                np.where(pred_values > 0, 1.0, -1.0) == self.benchmark_values
-            ).mean()
+                np.where(pred_values[~draw_idx] > 0, 1.0, -1.0)
+                == self.benchmark_values[~draw_idx]
+            ).sum()
+
+            # See if you're close to 0 for drawn games
+            accuracy += (
+                (pred_values[draw_idx] < 0.5) & (pred_values[draw_idx] > -0.5)
+            ).sum()
+
+            accuracy /= len(self.benchmark_values)
+
             self.logger.info(
                 f"Benchmark MSE : {mse} Benchmark ACCURACY : {accuracy}"
             )
@@ -304,7 +332,6 @@ class Trainer:
             if gt_values is not None:
                 self_play_accuracy = (values == gt_values).mean()
                 self_play_mse = ((values - gt_values) ** 2).mean()
-
                 self.logger.info(
                     f"Self-Play MSE: {self_play_mse} "
                     f"Self-Play ACCURACY: {self_play_accuracy}"
@@ -370,6 +397,8 @@ class Trainer:
                 break
             self.stage_idx += 1
             generation_tracker += stage_length
+        if len(self.history["best_generation"]) > 0:
+            self.best_generation = self.history["best_generation"][-1]
 
     def _get_self_play_controller(
         self, n_games_per_worker, n_simulations_per_move, debug_mode=False
@@ -479,6 +508,13 @@ class Trainer:
         plt.close()
 
         plt.figure()
+        plt.plot(self.history["best_generation"], label="Best generation")
+        plt.legend()
+        plot_path = self.save_path / "best_generation.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
         plt.plot(self.history["wins"], label="wins")
         plt.plot(self.history["losses"], label="losses")
         plt.plot(self.history["draws"], label="draws")
@@ -513,3 +549,26 @@ class Trainer:
             self.game_module = importlib.import_module(
                 "pyoaz.games.tic_tac_toe"
             )
+
+    def _update_best_self(self):
+        best_path = self.checkpoint_path / "best_model.pb"
+
+        if (self.generation == 0) and best_path.exists():
+            self.logger.info("REMOVING OLD BEST MODEL")
+            os.remove(best_path)
+
+        self.logger.info(
+            f"Playing generation {self.generation} versus "
+            f"{self.best_generation}"
+        )
+        wins, losses = play_best_self(
+            self.game,
+            self.model,
+            best_path,
+            n_games=self.configuration["benchmark"]["n_best_self_games"],
+        )
+        self.logger.info(f"Wins: {wins} Losses: {losses}")
+        if wins > losses:
+            self.logger.info("Saving new best model")
+            self.model.save(str(best_path))
+            self.best_generation = self.generation

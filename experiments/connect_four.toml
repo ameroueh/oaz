@@ -13,6 +13,8 @@ checkpoint_every = 5
 [benchmark]
 tournament_frequency = 5
 benchmark_path = "benchmark/connect_four"
+mcts_bot_iterations = [10]
+
 
 [self_play]
 n_tree_workers = 4
@@ -32,6 +34,7 @@ n_simulations_per_move = 200
 discount_factor = 0.99
 n_games_per_worker = 30
 update_epochs = 10
+training_samples = 40000
 
 
 [[stages]]
@@ -44,3 +47,4 @@ n_simulations_per_move = 800
 discount_factor = 1.0
 n_games_per_worker = 30
 update_epochs = 10
+training_samples = 40000
