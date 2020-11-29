@@ -44,6 +44,10 @@ def set_logging(debug_mode=False):
 
 def main(args):
 
+    if args.cpu:
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
     configuration = toml.load(args.configuration_path)
 
     overwrite_config(configuration, vars(args))
@@ -99,6 +103,7 @@ if __name__ == "__main__":
         help="Number of generations for which to train. Default is 5",
     )
     parser.add_argument("--debug_mode", action="store_true")
+    parser.add_argument("--cpu", action="store_true")
     args = parser.parse_args()
 
     main(args)
