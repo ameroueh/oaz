@@ -20,6 +20,7 @@ void SimulationEvaluator::RequestEvaluation(
 float SimulationEvaluator::Simulate(oaz::games::Game& game) {
 
 	std::vector<size_t> available_moves;
+	size_t current_player = game.GetCurrentPlayer();
 	while (!game.IsFinished()) {
 		game.GetAvailableMoves(available_moves);
 		std::uniform_int_distribution<size_t> dis(
@@ -30,6 +31,7 @@ float SimulationEvaluator::Simulate(oaz::games::Game& game) {
 		auto random_move = available_moves[random_move_index];
 		game.PlayMove(random_move);
 	}
+	float score = game.GetScore();
 
-	return game.GetScore();
+	return (current_player == 0) ? score : score * -1.;
 }
