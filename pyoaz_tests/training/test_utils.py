@@ -45,4 +45,3 @@ def test_to_canonical():
 def test_static_score_to_value():
     res = static_score_to_value(BOARDS, ORIGINAL_VALUES)
     np.testing.assert_array_equal(res, CANONICAL_VALUES)
-
