@@ -20,7 +20,7 @@ def load_benchmark(benchmark_path):
         values = np.load(values_path)
 
         boards = to_canonical(boards)
-        values = static_score_to_value(boards, values)
+        values = static_score_to_value(boards, values).squeeze()
 
         return boards, values
     return None, None
