@@ -1,12 +1,9 @@
-import os
-
 import numpy as np
 
 from .bot import Bot
 
 
 class NNBot(Bot):
-  
     @classmethod
     def load_model(cls, model_path: str):
         from tensorflow.keras.models import load_model

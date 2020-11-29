@@ -35,13 +35,13 @@ def test_az_search():
             [[1.0 for _ in range(7)] for _ in range(12)], dtype=tf.float32
         )
         dense_value = tf.Variable([[1.0] for _ in range(12)], dtype=tf.float32)
-        value = tf.matmul(flat, dense_value, name="value")
+        _ = tf.matmul(flat, dense_value, name="value")
         dense_policy = tf.Variable(
             [[1.0 for _ in range(7)] for _ in range(12)], dtype=tf.float32
         )
-        value = tf.matmul(flat, dense_value, name="value")
+        _ = tf.matmul(flat, dense_value, name="value")
         policy_logits = tf.matmul(flat, dense_policy, name="policy_logits")
-        policy = tf.nn.softmax(policy_logits, name="policy")
+        _ = tf.nn.softmax(policy_logits, name="policy")
 
         session.run(tf.global_variables_initializer())
 
@@ -58,7 +58,7 @@ def test_az_search():
         )
         selector = AZSelector()
         game = ConnectFour()
-        search = Search(
+        _ = Search(
             game=game,
             selector=selector,
             evaluator=evaluator,
@@ -97,13 +97,13 @@ def test_az_search_with_cache():
             [[1.0 for _ in range(7)] for _ in range(12)], dtype=tf.float32
         )
         dense_value = tf.Variable([[1.0] for _ in range(12)], dtype=tf.float32)
-        value = tf.matmul(flat, dense_value, name="value")
+        _ = tf.matmul(flat, dense_value, name="value")
         dense_policy = tf.Variable(
             [[1.0 for _ in range(7)] for _ in range(12)], dtype=tf.float32
         )
-        value = tf.matmul(flat, dense_value, name="value")
+        _ = tf.matmul(flat, dense_value, name="value")
         policy_logits = tf.matmul(flat, dense_policy, name="policy_logits")
-        policy = tf.nn.softmax(policy_logits, name="policy")
+        _ = tf.nn.softmax(policy_logits, name="policy")
 
         session.run(tf.global_variables_initializer())
 
@@ -122,7 +122,7 @@ def test_az_search_with_cache():
         )
         selector = AZSelector()
         game = ConnectFour()
-        search = Search(
+        _ = Search(
             game=game,
             selector=selector,
             evaluator=evaluator,
@@ -133,5 +133,6 @@ def test_az_search_with_cache():
             noise_alpha=1,
         )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_az_search()

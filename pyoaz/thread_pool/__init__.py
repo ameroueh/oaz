@@ -1,7 +1,7 @@
 from .thread_pool import ThreadPool as ThreadPoolCore
 
-class ThreadPool:
 
+class ThreadPool:
     def __init__(self, n_workers=1):
 
         self._core = ThreadPoolCore(n_workers)

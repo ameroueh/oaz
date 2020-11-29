@@ -49,9 +49,9 @@ with tf.Session() as session:
     )
 
     flat = Flatten()(input)
-    value = Dense(units=1, kernel_initializer="ones", bias_initializer="zeros")(
-        flat
-    )
+    value = Dense(
+        units=1, kernel_initializer="ones", bias_initializer="zeros"
+    )(flat)
     policy_logits = Dense(units=7)(flat)
 
     value = tf.reshape(value, shape=[-1], name="value")

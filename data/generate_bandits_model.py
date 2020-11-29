@@ -26,16 +26,14 @@ for i in range(10):
 
 with graph.as_default():
 
-    input = tf.placeholder(
-        dtype=tf.float32, shape=[None, 10], name="input"
-    )
+    input = tf.placeholder(dtype=tf.float32, shape=[None, 10], name="input")
     policy_labels = tf.placeholder(
         dtype=tf.float32, shape=[None, 10], name="policy_labels"
     )
     value_labels = tf.placeholder(
         dtype=tf.float32, shape=[None], name="value_labels"
     )
-    
+
     dense_value = tf.Variable([[1.0] for _ in range(10)], dtype=tf.float32)
     dense_policy = tf.Variable(
         [[1.0 for _ in range(10)] for _ in range(10)], dtype=tf.float32
@@ -65,7 +63,9 @@ with graph.as_default():
 
         print("Saving model")
         session.run(tf.global_variables_initializer())
-        output_data = session.run([value, policy], feed_dict={input: input_data})
+        output_data = session.run(
+            [value, policy], feed_dict={input: input_data}
+        )
         frozen_graph = convert_variables_to_constants(
             session, session.graph.as_graph_def(), ["value", "policy"]
         )

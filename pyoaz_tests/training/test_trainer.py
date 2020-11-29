@@ -8,6 +8,7 @@ file_path = Path(__file__).parent.absolute()
 
 CONFIG = toml.load(file_path / "test_config.toml")
 
+
 # Very simple integration test
 def test_trainer():
     with TemporaryDirectory() as save_dir:
@@ -15,4 +16,3 @@ def test_trainer():
 
         trainer = Trainer(configuration=CONFIG)
         trainer.train()
-

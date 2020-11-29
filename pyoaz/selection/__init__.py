@@ -1,11 +1,10 @@
 from .selection import (
     UCTSelector as UCTSelectorCore,
-    AZSelector as AZSelectorCore
+    AZSelector as AZSelectorCore,
 )
 
 
 class UCTSelector:
-
     def __init__(self):
         self._core = UCTSelectorCore()
 
@@ -15,7 +14,6 @@ class UCTSelector:
 
 
 class AZSelector:
-
     def __init__(self):
         self._core = AZSelectorCore()
 

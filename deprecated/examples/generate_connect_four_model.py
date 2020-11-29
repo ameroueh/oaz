@@ -70,7 +70,8 @@ with open(os.path.join(save_dir, "data.json"), "w") as f:
                     "value": output_data[0][i].tolist(),
                     "policy": output_data[1][i, :].tolist(),
                     "batch_size": 1,
-                } for i in range(input_data.shape[0]
+                }
+                for i in range(input_data.shape[0])
             ]
         )
     )
