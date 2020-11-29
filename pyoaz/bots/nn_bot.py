@@ -23,8 +23,7 @@ class NNBot(Bot):
         self.greedy = greedy
 
     def play(self, game):
-        _board = game.board[np.newaxis, ...]
-
+        _board = game.canonical_board[np.newaxis, ...]
         if self.use_cpu:
             with tf.device("/cpu:0"):
                 policy, value = self.model.predict(_board)
