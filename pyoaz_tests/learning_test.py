@@ -3,6 +3,7 @@
 """
 
 
+import logging
 import os
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from logzero import setup_logger
 from pyoaz.training import Trainer
 
 LOGGER = setup_logger()
+LOGGER.level = logging.INFO
 
 experiment_path = Path(__file__).parent.parent.absolute() / "experiments"
 save_path = experiment_path / "runs/test_script"
@@ -58,7 +60,7 @@ CONFIGURATION = {
             "training_samples": 40000,
         },
         {
-            "n_generations": 5,
+            "n_generations": 3,
             "learning_rate": 0.001,
             "momentum": 0.9,
             "buffer_length": 70000,
@@ -70,7 +72,7 @@ CONFIGURATION = {
             "training_samples": 40000,
         },
         {
-            "n_generations": 5,
+            "n_generations": 3,
             "learning_rate": 0.001,
             "momentum": 0.9,
             "buffer_length": 150000,
@@ -93,16 +95,16 @@ def test_learning():
     history = joblib.load(save_path / "history.joblib")
     n_generations = len(history["best_generation"])
 
-    extremity_index = min(1, n_generations // 5)
+    extremity_index = max(1, n_generations // 5)
 
     # Check that the model improved a minimum number of times
-    n_improvements = np.diff(history["best_generations"]).sum()
+    n_improvements = np.diff(history["best_generation"]).sum()
     min_improvements = min(n_generations // 4, 10)
     assert n_improvements > min_improvements
 
     # Check that the agent wins sufficiently against naive bots towards the end
     best_wins = max(history(["wins"][-extremity_index:]))
-    assert best_wins > 55
+    assert best_wins > 50
 
     # Check that mse decreased and reached a certain threshold
     mses = history(["mse"])
