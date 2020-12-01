@@ -60,6 +60,7 @@ BOOST_PYTHON_MODULE(MODULE_NAME) {
         GameImpl,
         p::bases<oaz::games::Game> >(XSTRINGIFY(GAME_CLASS_NAME))
         .def("play_move", &GameImpl::PlayMove)
+        .def("set_board", &GameImpl::SetBoard)
         .add_property("current_player", &GameImpl::GetCurrentPlayer)
         .add_property("finished", &GameImpl::IsFinished)
         .add_property("score", &GameImpl::GetScore)

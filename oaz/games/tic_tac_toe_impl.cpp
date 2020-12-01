@@ -139,6 +139,37 @@ void TicTacToe::WriteCanonicalStateToTensorMemory(float* destination) const {
             tensor[i][j][1] = other_player_tokens.Get(i, j) ? 1. : 0.;
 }
 
+void TicTacToe::SetBoard(np::ndarray input_board) const {
+    //Will need to worry about passing canonical board
+    // Need to figure out how to write multi dim array
+    const Board& player0_tokens = GetPlayerBoard(0);
+    const Board& player1_tokens = GetPlayerBoard(1);
+    Py_intptr_t const* strides input_board.get_strides();
+    double* input_ptr = reinterpret_cast<int*>(input_board.get_data());
+    for (size_t i = 0; i != 3; ++i) {
+        for (size_t j = 0; j != 3; ++j) {
+            int data0 = *reinterpret_cast<int const*>(input_ptr + i * strides[0] + j * strides[1] + 0 * strides[2]);
+            int data1 = *reinterpret_cast<int const*>(input_ptr + i * strides[0] + j * strides[1] + 1 * strides[2]);
+            if (data0 == 1)
+                player0_tokens.Set(i, j);
+            else if (data1 == 1):
+                player1_tokens.Set(i, j);
+        }
+    }
+
+    boost::multi_array_ref<float, 3> tensor(
+        destination,
+        boost::extents[3][3][2]);
+    const Board& current_player_tokens = GetPlayerBoard(GetCurrentPlayer());
+    for (size_t i = 0; i != 3; ++i)
+        for (size_t j = 0; j != 3; ++j)
+            tensor[i][j][0] = current_player_tokens.Get(i, j) ? 1. : 0.;
+    const Board& other_player_tokens = GetPlayerBoard(1 - GetCurrentPlayer());
+    for (size_t i = 0; i != 3; ++i)
+        for (size_t j = 0; j != 3; ++j)
+            tensor[i][j][1] = other_player_tokens.Get(i, j) ? 1. : 0.;
+}
+
 size_t TicTacToe::GetState() const {
     return m_player0_tokens.GetBits() | (m_player1_tokens.GetBits() << 9);
 }
