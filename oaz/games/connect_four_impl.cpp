@@ -1,9 +1,13 @@
 #include <algorithm>
 #include <bitset>
+#include <boost/python/numpy.hpp>
 #include <string>
 #include <vector>
 
 #include "oaz/games/connect_four.hpp"
+
+namespace py = boost::python;
+namespace np = boost::python::numpy;
 
 using namespace oaz::games;
 
@@ -156,6 +160,25 @@ void ConnectFour::WriteCanonicalStateToTensorMemory(float* destination) const {
     for (size_t i = 0; i != 6; ++i)
         for (size_t j = 0; j != 7; ++j)
             tensor[i][j][1] = other_player_tokens.Get(i, j) ? 1. : 0.;
+}
+
+void ConnectFour::SetBoard(np::ndarray input_board) const {
+    size_t player_0 = 0;
+    size_t player_1 = 1;
+    Board& player0_tokens = GetPlayerBoard(player_0);
+    Board& player1_tokens = GetPlayerBoard(player_1);
+    Py_intptr_t const* strides = input_board.get_strides();
+    double* input_ptr = reinterpret_cast<double*>(input_board.get_data());
+    for (size_t i = 0; i != 6; ++i) {
+        for (size_t j = 0; j != 7; ++j) {
+            double* data0 = input_ptr + i * strides[0] + j * strides[1];
+            double* data1 = input_ptr + i * strides[0] + j * strides[1] + strides[2];
+            if (*data0 == 1)
+                player0_tokens.Set(i, j);
+            else if (*data1 == 1)
+                player1_tokens.Set(i, j);
+        }
+    }
 }
 
 uint64_t ConnectFour::GetState() const {

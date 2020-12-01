@@ -59,6 +59,9 @@ void Bandits::WriteCanonicalStateToTensorMemory(float* destination) const {
     WriteStateToTensorMemory(destination);
 }
 
+void Bandits::SetBoard(np::ndarray input_board) const {
+}
+
 uint64_t Bandits::GetState() const {
     return m_board.to_ulong();
 }

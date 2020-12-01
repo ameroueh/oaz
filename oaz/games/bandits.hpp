@@ -2,6 +2,7 @@
 #define __BANDITS_HPP__
 
 #include <bitset>
+#include <boost/python/numpy.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,6 +11,9 @@
 #include "oaz/games/game.hpp"
 #include "oaz/games/generic_game_map.hpp"
 #include "stdint.h"
+
+namespace py = boost::python;
+namespace np = boost::python::numpy;
 
 namespace oaz::games {
 class Bandits : public Game {
@@ -46,6 +50,7 @@ class Bandits : public Game {
     float GetScore() const;
     void WriteStateToTensorMemory(float*) const;
     void WriteCanonicalStateToTensorMemory(float*) const;
+    void SetBoard(np::ndarray input_board) const;
     std::unique_ptr<Game> Clone() const;
 
     bool operator==(const Bandits&) const;
