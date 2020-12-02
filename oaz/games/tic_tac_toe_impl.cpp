@@ -145,10 +145,14 @@ void TicTacToe::WriteCanonicalStateToTensorMemory(float* destination) const {
 
 void TicTacToe::SetBoard(np::ndarray input_board) const {
     // Need to fix player properly to take into account canonical stuff
-    size_t player_1 = 1;
     size_t player_0 = 0;
-    Board& player0_tokens = GetPlayerBoard(player_0);
-    Board& player1_tokens = GetPlayerBoard(player_1);
+    size_t player_1 = 1;
+
+    Board player0_tokens;
+    Board player1_tokens;
+
+    player0_tokens = GetPlayerBoard(player_0);
+    player1_tokens = GetPlayerBoard(player_1);
     Py_intptr_t const* strides = input_board.get_strides();
     double* input_ptr = reinterpret_cast<double*>(input_board.get_data());
     for (size_t i = 0; i != 3; ++i) {

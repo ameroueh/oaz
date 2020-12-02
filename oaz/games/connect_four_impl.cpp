@@ -165,8 +165,12 @@ void ConnectFour::WriteCanonicalStateToTensorMemory(float* destination) const {
 void ConnectFour::SetBoard(np::ndarray input_board) const {
     size_t player_0 = 0;
     size_t player_1 = 1;
-    Board& player0_tokens = GetPlayerBoard(player_0);
-    Board& player1_tokens = GetPlayerBoard(player_1);
+
+    Board player0_tokens;
+    Board player1_tokens;
+
+    player0_tokens = GetPlayerBoard(player_0);
+    player1_tokens = GetPlayerBoard(player_1);
     Py_intptr_t const* strides = input_board.get_strides();
     double* input_ptr = reinterpret_cast<double*>(input_board.get_data());
     for (size_t i = 0; i != 6; ++i) {

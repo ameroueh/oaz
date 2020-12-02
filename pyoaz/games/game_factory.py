@@ -9,6 +9,13 @@ class Game:
             )
         self._core.play_move(move)
 
+    def set_board(self, board):
+        if board.shape != self.board.shape:
+            raise ValueError(
+                f"Board has shape {board.shape} Expected shape: {self.board.shape}"
+            )
+        self._core.set_board(board)
+
     @property
     def current_player(self):
         return self._core.current_player
