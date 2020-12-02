@@ -144,6 +144,7 @@ void TicTacToe::WriteCanonicalStateToTensorMemory(float* destination) const {
 }
 
 void TicTacToe::SetBoard(np::ndarray input_board) const {
+    // Need to fix player properly to take into account canonical stuff
     size_t player_1 = 1;
     size_t player_0 = 0;
     Board& player0_tokens = GetPlayerBoard(player_0);
