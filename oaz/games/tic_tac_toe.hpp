@@ -40,6 +40,7 @@ class TicTacToe : public Game {
     }
 
     TicTacToe();
+    TicTacToe(np::ndarray input_board);
 
     void PlayFromString(std::string);
     void PlayMove(size_t);

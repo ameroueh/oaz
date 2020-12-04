@@ -41,6 +41,7 @@ class Bandits : public Game {
     }
 
     Bandits();
+    Bandits(np::ndarray input_board);
 
     void PlayFromString(std::string);
     void PlayMove(size_t);

@@ -3,11 +3,13 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace oaz::games {
 
 class Game {
    public:
+    Game();
     class GameMap {
        public:
         virtual bool Get(const Game&, size_t&) const = 0;
@@ -21,6 +23,8 @@ class Game {
         virtual const std::vector<int>& GetBoardShape() const = 0;
         virtual GameMap* CreateGameMap() const = 0;
     };
+
+    
     virtual const Class& ClassMethods() const = 0;
 
     virtual void PlayFromString(std::string) = 0;

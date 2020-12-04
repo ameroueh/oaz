@@ -12,6 +12,10 @@ namespace np = boost::python::numpy;
 using namespace oaz::games;
 
 ConnectFour::ConnectFour() : m_status(0) {}
+ConnectFour::ConnectFour(np::ndarray input_board) : m_status(0) {
+    SetBoard(input_board);
+    CheckVictory();
+}
 
 void ConnectFour::PlayFromString(std::string moves) {
     for (char& c : moves)
@@ -40,6 +44,10 @@ void ConnectFour::PlayMove(size_t move) {
     Board& board = GetPlayerBoard(player);
     board.Set(n_tokens_in_column, move);
     bool victory = CheckVictory(board, n_tokens_in_column, move);
+    MaybeEndGame(victory, player);
+}
+
+void ConnectFour::MaybeEndGame(bool victory, size_t player) {
     if (victory) {
         SetWinner(player);
         DeclareFinished();
@@ -73,6 +81,27 @@ void ConnectFour::SetWinner(size_t player) {
 
 bool ConnectFour::CheckVictory(const Board& board, size_t row, size_t column) const {
     return CheckVerticalVictory(board, row, column) || CheckHorizontalVictory(board, row, column) || CheckDiagonalVictory1(board, row, column) || CheckDiagonalVictory2(board, row, column);
+}
+
+bool ConnectFour::CheckVictory(const Board& board) const {
+    bool victory = false;
+    for (size_t i = 0; i != 6; ++i)
+        for (size_t j = 0; j != 7; ++j)
+            if (board.Get(i, j)) {
+                victory = CheckVictory(board, i, j);
+                if (victory)
+                    return victory;
+            }
+    return victory;
+}
+
+void ConnectFour::CheckVictory() {
+    const Board& player0_tokens = GetPlayerBoard(0);
+    bool victory0 = CheckVictory(player0_tokens);
+    MaybeEndGame(victory0, 0);
+    const Board& player1_tokens = GetPlayerBoard(1);
+    bool victory1 = CheckVictory(player1_tokens);
+    MaybeEndGame(victory1, 1);
 }
 
 bool ConnectFour::CheckVerticalVictory(const ConnectFour::Board& board, size_t row, size_t column) const {

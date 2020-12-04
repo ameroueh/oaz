@@ -8,6 +8,7 @@
 using namespace oaz::games;
 
 Bandits::Bandits() {}
+Bandits::Bandits(np::ndarray input_board) : m_status(0){};
 
 void Bandits::PlayFromString(std::string moves) {
     for (char& c : moves) {

@@ -12,6 +12,9 @@ namespace np = boost::python::numpy;
 using namespace oaz::games;
 
 TicTacToe::TicTacToe() : m_status(0) {}
+TicTacToe::TicTacToe(np::ndarray input_board) : m_status(0) {
+    SetBoard(input_board);
+}
 
 void TicTacToe::PlayFromString(std::string moves) {
     for (char& c : moves) {
