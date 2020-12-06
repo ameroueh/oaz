@@ -8,11 +8,11 @@
 namespace oaz::queue {
 	template <class T>
 	class SafeQueue : public std::queue<T> { public:
-			void lock() {
-				m_mutex.lock();
+			void Lock() {
+				m_mutex.Lock();
 			}
-			void unlock() {
-				m_mutex.unlock();
+			void Unlock() {
+				m_mutex.Unlock();
 			}
 			SafeQueue<T>& operator=(const SafeQueue<T>& rhs) {
 				this->std::queue<T>::operator=(rhs);
@@ -25,11 +25,11 @@ namespace oaz::queue {
 	
 	template <class T>
 	class SafeDeque : public std::deque<T> { public:
-			void lock() {
-				m_mutex.lock();
+			void Lock() {
+				m_mutex.Lock();
 			}
-			void unlock() {
-				m_mutex.unlock();
+			void Unlock() {
+				m_mutex.Unlock();
 			}
 			SafeDeque<T>& operator=(const SafeDeque<T>& rhs) {
 				this->std::deque<T>::operator=(rhs);

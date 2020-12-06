@@ -1,76 +1,85 @@
 #ifndef __CONNECT_FOUR_HPP__
 #define __CONNECT_FOUR_HPP__
 
+#include <bitset>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "stdint.h"
 #include "oaz/array/array.hpp"
-
+#include "oaz/bitboard/bitboard.hpp"
+#include "oaz/games/game.hpp"
+#include "oaz/games/generic_game_map.hpp"
+#include "stdint.h"
 
 namespace oaz::games {
-	class ConnectFour {
-		public:
-			using Move = uint32_t;
-			using Value = float;
-			using Tile = float;
-			using Board = oaz::array::Array<7, 6, 2>;
-			using Policy = oaz::array::Array<7>;
-			using Registry = std::array<size_t, 7>;
-			
-			static constexpr Tile EMPTY_TOKEN = 0.;
-			static constexpr Tile BASE_TOKEN = 1.;
-			
-			static const size_t n_moves = 7;
-			static const size_t n_players = 2;
-			static const size_t max_n_moves = 42;
-			
-			ConnectFour();
-			ConnectFour(const ConnectFour&);
-			
-			void reset();
-			Board& getBoard() {
-				return m_board;
-			}
+class ConnectFour : public Game {
+   public:
+    struct Class : public Game::Class {
+        size_t GetMaxNumberOfMoves() const {
+            return 7;
+        }
+        const std::vector<int>& GetBoardShape() const {
+            return m_board_shape;
+        }
+        GameMap* CreateGameMap() const {
+            return new GenericGameMap<ConnectFour, uint64_t>();
+        }
+        static const Class& Methods() {
+            static const Class meta;
+            return meta;
+        };
 
+       private:
+        const std::vector<int> m_board_shape{6, 7, 2};
+    };
+    const Class& ClassMethods() const {
+        return Class::Methods();
+    }
 
-			void playFromString(std::string);
-			void playMove(Move);
-			void undoMove(Move);
-			size_t getCurrentPlayer() const;
-			bool Finished() const;
-			std::vector<Move>* availableMoves();
-			float score() const;
+    ConnectFour();
 
-			size_t currentPlayer() const;
+    void PlayFromString(std::string);
+    void PlayMove(size_t);
+    size_t GetCurrentPlayer() const;
+    bool IsFinished() const;
+    void GetAvailableMoves(std::vector<size_t>&) const;
+    float GetScore() const;
+    void WriteStateToTensorMemory(float*) const;
+    void WriteCanonicalStateToTensorMemory(float*) const;
+    std::unique_ptr<Game> Clone() const;
 
-			bool operator==(const ConnectFour&);
-			void set(const ConnectFour&);
-				
-		private:
-			void setCurrentPlayer(size_t);
-			void initialise();
-			void resetBoard();
-			void placeToken(Move);
-			void removeToken(Move);
-			void swapPlayers();
-			void refreshAvailableMoves();
-			void maybeDeclareVictory(Move);
+    bool operator==(const ConnectFour&) const;
 
-			bool checkVerticalVictory(size_t, size_t, size_t);
-			bool checkHorizontalVictory(size_t, size_t, size_t);
-			bool checkFirstDiagonalVictory(size_t, size_t, size_t);
-			bool checkSecondDiagonalVictory(size_t, size_t, size_t);
+    uint64_t GetState() const;
 
-			size_t m_current_player;
-			float m_score;
-			bool m_game_won;
-			std::vector<Move> m_available_moves;
-			
-			Board m_board;
-			Registry m_tokens_in_column;
-	};
-}
+   private:
+    using Board = oaz::bitboard::BitBoard<6, 7>;
+    static constexpr Board ROW{{0, 0}, {0, 1}, {0, 2}, {0, 3}, {0, 4}, {0, 5}, {0, 6}};
+    static constexpr Board COLUMN{{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0}};
+    static constexpr Board FIRST_DIAGONAL{{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}};
+    static constexpr Board SECOND_DIAGONAL{{5, 0}, {4, 1}, {3, 2}, {2, 3}, {1, 4}, {0, 5}};
+
+    size_t GetNumberOfTokensInColumn(size_t) const;
+    Board& GetPlayerBoard(size_t);
+    const Board& GetPlayerBoard(size_t) const;
+
+    bool CheckVictory(const Board&, size_t, size_t) const;
+    bool CheckVerticalVictory(const Board&, size_t, size_t) const;
+    bool CheckHorizontalVictory(const Board&, size_t, size_t) const;
+    bool CheckDiagonalVictory1(const Board&, size_t, size_t) const;
+    bool CheckDiagonalVictory2(const Board&, size_t, size_t) const;
+    bool Player0Won() const;
+    bool Player1Won() const;
+
+    void SetWinner(size_t);
+    void DeclareFinished();
+
+    Board m_player0_tokens;
+    Board m_player1_tokens;
+    std::bitset<8> m_status;
+};
+}  // namespace oaz::games
 
 #include "oaz/games/connect_four_impl.cpp"
 #endif

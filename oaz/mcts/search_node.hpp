@@ -9,92 +9,122 @@
 #include "oaz/mutex/mutex.hpp"
 
 namespace oaz::mcts {
-	template <class Move>
 	class SearchNode {
 		public:
-			using tsize_t = uint32_t;
-			using uniqueptr_t = std::unique_ptr<SearchNode>;
-			using ptr_t = SearchNode*;
-			using value_t = float;
-
 			SearchNode():
 				m_parent(nullptr),
+				m_player(0),
 				m_n_visits(0),
 				m_acc_value(0.),
 				m_prior(0.),
 				m_is_blocked_for_evaluation(false)
 			{}
-			SearchNode(Move move, ptr_t parent, float prior):
+			SearchNode(
+				size_t move, 
+				size_t player, 
+				SearchNode* parent, 
+				float prior):
 				m_move(move),
+				m_player(player),
 				m_parent(parent),
 				m_n_visits(0),
 				m_acc_value(0.),
 				m_prior(prior),
 				m_is_blocked_for_evaluation(false)
 			{}
+			SearchNode(const SearchNode& rhs):
+				m_move(rhs.m_move),
+				m_player(rhs.m_player),
+				m_parent(nullptr),
+				m_n_visits(rhs.m_n_visits),
+				m_acc_value(rhs.m_acc_value),
+				m_prior(rhs.m_prior),
+				m_is_blocked_for_evaluation(false) {
+					for(size_t i=0; i!=rhs.GetNChildren(); ++i) {
+						std::unique_ptr<SearchNode> child = std::make_unique<SearchNode>(*rhs.m_children[i]);
+						child->SetParent(this);
+						m_children.push_back(std::move(child));
+					}
+				}
 			
-			Move getMove() const {return m_move;}
-			bool isRoot() const {return !m_parent;}
-			bool isLeaf() const {return m_children.size() == 0;}
-			void addChild(Move move, float prior) {
-				uniqueptr_t child(new SearchNode<Move>(move, this, prior));
+			size_t GetMove() const {return m_move;}
+			size_t GetPlayer() const {return m_player;}
+			bool IsRoot() const {return !m_parent;}
+			bool IsLeaf() const {return m_children.size() == 0;}
+			void AddChild(
+				size_t move, 
+				size_t player, 
+				float prior) {
+				std::unique_ptr<SearchNode> child(
+					new SearchNode(
+						move, 
+						player, 
+						this, 
+						prior
+					)
+				);
 				m_children.push_back(std::move(child));
 			}
-			ptr_t getChild(tsize_t index) {
+			SearchNode* GetChild(size_t index) {
 				return m_children[index].get();
 			}
-			tsize_t getNChildren() const {
+			size_t GetNChildren() const {
 				return m_children.size();
 			}
-			tsize_t getNVisits() const {
+			size_t GetNVisits() const {
 				return m_n_visits;
 			}
-			value_t getAccumulatedValue() const {
+			float GetAccumulatedValue() const {
 				return m_acc_value;
 			}
 
-			void incrementNVisits() {
+			void IncrementNVisits() {
 				++m_n_visits;
 			}
 
-			void lock() {
-				m_mutex.lock();
+			void Lock() {
+				m_mutex.Lock();
 			}
 
-			void unlock() {
-				m_mutex.unlock();
+			void Unlock() {
+				m_mutex.Unlock();
 			}
 
 			bool IsBlockedForEvaluation() const {
 				return m_is_blocked_for_evaluation;
 			}
 
-			void blockForEvaluation() {
+			void BlockForEvaluation() {
 				m_is_blocked_for_evaluation = true;
 			}
 
-			void unblockForEvaluation() {
+			void UnblockForEvaluation() {
 				m_is_blocked_for_evaluation = false;
 			}
 
-			void addValue(float value) {
+			void AddValue(float value) {
 				m_acc_value += value;
 			}	
 
-			ptr_t getParent() {
+			SearchNode* GetParent() {
 				return m_parent;
 			}
 
-			float getPrior() const {
+			float GetPrior() const {
 				return m_prior;
 			}
 
 		private:
-			std::vector<uniqueptr_t> m_children;
-			ptr_t m_parent;
-			Move m_move;
-			tsize_t m_n_visits;
-			value_t m_acc_value;
+			void SetParent(SearchNode* parent) {
+				m_parent = parent;
+			}
+
+			std::vector<std::unique_ptr<SearchNode>> m_children;
+			SearchNode* m_parent;
+			size_t m_player;
+			size_t m_move;
+			size_t m_n_visits;
+			float m_acc_value;
 			float m_prior;
 			bool m_is_blocked_for_evaluation;
 			oaz::mutex::SpinlockMutex m_mutex;

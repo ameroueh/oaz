@@ -59,12 +59,6 @@ with tf.Session(graph=graph) as session:
         session, session.graph.as_graph_def(), ["value", "policy"]
     )
     write_graph(frozen_graph, save_dir, "frozen_model.pb", as_text=False)
-    # tf.saved_model.simple_save(
-    #     session,
-    #     os.path.join(save_dir, "model"),
-    #     inputs={"input": input},
-    #     outputs={"value": value, "policy": policy},
-    # )
 
 with open(os.path.join(save_dir, "data.json"), "w") as f:
     f.write(

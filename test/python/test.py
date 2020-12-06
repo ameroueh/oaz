@@ -22,7 +22,12 @@ def self_play(game, pool, evaluator):
     for _ in range(N_GAMES_PER_WORKER):
         while not game.finished:
             search = Search(
-                game, evaluator, SEARCH_BATCH_SIZE, N_SIMULATIONS_PER_MOVE, 0., 1.
+                game,
+                evaluator,
+                SEARCH_BATCH_SIZE,
+                N_SIMULATIONS_PER_MOVE,
+                0.0,
+                1.0,
             )
             pool.perform_search(search)
             root = search.get_root()

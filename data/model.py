@@ -111,8 +111,12 @@ def resnet_v1(input, depth):
             strides = 1
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 strides = 2  # downsample
-            y = resnet_layer(inputs=x, num_filters=num_filters, strides=strides)
-            y = resnet_layer(inputs=y, num_filters=num_filters, activation=None)
+            y = resnet_layer(
+                inputs=x, num_filters=num_filters, strides=strides
+            )
+            y = resnet_layer(
+                inputs=y, num_filters=num_filters, activation=None
+            )
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 # linear projection residual shortcut connection to match
                 # changed dims

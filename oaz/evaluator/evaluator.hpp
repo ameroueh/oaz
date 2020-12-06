@@ -1,21 +1,22 @@
 #ifndef __EVALUATOR_HPP__
 #define __EVALUATOR_HPP__
 
+#include "boost/multi_array.hpp"
 #include "oaz/thread_pool/thread_pool.hpp"
+#include "oaz/games/game.hpp"
 
 
 namespace oaz::evaluator {
 	
-	template <class Game>
 	class Evaluator {
 		public:
-			virtual void requestEvaluation(
-				Game*, 
-				typename Game::Value*,
-				typename Game::Policy*,
+			virtual void RequestEvaluation(
+				oaz::games::Game*, 
+				float*,
+				boost::multi_array_ref<float, 1>,
 				oaz::thread_pool::Task*
 			) = 0;
-			virtual ~Evaluator() {}
+			virtual ~Evaluator(){}
 	};
 }
 #endif
