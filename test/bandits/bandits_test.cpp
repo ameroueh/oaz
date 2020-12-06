@@ -1,81 +1,119 @@
-#include <algorithm>
-#include <string>
-
 #include "oaz/games/bandits.hpp"
 
-#include "gtest/gtest.h"
-#include "gmock/gmock.h"
+#include <string>
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 using namespace oaz::games;
 using namespace testing;
 
-TEST (InstantiationTest, Default) {
-	Bandits game;
+TEST(InstantiationTest, Default) {
+    Bandits game;
 }
 
-TEST (InstantiationTest, AvailableMoves) {
-	Bandits game;
-	ASSERT_THAT(*(game.availableMoves()), ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+TEST(InstantiationTest, AvailableMoves) {
+    Bandits game;
+    std::vector<size_t> available_moves;
+    game.GetAvailableMoves(available_moves);
+    ASSERT_THAT(available_moves, ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 }
 
-
-TEST (ResetTest, Default) {
-	Bandits game;
-	game.reset();
+TEST(PlayTest, Victory) {
+    Bandits game;
+    ASSERT_FALSE(game.IsFinished());
+    game.PlayFromString("3");
+    ASSERT_TRUE(game.IsFinished());
+    ASSERT_EQ(-1., game.GetScore());
 }
 
-
-TEST (PlayTest, DoUndo) {
-	Bandits game;
-	Bandits game2;
-
-	auto available_moves = *(game.availableMoves());
-	
-	for(int i=0; i!=available_moves.size(); ++i) {
-		auto move_to_play = available_moves[i];
-		game2.playMove(move_to_play);
-		game2.undoMove(move_to_play);
-		ASSERT_TRUE(game == game2);
-	}
+TEST(PlayTest, Victory2) {
+    Bandits game;
+    ASSERT_FALSE(game.IsFinished());
+    game.PlayFromString("2");
+    ASSERT_TRUE(game.IsFinished());
+    ASSERT_EQ(1., game.GetScore());
 }
 
-TEST (PlayTest, Victory) {
-	Bandits game;
-	ASSERT_TRUE(~game.Finished());
-	game.playFromString("3");
-	ASSERT_TRUE(game.Finished());
-	ASSERT_EQ(-1., game.score());
+TEST(Clone, Default) {
+    Bandits game;
+    game.PlayFromString("6");
+    std::unique_ptr<Game> clone = game.Clone();
+    Bandits* clone_ptr = dynamic_cast<Bandits*>(clone.get());
+    ASSERT_TRUE(game == *clone_ptr);
 }
 
-TEST (PlayTest, Victory2) {
-	Bandits game;
-	ASSERT_TRUE(~game.Finished());
-	game.playFromString("2");
-	ASSERT_TRUE(game.Finished());
-	ASSERT_EQ(1., game.score());
+TEST(GetCurrentPlayer, Default) {
+    Bandits game;
+    ASSERT_EQ(game.GetCurrentPlayer(), 0);
+    game.PlayMove(0);
+    ASSERT_EQ(game.GetCurrentPlayer(), 1);
 }
 
-TEST (CopyTest, Default) {
-	Bandits game;
-	game.playFromString("6");
-	Bandits game2(game);
-	ASSERT_TRUE(game == game2);
+TEST(ClassMethods, Default) {
+    Bandits game;
+    Game* game_ptr = &game;
+    ASSERT_EQ(game_ptr->ClassMethods().GetMaxNumberOfMoves(), 10);
+    ASSERT_EQ(game_ptr->ClassMethods().GetBoardShape()[0], 10);
 }
 
-TEST (GetCurrentPlayer, Default) {
-	Bandits game;
-	ASSERT_EQ(game.getCurrentPlayer(), 0);
-	game.playMove(0);
-	ASSERT_EQ(game.getCurrentPlayer(), 1);
+TEST(WriteStateToTensorMemory, Default) {
+    Bandits game;
+    game.PlayMove(0);
+    boost::multi_array<float, 1> tensor(boost::extents[10]);
+    game.WriteStateToTensorMemory(tensor.origin());
+    for (size_t i = 0; i != 10; ++i)
+        if (i == 0)
+            ASSERT_EQ(tensor[i], 1.);
+        else
+            ASSERT_EQ(tensor[i], 0.);
 }
 
-TEST (Set, Default) {
-	Bandits game;
-	game.playFromString("2");
-	
-	Bandits game2;
-	game2.set(game);
+TEST(WriteCanonicalStateToTensorMemory, Default) {
+    Bandits game;
+    game.PlayMove(0);
+    boost::multi_array<float, 1> tensor(boost::extents[10]);
+    game.WriteCanonicalStateToTensorMemory(tensor.origin());
+    for (size_t i = 0; i != 10; ++i)
+        if (i == 0)
+            ASSERT_EQ(tensor[i], 1.);
+        else
+            ASSERT_EQ(tensor[i], 0.);
+}
 
-	ASSERT_TRUE(game == game2);	
+TEST(GameMap, Instantiation) {
+    Bandits game;
+    std::unique_ptr<oaz::games::Game::GameMap> game_map(
+        game.ClassMethods().CreateGameMap());
+}
+
+TEST(GameMap, GetNotInDB) {
+    Bandits game;
+    std::unique_ptr<oaz::games::Game::GameMap> game_map(
+        game.ClassMethods().CreateGameMap());
+    size_t index;
+    ASSERT_FALSE(game_map->Get(game, index));
+}
+
+TEST(GameMap, GetInDB) {
+    Bandits game;
+    std::unique_ptr<oaz::games::Game::GameMap> game_map(
+        game.ClassMethods().CreateGameMap());
+    game_map->Insert(game, 1ll);
+
+    size_t index = 0;
+    ASSERT_TRUE(game_map->Get(game, index));
+    ASSERT_EQ(index, 1);
+}
+
+TEST(GameMap, InsertAlreadyInDB) {
+    Bandits game;
+    std::unique_ptr<oaz::games::Game::GameMap> game_map(
+        game.ClassMethods().CreateGameMap());
+
+    ASSERT_EQ(game_map->GetSize(), 0);
+    game_map->Insert(game, 1ll);
+    ASSERT_EQ(game_map->GetSize(), 1);
+    game_map->Insert(game, 1ll);
+    ASSERT_EQ(game_map->GetSize(), 1);
 }

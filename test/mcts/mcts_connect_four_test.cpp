@@ -1,69 +1,60 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
+#include "oaz/mcts/search.hpp"
+#include "oaz/mcts/selection.hpp"
 #include "oaz/games/connect_four.hpp"
 #include "oaz/simulation/simulation_evaluator.hpp"
-#include "oaz/mcts/mcts_search.hpp"
-#include "oaz/mcts/search_node.hpp" 
-#include "oaz/mcts/selection.hpp"
-#include "oaz/mcts/search_node_serialisation.hpp"
-#include "oaz/thread_pool/thread_pool.hpp"
-
-#include <iostream>
-#include <queue>
-#include <vector>
 
 using namespace std;
 using namespace oaz::mcts;
 using namespace oaz::games;
 
-using Game = ConnectFour;
-using Move = typename Game::Move;
-using Node = SearchNode<Game::Move>;
-using GameEvaluator = SimulationEvaluator<Game>;
-using GameSearch = MCTSSearch<Game>;
-using SharedEvaluatorPointer = std::shared_ptr<GameEvaluator>;
+size_t GetBestMove(Search& search) {
+	auto tree_root = search.GetTreeRoot();
+	size_t best_move = 0;
+	size_t best_n_visits = 0;
+	for(size_t i=0; i != tree_root->GetNChildren(); ++i) {
+		auto child = tree_root->GetChild(i);
+		size_t n_visits = child->GetNVisits();
+		if (n_visits >= best_n_visits) {
+			best_n_visits = n_visits;
+			best_move = child->GetMove();
+		}
+	}
+	return best_move;
+}
 
 TEST (ForcedMoves, Scenario1) {
-	oaz::thread_pool::ThreadPool pool(8);
-	SharedEvaluatorPointer evaluator(new GameEvaluator(&pool));
-	Game game;
+	auto pool = make_shared<oaz::thread_pool::ThreadPool>(4);
+	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
+	UCTSelector selector;
+	ConnectFour game;
+	game.PlayFromString("5443233212"); // Expect best move to be 2
+	Search search(game, selector, evaluator, pool, 4, 10000);
 
-	game.playFromString("5443233212"); // Expect best move to be 2
-
-	GameSearch search (game, evaluator.get(), &pool, 16, 10000); 
-
-	search.search();
-
-	ASSERT_EQ(search.getBestMove(), 2);
+	ASSERT_EQ(GetBestMove(search), 2);
 }
 
 TEST (ForcedMoves, Scenario2) {
+	auto pool = make_shared<oaz::thread_pool::ThreadPool>(4);
+	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
+	UCTSelector selector;
+	ConnectFour game;
+	game.PlayFromString("4330011115"); // Expect best move to be 2
 	
-	oaz::thread_pool::ThreadPool pool(8);
-	SharedEvaluatorPointer evaluator(new GameEvaluator(&pool));
-	Game game;
+	Search search(game, selector, evaluator, pool, 4, 10000);
 	
-	game.playFromString("4330011115"); // Expect best move to be 2
-
-	GameSearch search (game, evaluator.get(), &pool, 8, 10000); 
-
-	search.search();
-
-	ASSERT_EQ(search.getBestMove(), 2);
+	ASSERT_EQ(GetBestMove(search), 2);
 }
 
 TEST (ForcedMoves, Scenario3) {
-	
-	oaz::thread_pool::ThreadPool pool(8);
-	SharedEvaluatorPointer evaluator(new GameEvaluator(&pool));
-	Game game;
-	
-	game.playFromString("433001111"); // Expect best move to be 2
+	auto pool = make_shared<oaz::thread_pool::ThreadPool>(4);
+	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
+	UCTSelector selector;
+	ConnectFour game;
+	game.PlayFromString("433001111"); // Expect best move to be 2
+	Search search(game, selector, evaluator, pool, 4, 10000);
 
-	GameSearch search (game, evaluator.get(), &pool, 16, 10000); 
-
-	search.search();
-	
-	ASSERT_EQ(search.getBestMove(), 2);
+	ASSERT_EQ(GetBestMove(search), 2);
 }

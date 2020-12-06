@@ -1,52 +1,37 @@
 #include "oaz/simulation/simulation_evaluator.hpp"
-#include "oaz/queue/queue.hpp"
 
-#include <random>
-#include <stack>
+using namespace oaz::simulation;
 
-using namespace oaz::random;
-
-template <class Game>
-SimulationEvaluator<Game>::SimulationEvaluator(oaz::thread_pool::ThreadPool* thread_pool):
+SimulationEvaluator::SimulationEvaluator(
+	std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool):
 	m_thread_pool(thread_pool) {}
 
-template <class Game>
-void SimulationEvaluator<Game>::requestEvaluation(
-	Game* game, 
-	typename Game::Value* value,
-	typename Game::Policy* policy,
+void SimulationEvaluator::RequestEvaluation(
+	oaz::games::Game* game, 
+	float* value,
+	boost::multi_array_ref<float, 1> policy,
 	oaz::thread_pool::Task* task) {
 
-	*value = simulate(*game);
+	std::unique_ptr<oaz::games::Game> game_copy = game->Clone();
+	*value = Simulate(*game_copy);
 	m_thread_pool->enqueue(task);
 }
 
-template <class Game>
-float SimulationEvaluator<Game>::simulate(Game& game) {
+float SimulationEvaluator::Simulate(oaz::games::Game& game) {
 
-	std::stack<typename Game::Move> played_moves;
-	while (!game.Finished()) {
-		auto available_moves = game.availableMoves();
-		size_t n_available_moves = available_moves->size();
-		std::uniform_int_distribution<size_t> dis(0, n_available_moves - 1);
+	std::vector<size_t> available_moves;
+	size_t current_player = game.GetCurrentPlayer();
+	while (!game.IsFinished()) {
+		game.GetAvailableMoves(available_moves);
+		std::uniform_int_distribution<size_t> dis(
+			0, 
+			available_moves.size() - 1
+		);
 		size_t random_move_index = dis(m_generator);
-		auto random_move = (*available_moves)[random_move_index];
-		game.playMove(random_move);
-		played_moves.push(random_move);
-
+		auto random_move = available_moves[random_move_index];
+		game.PlayMove(random_move);
 	}
+	float score = game.GetScore();
 
-	float score = game.score();
-
-	while(!played_moves.empty()) {
-		auto move = played_moves.top();
-		played_moves.pop();
-		game.undoMove(move);
-	}
-
-	return score;
-}
-
-template <class Game>
-void SimulationEvaluator<Game>::forceEvaluation() {
+	return (current_player == 0) ? score : score * -1.;
 }

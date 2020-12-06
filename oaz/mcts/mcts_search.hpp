@@ -5,8 +5,7 @@
 
 namespace oaz::mcts {
 
-	template <class Game>
-	using MCTSSearch = Search<Game, UCTSelector<SearchNode<typename Game::Move>>>;
+	using MCTSSearch = Search<UCTSelector<SearchNode>>;
 }
 
 #endif

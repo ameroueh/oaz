@@ -18,34 +18,34 @@ TEST (InstantiationTest, Default) {
 
 TEST (LockTest, Default) {
 	 SafeQueue<int> q;
-	 q.lock();
+	 q.Lock();
 }
 
 TEST (UnlockTest, Default) {
 	 SafeQueue<int> q;
-	 q.lock();
-	 q.unlock();
+	 q.Lock();
+	 q.Unlock();
 }
 
 void addIntegersToQueue(SafeQueue<int>* q, int n) {
 	for(int i=0; i!=n; ++i) {
-		q->lock();
+		q->Lock();
 		q->push(i);
-		q->unlock();
+		q->Unlock();
 	}
 }
 
 void emptyQueue(SafeQueue<int>* q) {
 	bool success = true;
 	while(success) {
-		q->lock();
+		q->Lock();
 		if(!q->empty()) {
 			q->pop();
 		}
 		else {
 			success = false;
 		}
-		q->unlock();
+		q->Unlock();
 	}
 }
 

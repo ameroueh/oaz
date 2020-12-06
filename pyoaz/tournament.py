@@ -2,10 +2,10 @@ import logging
 
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Iterable, List, Tuple
+from typing import Iterable, Tuple
 
 import numpy as np
-from pyoaz.bots import Bot
+from pyoaz.bots.bot import Bot
 from tqdm.auto import tqdm
 
 
@@ -22,19 +22,48 @@ class Participant:
 
 
 class Tournament:
-    def __init__(self, game):
+    def __init__(
+        self, game,
+    ):
         self.game = game
 
     def start_tournament(
-        self, participants: Iterable[Participant], n_games: int = 10
-    ) -> List[Participant]:
+        self,
+        participants: Iterable[Participant],
+        n_games: int = 10,
+        prioritised_participant: Participant = None,
+    ) -> np.ndarray:
+        """ Start a tournament. Each participant plays against every other
+            participant and tally of wins and losses is returned. If a
+            prioritised participant is provided, only play games that involve
+            that participant.
+
+        Parameters
+        ----------
+        participants : Iterable[Participant]
+            List of participants
+        n_games : int, optional
+            Number of games to play between each participant. Each game is
+            actually played twice, once with starting positions swapped, by
+            default 10.
+        prioritised_participant : Participant, optional
+            If provided, only games with that participant are played, by
+            default None
+
+        Returns
+        -------
+        np.ndarray
+            Matrix of wins and losses for each participant in order
+        """
 
         for index, participant in enumerate(participants):
             participant.index = index
 
         n_participants = len(participants)
         win_loss_matrix = np.zeros(shape=(n_participants, n_participants))
-        pairings = self._make_pairings(participants)
+        pairings = self._make_pairings(
+            participants, prioritised_participant=prioritised_participant
+        )
 
         for participant_a, participant_b in tqdm(
             pairings, desc="Pairings", total=len(pairings)
@@ -65,7 +94,13 @@ class Tournament:
             new_elo = other_elos + (400 * (wins - losses)) / (wins + losses)
             participant.elo = new_elo
 
-    def _make_pairings(self, participants):
+    def _make_pairings(self, participants, prioritised_participant=None):
+        if prioritised_participant:
+            return [
+                (prioritised_participant, participant)
+                for participant in participants
+                if participant is not prioritised_participant
+            ]
         return list(combinations(participants, 2))
 
     def _play_n_games(
@@ -108,9 +143,7 @@ class Tournament:
         turn = 0
         while not game.finished:
             player_idx = turn % 2
-            board = game.board.copy()
-            available_moves = game.available_moves
-            move = participants[player_idx].bot.play(board, available_moves)
+            move = participants[player_idx].bot.play(game)
             game.play_move(move)
             turn += 1
 

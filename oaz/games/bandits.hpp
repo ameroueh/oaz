@@ -1,68 +1,62 @@
 #ifndef __BANDITS_HPP__
 #define __BANDITS_HPP__
 
-#include <vector>
+#include <bitset>
+#include <memory>
 #include <string>
+#include <vector>
 
-#include "stdint.h"
 #include "oaz/array/array.hpp"
-
+#include "oaz/games/game.hpp"
+#include "oaz/games/generic_game_map.hpp"
+#include "stdint.h"
 
 namespace oaz::games {
-	class Bandits {
-		public:
-			using Move = uint32_t;
-			using Value = float;
-			using Policy = oaz::array::Array<10>;
-			using Tile = float;
-			using Board = oaz::array::Array<10>;
-			
-			static constexpr Tile EMPTY_TOKEN = 0.;
-			static constexpr Tile BASE_TOKEN = 1.;
-			
-			static const size_t n_moves = 10;
-			static const size_t n_players = 2;
-			static const size_t max_n_moves = 10;
+class Bandits : public Game {
+   public:
+    struct Class : public Game::Class {
+        size_t GetMaxNumberOfMoves() const {
+            return 10;
+        }
+        const std::vector<int>& GetBoardShape() const {
+            return m_board_shape;
+        }
+        static const Class& Methods() {
+            static const Class meta;
+            return meta;
+        };
+        GameMap* CreateGameMap() const {
+            return new GenericGameMap<Bandits, uint64_t>();
+        }
 
-			Bandits();
-			Bandits(const Bandits&);
-			
-			void reset();
-			Board& getBoard() {
-				return m_board;
-			}
-			
-			void playFromString(std::string);
-			void playMove(Move);
-			void undoMove(Move);
-			size_t getCurrentPlayer() const;
-			bool Finished() const;
-			std::vector<Move>* availableMoves();
-			float score() const;
+       private:
+        const std::vector<int> m_board_shape{10};
+    };
+    const Class& ClassMethods() const {
+        return Class::Methods();
+    }
 
-			size_t currentPlayer() const;
+    Bandits();
 
-			bool operator==(const Bandits&);
-			void set(const Bandits&);
-				
-		private:
-			void setCurrentPlayer(size_t);
-			void initialise();
-			void resetBoard();
-			void placeToken(Move);
-			void removeToken(Move);
-			void swapPlayers();
-			void refreshAvailableMoves();
-			void maybeDeclareVictory(Move);
+    void PlayFromString(std::string);
+    void PlayMove(size_t);
+    size_t GetCurrentPlayer() const;
+    bool IsFinished() const;
+    void GetAvailableMoves(std::vector<size_t>&) const;
+    float GetScore() const;
+    void WriteStateToTensorMemory(float*) const;
+    void WriteCanonicalStateToTensorMemory(float*) const;
+    std::unique_ptr<Game> Clone() const;
 
-			size_t m_current_player;
-			float m_score;
-			bool m_game_won;
-			std::vector<Move> m_available_moves;
-			
-			Board m_board;
-	};
-}
+    bool operator==(const Bandits&) const;
+
+    uint64_t GetState() const;
+
+   private:
+    static constexpr std::bitset<10> WINNING_BITS = std::bitset<10>(0b101010101ll);
+    std::bitset<10> m_board;
+};
+}  // namespace oaz::games
 
 #include "oaz/games/bandits_impl.cpp"
 #endif
