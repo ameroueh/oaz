@@ -7,7 +7,8 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import tensorflow.compat.v1.keras.backend as K
 import toml
 from keras_contrib.callbacks import CyclicLR
@@ -24,13 +25,7 @@ from pyoaz.training.utils import (
     running_mean,
     play_best_self,
 )
-from tensorflow.keras.models import load_model
-
-
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-os.environ["OAZ_LOGGING"] = "false"
-
+from tensorflow.compat.v1.keras.models import load_model
 
 class Trainer:
     def __init__(
