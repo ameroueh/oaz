@@ -9,7 +9,6 @@ import joblib
 import numpy as np
 import tensorflow.compat.v1 as tf
 
-tf.disable_v2_behavior()
 import tensorflow.compat.v1.keras.backend as K
 import toml
 from keras_contrib.callbacks import CyclicLR
@@ -27,6 +26,8 @@ from pyoaz.training.utils import (
     play_best_self,
 )
 from tensorflow.compat.v1.keras.models import load_model
+
+tf.disable_v2_behavior()
 
 
 class Trainer:
