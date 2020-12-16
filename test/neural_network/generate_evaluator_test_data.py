@@ -4,12 +4,13 @@ import shutil
 import sys
 
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 from tensorflow.python.framework.graph_util import (
     convert_variables_to_constants,
 )
-from tensorflow.train import write_graph
+from tensorflow.compat.v1.train import write_graph
 
 save_dir = sys.argv[1]
 

@@ -13,6 +13,9 @@
 #include "python/pyrun.swg"
 #include "runtime.swg"
 
+#include <pybind11/pybind11.h>
+
+#include "tensorflow/c/c_api.h"
 #include "tensorflow/c/c_api_internal.h"
 
 #include "oaz/neural_network/model.hpp"
@@ -20,7 +23,7 @@
 
 namespace p = boost::python;
 namespace np = boost::python::numpy;
-
+namespace py = pybind11;
 
 namespace oaz::nn {
 
@@ -45,10 +48,16 @@ namespace oaz::nn {
 
 
 
-void SetSession(Model& model, PyObject* obj) {
+void SetSessionV1(Model& model, PyObject* obj) {
 	void* ptr = nullptr;
 	int result = SWIG_ConvertPtr(obj, &ptr, 0, 0);
 	TF_Session* session = static_cast<TF_Session*>(ptr);
+	model.SetSession(session->session);
+}
+
+void SetSessionV2(Model& model, PyObject* obj) {
+	py::handle handle(obj);
+	TF_Session* session = handle.cast<TF_Session*>();
 	model.SetSession(session->session);
 }
 
@@ -81,12 +90,14 @@ BOOST_PYTHON_MODULE( nn_evaluator ) {
 
 	PyEval_InitThreads();
 
+	/* auto pywrap_tf_session = py::module::import("tensorflow.python._pywrap_tf_session"); */
+	
 	p::class_<
 		oaz::nn::Model,
 		std::shared_ptr<oaz::nn::Model>,
 		boost::noncopyable
 	>("Model", p::init<>())
-	.def("set_session", &SetSession)
+	.def("set_session", &SetSessionV2)
 	.add_property("value_node_name", &oaz::nn::Model::GetValueNodeName)
 	.add_property("policy_node_name", &oaz::nn::Model::GetPolicyNodeName)
 	.def("set_value_node_name", &oaz::nn::Model::SetValueNodeName)

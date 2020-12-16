@@ -59,7 +59,7 @@ class SelfPlay:
         )
 
         self.discount_factor = discount_factor
-
+    
         model = Model(
             session=session,
             value_node_name="value/Tanh",

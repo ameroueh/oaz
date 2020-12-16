@@ -1,5 +1,5 @@
-import tensorflow as tf
-from tensorflow.keras.layers import (
+import tensorflow.compat.v1 as tf
+from tensorflow.compat.v1.keras.layers import (
     Activation,
     Conv2D,
     Dense,
@@ -7,7 +7,7 @@ from tensorflow.keras.layers import (
     add,
     BatchNormalization,
 )
-from tensorflow.keras.regularizers import l2
+from tensorflow.compat.v1.keras.regularizers import l2
 
 
 def residual_block(
