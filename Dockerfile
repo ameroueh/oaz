@@ -1,115 +1,143 @@
-FROM ubuntu:19.04
+FROM nvidia/cuda:11.1-cudnn8-devel-ubuntu18.04
 
-ARG uid
-ARG gid
-
-COPY /etc/group /etc/group
-COPY /etc/passwd /etc/passwd
-COPY /etc/shadow /etc/shadow
-
-USER $uid:$gid
-
-WORKDIR /root
-
-# Set shell to bash
-
-SHELL ["/bin/bash", "--login", "-c"]
+SHELL [ "/bin/bash", "-c" ]
 
 # Install toolchain
-
-ENV DEBIAN_FRONTEND noninteractive
-
 RUN apt-get -qq update
-RUN apt-get install -qy g++ gcc git wget unzip
+RUN apt-get install -qy unzip wget gcc g++ git
+
+# Add user
+
+ARG UID=1000
+RUN useradd -m oaz --uid=${UID}
 
 # Install miniconda
 
-COPY environment.yml . 
-ARG miniconda_version=4.7.12.1
-ARG conda_dir=/opt/conda
-ENV CONDA_DIR=$conda_dir
+USER oaz
+WORKDIR /home/oaz
 
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-$miniconda_version-Linux-x86_64.sh -O miniconda.sh && \
-	chmod +x miniconda.sh && \
-	./miniconda.sh -b -p $conda_dir && \
-	rm miniconda.sh && \
-	ln -s $conda_dir/etc/profile.d/conda.sh /etc/profile.d/conda.sh 
+ARG MINICONDA_VERSION=4.7.12.1
+ENV CONDA_DIR /home/oaz/miniconda3
 
-ENV PATH=$conda_dir/bin:$PATH
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-$MINICONDA_VERSION-Linux-x86_64.sh -O miniconda.sh
+RUN chmod +x miniconda.sh
+RUN ./miniconda.sh -b -p $CONDA_DIR
+RUN rm miniconda.sh
 
-# Build conda environment
+ENV PATH=$CONDA_DIR/bin:$PATH
+RUN echo ". $CONDA_DIR/etc/profile.d/conda.sh" >> ~/.profile
+RUN conda init bash
 
-RUN conda env create -f environment.yml
+RUN conda create --name oaz python=3.6
+RUN echo "conda activate oaz" >> ~/.bashrc
 
-# Make entrypoint which activates the environment
-
+# Set-up entrypoint
 RUN echo $'#!/bin/bash \n\
-__conda_setup="$(/opt/conda/bin/conda shell.bash hook 2> /dev/null)" \n\
-eval "$__conda_setup" \n\
-conda activate oaz \n\
-echo "ENTRYPOINT: CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV}" \n\
-exec "$@"' >> /entrypoint.sh && chmod +x /entrypoint.sh
-SHELL ["/entrypoint.sh", "/bin/bash", "--login", "-c"]
-
-RUN echo "source activate oaz" >> .bashrc
+if [[ $EUID -ne 0 ]]; then \n\
+	__conda_setup="$($CONDA_DIR/bin/conda shell.bash hook 2> /dev/null)" \n\
+	eval "$__conda_setup" \n\
+	conda activate oaz\n\
+fi \n\
+exec "$@"' >> /home/oaz/entrypoint.sh && chmod +x /home/oaz/entrypoint.sh
+SHELL ["/home/oaz/entrypoint.sh", "/bin/bash", "-c"]
+ENTRYPOINT ["/home/oaz/entrypoint.sh"]
 
 # Install and build tensorflow
 
 # Install tensorflow dependencies
 
-RUN pip install six 'numpy<1.19.0' wheel setuptools mock 'future>=0.17.1'
-RUN pip install keras_applications --no-deps
-RUN pip install keras_preprocessing --no-deps 
+RUN pip install six 'numpy<1.19.0' wheel setuptools mock 'futures>=0.17.1'
+RUN pip install keras_preprocessing --no-deps
 
 # Install Bazel
 
-RUN wget https://github.com/bazelbuild/bazel/releases/download/0.26.1/bazel-0.26.1-installer-linux-x86_64.sh && \
- 	chmod +x bazel-0.26.1-installer-linux-x86_64.sh && \
-	./bazel-0.26.1-installer-linux-x86_64.sh --user && \
-	rm bazel-0.26.1-installer-linux-x86_64.sh
-ENV PATH=/root/bin:$PATH
+ARG BAZEL_VERSION=3.1.0
+RUN wget https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
+ 	chmod +x bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
+	./bazel-$BAZEL_VERSION-installer-linux-x86_64.sh --user && \
+	rm bazel-$BAZEL_VERSION-installer-linux-x86_64.sh
+ENV PATH=/home/oaz/bin:$PATH
 
 # Get tensorflow
 
-RUN git clone https://github.com/tensorflow/tensorflow.git && \
-	cd tensorflow && \
-	git checkout r1.15
-WORKDIR /root/tensorflow
+RUN git clone https://github.com/tensorflow/tensorflow.git --depth 1 -b r2.4
 
-# Patch tensorflow 1.15 (gettid name collision)
+# Configure
 
-COPY patches/tensorflow.patch .
-RUN git apply tensorflow.patch 
+WORKDIR /home/oaz/tensorflow
 
-# Configure tensorflow build
-
-ENV TF_SET_ANDROID_WORKSPACE=0
-ENV TF_NEED_OPENCL_SYCL=0
-ENV TF_NEED_ROCM=0
-ENV TF_DOWNLOAD_CLANG=0
-ENV TF_NEED_MPI=0 
-ENV TF_NEED_CUDA=0
-ENV GCC_HOST_COMPILER_PATH=/usr/bin/gcc
-ENV CC_OPT_FLAGS="-march=native -mtune=native"
-ENV PYTHON_BIN_PATH="$CONDA_DIR/envs/oaz/bin/python"
-ENV USE_DEFAULT_PYTHON_LIB_PATH=1
-ENV TF_NEED_JEMALLOC=1
-ENV TF_NEED_GCP=0
-ENV TF_NEED_HDFS=0
-ENV TF_ENABLE_XLA=0
-ENV TF_NEED_OPENCL=0
+ARG TF_SET_ANDROID_WORKSPACE=0
+ARG TF_NEED_OPENCL_SYCL=0
+ARG TF_NEED_ROCM-0
+ARG TF_DOWNLOAD_CLANG=0
+ARG TF_NEED_MPI-0 
+ARG TF_NEED_CUDA=1
+ARG TF_CUDA_COMPUTE_CAPABILITIES=8.6
+ARG GCC_HOST_COMPILER_PATH="/usr/bin/gcc"
+ARG CC_OPT_FLAGS="-march=native -mtune=native"
+ARG USE_DEFAULT_PYTHON_LIB_PATH=1
+ARG TF_NEED_JEMALLOC=1
+ARG TF_NEED_GCP=0
+ARG TF_NEED_HDFS=0
+ARG TF_ENABLE_XLA=0
+ARG TF_NEED_OPENCL=0
+ARG TF_NEED_MKL=0
 
 RUN ./configure
 
-RUN bazel build --config=opt //tensorflow/tools/pip_package:build_pip_package
+ARG BAZEL_LOCAL_RAM_RESOURCES=16384
+ARG BAZEL_JOBS=16
+
+RUN bazel build --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
+		--jobs=$BAZEL_JOBS \
+		--config=opt \
+		//tensorflow/tools/pip_package:build_pip_package
 RUN ./bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg && \
 	pip install /tmp/tensorflow_pkg/tensorflow-*whl && \
 	rm -rf /tmp/tensorflow
-RUN bazel build --config=opt //tensorflow:libtensorflow.so
-RUN bazel build --config=opt //tensorflow:libtensorflow_cc.so
+RUN bazel build --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
+		--jobs=$BAZEL_JOBS \
+		--config=opt \
+		//tensorflow:libtensorflow.so
+RUN bazel build --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
+		--jobs=$BAZEL_JOBS \
+		--config=opt \
+		//tensorflow:libtensorflow_cc.so
 
-# Install OAZ specific dependencies
+ENV TENSORFLOW_DIR=/home/oaz/tensorflow
 
-RUN apt-get install make cmake swig
+# Install cmake
 
-WORKDIR /root
+USER root
+ARG CMAKE_VERSION=3.19.1
+RUN apt remove --purge --auto-remove cmake -qy
+RUN apt-get update
+RUN apt-get install libssl-dev -qy
+RUN mkdir /tmp/cmake && \
+	cd /tmp/cmake && \
+	wget https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.tar.gz && \
+	tar -xzvf cmake-$CMAKE_VERSION.tar.gz && \
+	cd /tmp/cmake/cmake-$CMAKE_VERSION && \
+	./bootstrap && \
+	make -j$(nproc) && \
+ 	make install && \
+	rm -rf /tmp/cmake
+USER oaz
+
+# Install boost
+
+RUN conda install py-boost boost-cpp
+
+# Install swig
+
+RUN conda install swig
+
+# Install OAZ python requirements
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Set up working directory
+
+RUN mkdir /home/oaz/io
+WORKDIR /home/oaz/io
