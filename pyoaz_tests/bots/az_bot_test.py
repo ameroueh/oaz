@@ -1,8 +1,11 @@
+import tensorflow.compat.v1 as tf
+
+tf.disable_v2_behavior()
+from tensorflow.python._pywrap_tf_session import *
+
 from pyoaz.bots.az_bot import AZBot
 from pyoaz.games.tic_tac_toe import TicTacToe
 from pyoaz.models import create_tic_tac_toe_model
-
-import tensorflow as tf
 
 
 def test_az_bot():

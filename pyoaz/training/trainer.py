@@ -8,6 +8,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import tensorflow.compat.v1 as tf
+
 tf.disable_v2_behavior()
 import tensorflow.compat.v1.keras.backend as K
 import toml
@@ -26,6 +27,7 @@ from pyoaz.training.utils import (
     play_best_self,
 )
 from tensorflow.compat.v1.keras.models import load_model
+
 
 class Trainer:
     def __init__(
@@ -372,8 +374,8 @@ class Trainer:
             )
 
     def _load_model(self, load_path):
-        """ Loads a model. Also loads associated memories and history, and sets
-            the generation index in the right place
+        """Loads a model. Also loads associated memories and history, and sets
+        the generation index in the right place
         """
         self.model = load_model(load_path)
         hist_path = Path(load_path).parent / "history.joblib"
