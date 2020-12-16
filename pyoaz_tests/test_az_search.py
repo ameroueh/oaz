@@ -1,4 +1,4 @@
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from pyoaz.thread_pool import ThreadPool
 from pyoaz.search import Search
