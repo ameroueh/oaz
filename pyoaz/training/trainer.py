@@ -7,7 +7,8 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+
 import tensorflow.compat.v1.keras.backend as K
 import toml
 from keras_contrib.callbacks import CyclicLR
@@ -24,12 +25,9 @@ from pyoaz.training.utils import (
     running_mean,
     play_best_self,
 )
-from tensorflow.keras.models import load_model
+from tensorflow.compat.v1.keras.models import load_model
 
-
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-os.environ["OAZ_LOGGING"] = "false"
+tf.disable_v2_behavior()
 
 
 class Trainer:
@@ -377,8 +375,8 @@ class Trainer:
             )
 
     def _load_model(self, load_path):
-        """ Loads a model. Also loads associated memories and history, and sets
-            the generation index in the right place
+        """Loads a model. Also loads associated memories and history, and sets
+        the generation index in the right place
         """
         self.model = load_model(load_path)
         hist_path = Path(load_path).parent / "history.joblib"
