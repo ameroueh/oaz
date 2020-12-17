@@ -11,7 +11,7 @@ def apply_symmetry(boards, policies):
 
 
 def _policy_symmetry(policies: np.ndarray) -> Tuple[np.ndarray, int]:
-    """ Given a set of policies, return the policies corresponding to symmetric positions
+    """Given a set of policies, return the policies corresponding to symmetric positions
         and the order of symmetry.
 
     Parameters
@@ -30,7 +30,7 @@ def _policy_symmetry(policies: np.ndarray) -> Tuple[np.ndarray, int]:
 
 
 def _board_symmetry(boards: np.ndarray) -> Tuple[np.ndarray, int]:
-    """ Given board positions, return all the equivalent symmetric positions
+    """Given board positions, return all the equivalent symmetric positions
         and the order of symmetry.
 
     Parameters

@@ -7,9 +7,9 @@ import logging
 
 
 class ArrayBuffer:
-    """ Buffer class to store a numpy array in memory, with a maximum buffer
-        size. Also contains functionality to keep track of unique elements of
-        the array.
+    """Buffer class to store a numpy array in memory, with a maximum buffer
+    size. Also contains functionality to keep track of unique elements of
+    the array.
     """
 
     def __init__(self, maxlen: int):
@@ -25,8 +25,7 @@ class ArrayBuffer:
     def enqueue(
         self, array: np.ndarray, keep_indices: np.ndarray = None,
     ) -> np.ndarray:
-        """ Add new data to the buffer, pushing out old data if necessary
-        """
+        """Add new data to the buffer, pushing out old data if necessary"""
 
         self._enqueue(array)
         if keep_indices is None:
@@ -36,39 +35,34 @@ class ArrayBuffer:
         return keep_indices
 
     def get_array(self) -> np.ndarray:
-        """ Return the stored array
-        """
+        """Return the stored array"""
         return self._array[0]
 
     def purge(self, n_purge: int) -> None:
-        """ Purge the first n parameters
-        """
+        """Purge the first n parameters"""
         if n_purge > 0:
             if len(self._array[0]) > n_purge:
                 self._array = [self._array[0][n_purge:]]
 
     def _get_unique_indices(self) -> np.ndarray:
-        """ Return the indices corresponding to unique arrays. In case of
-            duplicates, return the later indices.
+        """Return the indices corresponding to unique arrays. In case of
+        duplicates, return the later indices.
         """
         array = np.flip(self._array[0], axis=0)
         _, indices = np.unique(array, return_index=True, axis=0)
         return np.sort(-indices + len(array) - 1)
 
     def _keep_indices(self, indices: np.ndarray):
-        """
-        """
+        """"""
         self._array = [self._array[0][indices]]
 
     def _truncate(self):
-        """ truncate excessive elements
-        """
+        """truncate excessive elements"""
         if len(self._array[0]) > self.maxlen:
             self._array = [self._array[0][: self.maxlen]]
 
     def _enqueue(self, array: np.ndarray):
-        """ Add new data to the buffer
-        """
+        """Add new data to the buffer"""
         self._array.append(array)
         self._array = [np.concatenate(self._array)]
 
@@ -86,8 +80,8 @@ class MemoryBuffer:
         self.value_buffer.maxlen = maxlen
 
     def update(self, dataset: np.ndarray, logger: logging.Logger = None):
-        """ Add new data to the buffer, remove duplicates, and only then remove
-            overflow elements.
+        """Add new data to the buffer, remove duplicates, and only then remove
+        overflow elements.
         """
         initial_size = len(self.board_buffer)
 
@@ -111,8 +105,7 @@ class MemoryBuffer:
     def recall(
         self, shuffle: bool = False, n_sample: int = None
     ) -> Mapping[str, np.ndarray]:
-        """ Return all stored memories. Can return a subset of samples
-        """
+        """Return all stored memories. Can return a subset of samples"""
 
         boards = self.board_buffer.get_array()
         policies = self.policy_buffer.get_array()

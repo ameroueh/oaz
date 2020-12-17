@@ -6,13 +6,13 @@ from distutils.file_util import copy_file
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext as build_ext_orig
 
-REQUIREMENTS = [
-    line
-    for line in pathlib.Path("requirements.txt")
-    .read_text()
-    .strip()
-    .split("\n")
-]
+# REQUIREMENTS = [
+#     line
+#     for line in pathlib.Path("requirements.txt")
+#     .read_text()
+#     .strip()
+#     .split("\n")
+# ]
 
 CPU_COUNT = multiprocessing.cpu_count()
 
@@ -142,7 +142,7 @@ setup(
     version="0.1",
     packages=find_packages(),
     ext_modules=[CMakeExtension("pyoaz")],
-    install_requires=REQUIREMENTS,
+    # install_requires=REQUIREMENTS,
     dependency_links=[
         "git+https://www.github.com/keras-team/keras-contrib.git"
     ],
