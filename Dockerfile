@@ -1,4 +1,5 @@
-FROM nvidia/cuda:11.1-cudnn8-devel-ubuntu18.04
+ARG NVIDIA_CUDA_IMAGE=11.1-cudnn8-devel-ubuntu18.04
+FROM nvidia/cuda:$NVIDIA_CUDA_IMAGE
 
 SHELL [ "/bin/bash", "-c" ]
 
