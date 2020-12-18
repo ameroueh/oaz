@@ -12,8 +12,6 @@
 #include "stdint.h"
 
 namespace py = boost::python;
-namespace np = boost::python::numpy;
-
 namespace oaz::games {
 class TicTacToe : public Game {
    public:
@@ -40,7 +38,6 @@ class TicTacToe : public Game {
     }
 
     TicTacToe();
-    TicTacToe(np::ndarray input_board);
 
     void PlayFromString(std::string);
     void PlayMove(size_t);
@@ -50,7 +47,7 @@ class TicTacToe : public Game {
     float GetScore() const;
     void WriteStateToTensorMemory(float*) const;
     void WriteCanonicalStateToTensorMemory(float*) const;
-    void SetBoard(np::ndarray input_board) const;
+    void InitialiseStateFromMemory(float*);
     std::unique_ptr<Game> Clone() const;
 
     bool operator==(const TicTacToe&);

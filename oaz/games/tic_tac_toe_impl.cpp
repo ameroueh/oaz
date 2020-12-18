@@ -12,9 +12,6 @@ namespace np = boost::python::numpy;
 using namespace oaz::games;
 
 TicTacToe::TicTacToe() : m_status(0) {}
-TicTacToe::TicTacToe(np::ndarray input_board) : m_status(0) {
-    SetBoard(input_board);
-}
 
 void TicTacToe::PlayFromString(std::string moves) {
     for (char& c : moves) {
@@ -146,8 +143,8 @@ void TicTacToe::WriteCanonicalStateToTensorMemory(float* destination) const {
             tensor[i][j][1] = other_player_tokens.Get(i, j) ? 1. : 0.;
 }
 
-void TicTacToe::SetBoard(np::ndarray input_board) const {
-    // Need to fix player properly to take into account canonical stuff
+void TicTacToe::InitialiseStateFromMemory(float* input_board) {
+    // TODO should probably assume that the state given is canonical
     size_t player_0 = 0;
     size_t player_1 = 1;
 
@@ -156,18 +153,16 @@ void TicTacToe::SetBoard(np::ndarray input_board) const {
 
     player0_tokens = GetPlayerBoard(player_0);
     player1_tokens = GetPlayerBoard(player_1);
-    Py_intptr_t const* strides = input_board.get_strides();
-    double* input_ptr = reinterpret_cast<double*>(input_board.get_data());
     for (size_t i = 0; i != 3; ++i) {
         for (size_t j = 0; j != 3; ++j) {
-            double* data0 = input_ptr + i * strides[0] + j * strides[1];
-            double* data1 = input_ptr + i * strides[0] + j * strides[1] + strides[2];
-            if (*data0 == 1)
+            if (*(input_board + i + 3 * j) == 1)
                 player0_tokens.Set(i, j);
-            else if (*data1 == 1)
+            else if (*(input_board + i + 3 * j + 3 * 3) == 1)
                 player1_tokens.Set(i, j);
         }
     }
+    //TODO Implement
+    // CheckVictory();
 }
 
 size_t TicTacToe::GetState() const {

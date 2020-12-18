@@ -12,8 +12,6 @@
 #include "oaz/games/generic_game_map.hpp"
 #include "stdint.h"
 
-namespace np = boost::python::numpy;
-
 namespace oaz::games {
 class ConnectFour : public Game {
    public:
@@ -40,7 +38,6 @@ class ConnectFour : public Game {
     }
 
     ConnectFour();
-    ConnectFour(np::ndarray input_board);
 
     void PlayFromString(std::string);
     void PlayMove(size_t);
@@ -50,6 +47,7 @@ class ConnectFour : public Game {
     float GetScore() const;
     void WriteStateToTensorMemory(float*) const;
     void WriteCanonicalStateToTensorMemory(float*) const;
+    void InitialiseStateFromMemory(float*);
     std::unique_ptr<Game> Clone() const;
 
     bool operator==(const ConnectFour&) const;
@@ -69,6 +67,7 @@ class ConnectFour : public Game {
 
     bool CheckVictory(const Board&, size_t, size_t) const;
     bool CheckVictory(const Board&) const;
+
     bool CheckVerticalVictory(const Board&, size_t, size_t) const;
     bool CheckHorizontalVictory(const Board&, size_t, size_t) const;
     bool CheckDiagonalVictory1(const Board&, size_t, size_t) const;
@@ -76,11 +75,10 @@ class ConnectFour : public Game {
     bool Player0Won() const;
     bool Player1Won() const;
 
-    void MaybeEndGame(bool, size_t);
     void CheckVictory();
+    void MaybeEndGame(bool, size_t);
     void SetWinner(size_t);
     void DeclareFinished();
-    void SetBoard(np::ndarray input_board) const;
 
     Board m_player0_tokens;
     Board m_player1_tokens;
