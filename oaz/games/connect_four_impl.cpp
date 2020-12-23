@@ -1,13 +1,9 @@
 #include <algorithm>
 #include <bitset>
-#include <boost/python/numpy.hpp>
 #include <string>
 #include <vector>
 
 #include "oaz/games/connect_four.hpp"
-
-namespace py = boost::python;
-namespace np = boost::python::numpy;
 
 using namespace oaz::games;
 
@@ -192,16 +188,16 @@ void ConnectFour::InitialiseStateFromMemory(float* input_board) {
     size_t player_0 = 0;
     size_t player_1 = 1;
 
-    Board player0_tokens;
-    Board player1_tokens;
+    Board& player0_tokens = GetPlayerBoard(player_0);
+    Board& player1_tokens = GetPlayerBoard(player_1);
 
-    player0_tokens = GetPlayerBoard(player_0);
-    player1_tokens = GetPlayerBoard(player_1);
-    for (size_t i = 0; i != 6; ++i) {
-        for (size_t j = 0; j != 7; ++j) {
-            if (*(input_board + i + 6 * j) == 1)
+    boost::multi_array_ref<float, 3> data(input_board, boost::extents[6][7][2]);
+
+    for (int i = 0; i != 6; ++i) {
+        for (int j = 0; j != 7; ++j) {
+            if (data[i][j][0] == 1.0)
                 player0_tokens.Set(i, j);
-            else if (*(input_board + i + 6 * j + 6 * 7) == 1)
+            else if (data[i][j][1] == 1.0)
                 player1_tokens.Set(i, j);
         }
     }

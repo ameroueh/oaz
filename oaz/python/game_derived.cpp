@@ -2,7 +2,7 @@
 #error "GAME_CASS_NAME not defined!"
 #endif
 #ifndef GAME_HEADER
-#err or "GAME_HEADER not defined!"
+#error "GAME_HEADER not defined!"
 #endif
 #ifndef MODULE_NAME
 #error "MODULE_NAME not defined!"
@@ -25,8 +25,8 @@ namespace np = boost::python::numpy;
 
 using GameImpl = oaz::games::GAME_CLASS_NAME;
 
-GameImpl CreateGameFromNDArray(np::ndarray array) {
-    GameImpl game;
+static GameImpl CreateGameFromNDArray(np::ndarray array) {
+    GameImpl game = *(new GameImpl());
     game.InitialiseStateFromMemory(reinterpret_cast<float*>(array.get_data()));
     return game;
 }
@@ -67,6 +67,7 @@ BOOST_PYTHON_MODULE(MODULE_NAME) {
         p::bases<oaz::games::Game> >(XSTRINGIFY(GAME_CLASS_NAME))
         .def("play_move", &GameImpl::PlayMove)
         .def("from_numpy", &CreateGameFromNDArray)
+        .staticmethod("from_numpy")
         .add_property("current_player", &GameImpl::GetCurrentPlayer)
         .add_property("finished", &GameImpl::IsFinished)
         .add_property("score", &GameImpl::GetScore)

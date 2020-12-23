@@ -2,14 +2,15 @@ class Game:
     def __init__(self, core):
         self._core = core
 
-    # @classmethod
-    # def from_numpy(cls, board):
-    #     # if board.shape != cls.board.shape:
-    #     #     raise ValueError(
-    #     #         f"Board has shape {board.shape} Expected shape: "
-    #     #         f"{cls.board.shape}"
-    #     #     )
-    #     cls()._core.from_numpy(board)
+    @classmethod
+    def from_numpy(cls, board):
+        game = cls()
+        if board.shape != game.board.shape:
+            raise ValueError(
+                f"Board has shape {board.shape} Expected shape: "
+                f"{game.board.shape}"
+            )
+        return game._core.from_numpy(board)
 
     def play_move(self, move):
         if move not in self.available_moves:
@@ -57,5 +58,5 @@ def game_constructor_factory(core_class):
 
 def game_factory(core_class, name):
     return type(
-        name, (Game,), {"__init__": game_constructor_factory(core_class)}
+        name, (Game,), {"__init__": game_constructor_factory(core_class),},
     )

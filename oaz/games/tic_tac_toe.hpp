@@ -61,7 +61,10 @@ class TicTacToe : public Game {
 
     const Board& GetPlayerBoard(size_t) const;
     Board& GetPlayerBoard(size_t);
-    bool CheckVictory(Board&, size_t, size_t) const;
+    bool CheckVictory(const Board&, size_t, size_t) const;
+    bool CheckVictory(const Board&) const;
+    void CheckVictory();
+    void MaybeEndGame(bool, size_t);
     void SetWinner(size_t);
     void DeclareFinished();
     bool Player0Won() const;

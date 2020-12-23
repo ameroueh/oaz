@@ -1,13 +1,9 @@
 #include <algorithm>
-#include <boost/python/numpy.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "oaz/games/tic_tac_toe.hpp"
-
-namespace py = boost::python;
-namespace np = boost::python::numpy;
 
 using namespace oaz::games;
 
@@ -27,7 +23,10 @@ void TicTacToe::PlayMove(size_t move) {
     Board& board = GetPlayerBoard(player);
     board.Set(row, column);
     bool victory = CheckVictory(board, row, column);
+    MaybeEndGame(victory, player);
+}
 
+void TicTacToe::MaybeEndGame(bool victory, size_t player) {
     if (victory) {
         SetWinner(player);
         DeclareFinished();
@@ -47,7 +46,7 @@ TicTacToe::Board& TicTacToe::GetPlayerBoard(size_t player) {
     return const_cast<Board&>(static_cast<const TicTacToe&>(*this).GetPlayerBoard(player));
 }
 
-bool TicTacToe::CheckVictory(Board& board, size_t row, size_t column) const {
+bool TicTacToe::CheckVictory(const Board& board, size_t row, size_t column) const {
     if ((board.RowSum(row) == 3) || (board.ColumnSum(column) == 3)) {
         return true;
     }
@@ -58,6 +57,27 @@ bool TicTacToe::CheckVictory(Board& board, size_t row, size_t column) const {
         return true;
     }
     return false;
+}
+
+bool TicTacToe::CheckVictory(const Board& board) const {
+    bool victory = false;
+    for (size_t i = 0; i != 3; ++i)
+        for (size_t j = 0; j != 3; ++j)
+            if (board.Get(i, j)) {
+                victory = CheckVictory(board, i, j);
+                if (victory)
+                    return victory;
+            }
+    return victory;
+}
+
+void TicTacToe::CheckVictory() {
+    const Board& player0_tokens = GetPlayerBoard(0);
+    bool victory0 = CheckVictory(player0_tokens);
+    MaybeEndGame(victory0, 0);
+    const Board& player1_tokens = GetPlayerBoard(1);
+    bool victory1 = CheckVictory(player1_tokens);
+    MaybeEndGame(victory1, 1);
 }
 
 void TicTacToe::SetWinner(size_t player) {
@@ -148,21 +168,20 @@ void TicTacToe::InitialiseStateFromMemory(float* input_board) {
     size_t player_0 = 0;
     size_t player_1 = 1;
 
-    Board player0_tokens;
-    Board player1_tokens;
+    Board& player0_tokens = GetPlayerBoard(player_0);
+    Board& player1_tokens = GetPlayerBoard(player_1);
 
-    player0_tokens = GetPlayerBoard(player_0);
-    player1_tokens = GetPlayerBoard(player_1);
+    boost::multi_array_ref<float, 3> data(input_board, boost::extents[3][3][2]);
+
     for (size_t i = 0; i != 3; ++i) {
         for (size_t j = 0; j != 3; ++j) {
-            if (*(input_board + i + 3 * j) == 1)
+            if (data[i][j][0] == 1.0)
                 player0_tokens.Set(i, j);
-            else if (*(input_board + i + 3 * j + 3 * 3) == 1)
+            else if (data[i][j][1] == 1.0)
                 player1_tokens.Set(i, j);
         }
     }
-    //TODO Implement
-    // CheckVictory();
+    CheckVictory();
 }
 
 size_t TicTacToe::GetState() const {

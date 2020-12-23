@@ -9,7 +9,6 @@ namespace oaz::games {
 
 class Game {
    public:
-    Game();
     class GameMap {
        public:
         virtual bool Get(const Game&, size_t&) const = 0;
