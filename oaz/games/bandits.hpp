@@ -2,7 +2,6 @@
 #define __BANDITS_HPP__
 
 #include <bitset>
-#include <boost/python/numpy.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -11,8 +10,6 @@
 #include "oaz/games/game.hpp"
 #include "oaz/games/generic_game_map.hpp"
 #include "stdint.h"
-
-namespace py = boost::python;
 
 namespace oaz::games {
 class Bandits : public Game {

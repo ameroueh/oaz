@@ -1,7 +1,6 @@
 #ifndef __TIC_TAC_TOE_HPP__
 #define __TIC_TAC_TOE_HPP__
 
-#include <boost/python/numpy.hpp>
 #include <string>
 #include <vector>
 
@@ -11,7 +10,6 @@
 #include "oaz/games/generic_game_map.hpp"
 #include "stdint.h"
 
-namespace py = boost::python;
 namespace oaz::games {
 class TicTacToe : public Game {
    public:

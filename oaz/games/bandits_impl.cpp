@@ -55,6 +55,10 @@ void Bandits::WriteStateToTensorMemory(float* destination) const {
         tensor[i] = m_board.test(i) ? 1. : 0.;
 }
 
+void Bandits::WriteCanonicalStateToTensorMemory(float* destination) const {
+    WriteStateToTensorMemory(destination);
+}
+
 void Bandits::InitialiseStateFromMemory(float* input_board) {
     boost::multi_array_ref<float, 1> data(input_board, boost::extents[10]);
 
