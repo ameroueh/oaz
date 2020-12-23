@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.13)
+cmake_minimum_required (VERSION 3.19)
 project (oaz)
 
 ### DEPENDENCIES ###
@@ -43,9 +43,14 @@ execute_process(
 )
 find_package(PythonInterp 3 REQUIRED)
 find_package(PythonLibs 3 REQUIRED)
+set(Python3_FIND_VIRTUALENV "ONLY")
+set(Python3_FIND_STRATEGY "LOCATION")
+# message( "Variable is ${Python3_FIND_VIRTUALENV}")
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(PythonLibs 3 REQUIRED)
 set(
 	BOOST_PYTHON_VERSION_SUFFIX
-	"${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}"
+	"${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}"
 
 )
 
@@ -57,6 +62,18 @@ find_package(
 	numpy${BOOST_PYTHON_VERSION_SUFFIX}
 )
 find_package(SWIG REQUIRED COMPONENTS python)
+# execute_process(
+# 	COMMAND 
+# 	python -m pybind11 --includes 
+# 	COMMAND
+# 	sed -e "s#-I##g"
+# 	COMMAND
+# 	sed -e "s# #;#g"
+# 	OUTPUT_VARIABLE
+# 	pybind11_INCLUDE_DIRS
+# )
+set(pybind11_INCLUDE_DIRS "")
+message("pybind11_INCLUDE_DIRS ${pybind11_INCLUDE_DIRS}")
 # find_package(Threads REQUIRED)
 
 set(TensorFlow_BUILD_DIR $ENV{TENSORFLOW_DIR}/bazel-bin/tensorflow)
@@ -174,6 +191,16 @@ target_include_directories(
 	${SWIG_DIR}
 )
 
+add_library(
+	pybind11
+	INTERFACE
+)
+target_include_directories(
+	pybind11
+	INTERFACE
+	${pybind11_INCLUDE_DIRS}
+)
+
 ### PYTHON MODULES ###
 
 python_add_module(thread_pool oaz/python/thread_pool.cpp)
@@ -192,7 +219,7 @@ python_add_module(search oaz/python/search.cpp)
 target_link_libraries(search oaz_python_module)
 
 python_add_module(nn_evaluator oaz/python/nn_evaluator.cpp)
-target_link_libraries(nn_evaluator oaz_python_module tensorflow swig)
+target_link_libraries(nn_evaluator oaz_python_module tensorflow swig pybind11)
 
 python_add_module(game oaz/python/game.cpp)
 target_link_libraries(game oaz_python_module)

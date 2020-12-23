@@ -33,7 +33,7 @@ class Tournament:
         n_games: int = 10,
         prioritised_participant: Participant = None,
     ) -> np.ndarray:
-        """ Start a tournament. Each participant plays against every other
+        """Start a tournament. Each participant plays against every other
             participant and tally of wins and losses is returned. If a
             prioritised participant is provided, only play games that involve
             that participant.

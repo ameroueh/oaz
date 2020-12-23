@@ -4,3 +4,8 @@ pytest
 logzero
 black==19.10b0
 flake8==3.8.3
+pandas
+joblib
+matplotlib
+pybind11==2.4.3
+git+https://www.github.com/keras-team/keras-contrib.git

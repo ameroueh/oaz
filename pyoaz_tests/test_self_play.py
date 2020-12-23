@@ -2,7 +2,7 @@
 
 import os
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from pyoaz.models import create_connect_four_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.games.connect_four import ConnectFour
