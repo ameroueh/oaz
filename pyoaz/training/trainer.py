@@ -13,19 +13,22 @@ import tensorflow.compat.v1.keras.backend as K
 import toml
 from keras_contrib.callbacks import CyclicLR
 from logzero import setup_logger
+from tensorflow.keras.models import load_model
 
 # from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.memory import MemoryBuffer
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.training.utils import (
+    compute_entropy,
     get_gt_values,
     load_benchmark,
+    play_best_self,
     play_tournament,
     running_mean,
-    play_best_self,
 )
 from tensorflow.compat.v1.keras.models import load_model
+
 
 tf.disable_v2_behavior()
 
@@ -156,6 +159,8 @@ class Trainer:
             )
 
             dataset = self.perform_self_play(stage_params, debug_mode)
+            entropy = compute_entropy(dataset["Policies"])
+            self.history["mcts_entropy"].append(entropy)
             self.memory.update(dataset, logger=self.logger)
             train_history = self.update_model(stage_params)
 
@@ -462,6 +467,16 @@ class Trainer:
         import matplotlib.pyplot as plt
 
         joblib.dump(self.history, self.save_path / "history.joblib")
+
+        plt.figure()
+        plt.hist(self.history["mcts_entropy"][-1], label="entropies")
+        plt.legend()
+        plot_path = (
+            self.save_path / "mcts_entropy_gen_"
+            f"{len(self.history['mcts_entropy'])}.png"
+        )
+        plt.savefig(plot_path)
+        plt.close()
 
         plt.figure()
         plt.plot(self.history["mse"], alpha=0.5, label="MSE")
