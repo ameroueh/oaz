@@ -26,7 +26,7 @@ namespace np = boost::python::numpy;
 using GameImpl = oaz::games::GAME_CLASS_NAME;
 
 static GameImpl CreateGameFromNDArray(np::ndarray array) {
-    GameImpl game = *(new GameImpl());
+    GameImpl game;
     game.InitialiseStateFromMemory(reinterpret_cast<float*>(array.get_data()));
     return game;
 }

@@ -154,6 +154,28 @@ TEST(WriteCanonicalStateToTensorMemory, Default) {
         }
 }
 
+TEST(InitialiseStateFromMemory, Default) {
+    TicTacToe game;
+    boost::multi_array<float, 3> test_board(boost::extents[3][3][2]);
+    test_board[0][0][0] = 1.0;
+    test_board[1][0][1] = 1.0;
+    game.InitialiseStateFromMemory(test_board.origin());
+
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteStateToTensorMemory(tensor.origin());
+    for (size_t i = 0; i != 3; ++i)
+        for (size_t j = 0; j != 3; ++j) {
+            if (i == 0 && j == 0)
+                ASSERT_EQ(tensor[i][j][0], 1.0);
+            else if (i == 1 && j == 0)
+                ASSERT_EQ(tensor[i][j][1], 1.);
+            else {
+                ASSERT_EQ(tensor[i][j][0], 0.);
+                ASSERT_EQ(tensor[i][j][1], 0.);
+            }
+        }
+}
+
 TEST(GameMap, Instantiation) {
     TicTacToe game;
     std::unique_ptr<oaz::games::Game::GameMap> game_map(
