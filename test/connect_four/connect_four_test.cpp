@@ -1,6 +1,7 @@
 #include "oaz/games/connect_four.hpp"
 
 #include <algorithm>
+#include <boost/multi_array.hpp>
 #include <string>
 
 #include "gmock/gmock.h"
@@ -151,6 +152,35 @@ TEST(WriteCanonicalStateToTensorMemory, Default) {
             else
                 ASSERT_EQ(tensor[i][j][1], 0.);
             ASSERT_EQ(tensor[i][j][0], 0.);
+        }
+}
+
+TEST(InitialiseStateFromMemory, Default) {
+    ConnectFour game;
+
+    // Want to try and build an array float test_board[6 * 7 * 2] = {0};
+    float test_board[6 * 7 * 2] = {0};
+    float* p;
+    p = test_board;
+
+    // Why does the following work? Why +1 and not +0? Why can't I get the other indices to work?
+    *(p + 1) = 1.0;
+    // *(p + 2) = 1.0;
+    // test_board[0] = 1.0;
+    game.InitialiseStateFromMemory(test_board);
+
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteCanonicalStateToTensorMemory(tensor.origin());
+    for (size_t i = 0; i != 6; ++i)
+        for (size_t j = 0; j != 7; ++j) {
+            if (i == 0 && j == 0)
+                ASSERT_EQ(tensor[i][j][0], 1.);
+            // else if (i == 0 && j == 0)
+            // ASSERT_EQ(tensor[i][j][1], 1.);
+            else {
+                ASSERT_EQ(tensor[i][j][0], 0.);
+                ASSERT_EQ(tensor[i][j][1], 0.);
+            }
         }
 }
 
