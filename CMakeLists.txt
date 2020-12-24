@@ -45,7 +45,6 @@ find_package(PythonInterp 3 REQUIRED)
 find_package(PythonLibs 3 REQUIRED)
 set(Python3_FIND_VIRTUALENV "ONLY")
 set(Python3_FIND_STRATEGY "LOCATION")
-# message( "Variable is ${Python3_FIND_VIRTUALENV}")
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(PythonLibs 3 REQUIRED)
 set(
@@ -74,7 +73,6 @@ find_package(SWIG REQUIRED COMPONENTS python)
 # )
 set(pybind11_INCLUDE_DIRS "")
 message("pybind11_INCLUDE_DIRS ${pybind11_INCLUDE_DIRS}")
-# find_package(Threads REQUIRED)
 
 set(TensorFlow_BUILD_DIR $ENV{TENSORFLOW_DIR}/bazel-bin/tensorflow)
 set(TensorFlow_SOURCE_DIR $ENV{TENSORFLOW_DIR})
@@ -324,6 +322,9 @@ target_link_libraries(queue_test oaz_base oaz_test)
 add_executable(tensorflow_test test/tensorflow/tensorflow_test.cpp)
 target_link_libraries(tensorflow_test tensorflow_with_cc_library oaz_test)
 
+add_executable(tensorflow_eager_test test/tensorflow/tensorflow_eager_test.cpp)
+target_link_libraries(tensorflow_eager_test oaz_base tensorflow_with_cc_library oaz_test)
+
 add_executable(json_test test/json/json_test.cpp)
 target_link_libraries(json_test oaz_base oaz_test)
 
@@ -356,6 +357,7 @@ add_dependencies(
 	tensorflow_test
 	nn_evaluator_test
 	simple_cache_test
+	tensorflow_eager_test
 )
 
 enable_testing()
