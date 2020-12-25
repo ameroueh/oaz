@@ -177,6 +177,45 @@ TEST(InitialiseStateFromMemory, Default) {
         }
 }
 
+TEST(InitialiseStateFromMemory, CheckBoardCopy) {
+    ConnectFour game;
+    game.PlayMove(0);
+    game.PlayMove(5);
+    game.PlayMove(1);
+    game.PlayMove(0);
+    game.PlayMove(0);
+    game.PlayMove(5);
+    game.PlayMove(5);
+
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteStateToTensorMemory(tensor.origin());
+
+    ConnectFour game2;
+    game2.InitialiseStateFromMemory(tensor.origin());
+    ASSERT_TRUE(game == game2);
+}
+
+TEST(InitialiseStateFromMemory, CheckBoardCopy2) {
+    ConnectFour game;
+    game.PlayMove(0);
+    game.PlayMove(5);
+    game.PlayMove(1);
+    game.PlayMove(0);
+    game.PlayMove(0);
+    game.PlayMove(5);
+    game.PlayMove(5);
+
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteStateToTensorMemory(tensor.origin());
+
+    ConnectFour game2;
+    game2.InitialiseStateFromMemory(tensor.origin());
+
+    game.PlayMove(5);
+
+    ASSERT_FALSE(game == game2);
+}
+
 TEST(GameMap, Instantiation) {
     ConnectFour game;
     std::unique_ptr<oaz::games::Game::GameMap> game_map(
