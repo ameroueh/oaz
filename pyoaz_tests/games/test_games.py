@@ -16,6 +16,8 @@ def test_bandits():
     board2 = game2.board
     np.testing.assert_array_equal(board, board2)
 
+
+def test_connect_four():
     game = ConnectFour()
     game.play_move(1)
     game.play_move(2)
