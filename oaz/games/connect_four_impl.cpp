@@ -195,9 +195,9 @@ void ConnectFour::InitialiseStateFromMemory(float* input_board) {
 
     for (int i = 0; i != 6; ++i) {
         for (int j = 0; j != 7; ++j) {
-            if (data[i][j][0] == 1.0)
+            if (data[i][j][0] == 1.0f)
                 player0_tokens.Set(i, j);
-            else if (data[i][j][1] == 1.0)
+            else if (data[i][j][1] == 1.0f)
                 player1_tokens.Set(i, j);
         }
     }

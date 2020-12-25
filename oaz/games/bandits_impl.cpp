@@ -63,7 +63,7 @@ void Bandits::InitialiseStateFromMemory(float* input_board) {
     boost::multi_array_ref<float, 1> data(input_board, boost::extents[10]);
 
     for (size_t i = 0; i != 10; ++i) {
-        if (data[i] == 1)
+        if (data[i] == 1.0f)
             m_board.set(i);
     }
     //TODO Check victory
