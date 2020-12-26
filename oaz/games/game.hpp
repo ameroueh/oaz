@@ -33,7 +33,8 @@ class Game {
     virtual bool IsFinished() const = 0;
     virtual void WriteStateToTensorMemory(float*) const = 0;
     virtual void WriteCanonicalStateToTensorMemory(float*) const = 0;
-    virtual void InitialiseStateFromMemory(float*) = 0;
+    virtual void InitialiseFromState(float*) = 0;
+    virtual void InitialiseFromCanonicalState(float*) = 0;
     virtual std::unique_ptr<Game> Clone() const = 0;
 
     virtual ~Game(){};

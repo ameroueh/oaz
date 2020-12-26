@@ -183,7 +183,7 @@ void ConnectFour::WriteCanonicalStateToTensorMemory(float* destination) const {
             tensor[i][j][1] = other_player_tokens.Get(i, j) ? 1. : 0.;
 }
 
-void ConnectFour::InitialiseStateFromMemory(float* input_board) {
+void ConnectFour::InitialiseFromState(float* input_board) {
     // TODO should probably assume that the state given is canonical
     size_t player_0 = 0;
     size_t player_1 = 1;
@@ -199,6 +199,36 @@ void ConnectFour::InitialiseStateFromMemory(float* input_board) {
                 player0_tokens.Set(i, j);
             else if (data[i][j][1] == 1.0f)
                 player1_tokens.Set(i, j);
+        }
+    }
+    CheckVictory();
+}
+
+void ConnectFour::InitialiseFromCanonicalState(float* input_board) {
+    // TODO should probably assume that the state given is canonical
+    boost::multi_array_ref<float, 3> data(input_board, boost::extents[6][7][2]);
+
+    float current_player_count = 0.0;
+    float other_player_count = 0.0;
+    for (size_t i = 0; i != 6; ++i) {
+        for (size_t j = 0; j != 7; ++j) {
+            current_player_count += data[i][j][0];
+            other_player_count += data[i][j][1];
+        }
+    }
+
+    int current_player = current_player_count == other_player_count ? 0 : 1;
+    int other_player = 1 - current_player;
+
+    Board& current_player_tokens = GetPlayerBoard(current_player);
+    Board& other_player_tokens = GetPlayerBoard(other_player);
+
+    for (size_t i = 0; i != 6; ++i) {
+        for (size_t j = 0; j != 7; ++j) {
+            if (data[i][j][0] == 1.0f)
+                current_player_tokens.Set(i, j);
+            else if (data[i][j][1] == 1.0f)
+                other_player_tokens.Set(i, j);
         }
     }
     CheckVictory();

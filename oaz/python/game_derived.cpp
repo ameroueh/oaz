@@ -27,7 +27,7 @@ using GameImpl = oaz::games::GAME_CLASS_NAME;
 
 static GameImpl CreateGameFromNDArray(np::ndarray array) {
     GameImpl game;
-    game.InitialiseStateFromMemory(reinterpret_cast<float*>(array.get_data()));
+    game.InitialiseFromState(reinterpret_cast<float*>(array.get_data()));
     return game;
 }
 
