@@ -3,13 +3,15 @@ class Game:
         self._core = core
 
     @classmethod
-    def from_numpy(cls, board):
+    def from_numpy(cls, board, is_canonical=True):
         game = cls()
         if board.shape != game.board.shape:
             raise ValueError(
                 f"Board has shape {board.shape} Expected shape: "
                 f"{game.board.shape}"
             )
+        if is_canonical:
+            return game._core.from_numpy_canonical(board)
         return game._core.from_numpy(board)
 
     def play_move(self, move):
@@ -58,5 +60,5 @@ def game_constructor_factory(core_class):
 
 def game_factory(core_class, name):
     return type(
-        name, (Game,), {"__init__": game_constructor_factory(core_class),},
+        name, (Game,), {"__init__": game_constructor_factory(core_class)}
     )

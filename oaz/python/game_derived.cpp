@@ -31,6 +31,12 @@ static GameImpl CreateGameFromNDArray(np::ndarray array) {
     return game;
 }
 
+static GameImpl CreateGameFromNDArrayCanonical(np::ndarray array) {
+    GameImpl game;
+    game.InitialiseFromCanonicalState(reinterpret_cast<float*>(array.get_data()));
+    return game;
+}
+
 p::list GetAvailableMoves(GameImpl& game) {
     p::list l;
     std::vector<size_t> available_moves;
@@ -68,6 +74,8 @@ BOOST_PYTHON_MODULE(MODULE_NAME) {
         .def("play_move", &GameImpl::PlayMove)
         .def("from_numpy", &CreateGameFromNDArray)
         .staticmethod("from_numpy")
+        .def("from_numpy_canonical", &CreateGameFromNDArrayCanonical)
+        .staticmethod("from_numpy_canonical")
         .add_property("current_player", &GameImpl::GetCurrentPlayer)
         .add_property("finished", &GameImpl::IsFinished)
         .add_property("score", &GameImpl::GetScore)

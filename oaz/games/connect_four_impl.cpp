@@ -184,7 +184,6 @@ void ConnectFour::WriteCanonicalStateToTensorMemory(float* destination) const {
 }
 
 void ConnectFour::InitialiseFromState(float* input_board) {
-    // TODO should probably assume that the state given is canonical
     size_t player_0 = 0;
     size_t player_1 = 1;
 
@@ -205,7 +204,6 @@ void ConnectFour::InitialiseFromState(float* input_board) {
 }
 
 void ConnectFour::InitialiseFromCanonicalState(float* input_board) {
-    // TODO should probably assume that the state given is canonical
     boost::multi_array_ref<float, 3> data(input_board, boost::extents[6][7][2]);
 
     float current_player_count = 0.0;
