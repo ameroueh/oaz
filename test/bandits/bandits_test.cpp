@@ -81,11 +81,11 @@ TEST(WriteCanonicalStateToTensorMemory, Default) {
             ASSERT_EQ(tensor[i], 0.);
 }
 
-TEST(InitialiseStateFromMemory, Default) {
+TEST(InitialiseFromState, Default) {
     Bandits game;
     boost::multi_array<float, 1> test_board(boost::extents[10]);
     test_board[0] = 1.0f;
-    game.InitialiseStateFromMemory(test_board.origin());
+    game.InitialiseFromState(test_board.origin());
 
     boost::multi_array<float, 1> tensor(boost::extents[10]);
     game.WriteStateToTensorMemory(tensor.origin());
@@ -97,7 +97,7 @@ TEST(InitialiseStateFromMemory, Default) {
     }
 }
 
-TEST(InitialiseStateFromMemory, CheckBoardCopy) {
+TEST(InitialiseFromState, CheckBoardCopy) {
     Bandits game;
     game.PlayMove(0);
     game.PlayMove(1);
@@ -107,11 +107,11 @@ TEST(InitialiseStateFromMemory, CheckBoardCopy) {
     game.WriteStateToTensorMemory(tensor.origin());
 
     Bandits game2;
-    game2.InitialiseStateFromMemory(tensor.origin());
+    game2.InitialiseFromState(tensor.origin());
     ASSERT_TRUE(game == game2);
 }
 
-TEST(InitialiseStateFromMemory, CheckBoardCopy2) {
+TEST(InitialiseFromState, CheckBoardCopy2) {
     Bandits game;
     game.PlayMove(0);
     game.PlayMove(1);
@@ -121,8 +121,46 @@ TEST(InitialiseStateFromMemory, CheckBoardCopy2) {
     game.WriteStateToTensorMemory(tensor.origin());
     game.PlayMove(3);
     Bandits game2;
-    game2.InitialiseStateFromMemory(tensor.origin());
+    game2.InitialiseFromState(tensor.origin());
     ASSERT_FALSE(game == game2);
+}
+
+TEST(InitialiseFromCanonicalState, Default) {
+    Bandits game;
+    boost::multi_array<float, 1> test_board(boost::extents[10]);
+    test_board[0] = 1.0;
+    test_board[1] = 1.0;
+    test_board[2] = 1.0;
+    game.InitialiseFromCanonicalState(test_board.origin());
+
+    boost::multi_array<float, 1> tensor(boost::extents[10]);
+    game.WriteCanonicalStateToTensorMemory(tensor.origin());
+    for (size_t i = 0; i != 3; ++i)
+        if (i == 0)
+            ASSERT_EQ(tensor[i], 1.0f);
+        else if (i == 1)
+            ASSERT_EQ(tensor[i], 1.0f);
+        else if (i == 2)
+            ASSERT_EQ(tensor[i], 1.0f);
+        else {
+            ASSERT_EQ(tensor[i], 0.0f);
+            ASSERT_EQ(tensor[i], 0.0f);
+        }
+}
+
+TEST(InitialiseFromCanonicalState, CheckBoardCopy) {
+    Bandits game;
+    game.PlayMove(0);
+    game.PlayMove(1);
+    game.PlayMove(2);
+
+    boost::multi_array<float, 1> tensor(boost::extents[10]);
+    game.WriteCanonicalStateToTensorMemory(tensor.origin());
+
+    Bandits game2;
+    game2.InitialiseFromCanonicalState(tensor.origin());
+
+    ASSERT_TRUE(game == game2);
 }
 
 TEST(GameMap, Instantiation) {

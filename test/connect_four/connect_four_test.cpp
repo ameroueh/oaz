@@ -155,12 +155,12 @@ TEST(WriteCanonicalStateToTensorMemory, Default) {
         }
 }
 
-TEST(InitialiseStateFromMemory, Default) {
+TEST(InitialiseFromState, Default) {
     ConnectFour game;
     boost::multi_array<float, 3> test_board(boost::extents[6][7][2]);
     test_board[0][0][0] = 1.0;
     test_board[1][0][1] = 1.0;
-    game.InitialiseStateFromMemory(test_board.origin());
+    game.InitialiseFromState(test_board.origin());
 
     boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
     game.WriteStateToTensorMemory(tensor.origin());
@@ -177,7 +177,7 @@ TEST(InitialiseStateFromMemory, Default) {
         }
 }
 
-TEST(InitialiseStateFromMemory, CheckBoardCopy) {
+TEST(InitialiseFromState, CheckBoardCopy) {
     ConnectFour game;
     game.PlayMove(0);
     game.PlayMove(5);
@@ -191,11 +191,11 @@ TEST(InitialiseStateFromMemory, CheckBoardCopy) {
     game.WriteStateToTensorMemory(tensor.origin());
 
     ConnectFour game2;
-    game2.InitialiseStateFromMemory(tensor.origin());
+    game2.InitialiseFromState(tensor.origin());
     ASSERT_TRUE(game == game2);
 }
 
-TEST(InitialiseStateFromMemory, CheckBoardCopy2) {
+TEST(InitialiseFromState, CheckBoardCopy2) {
     ConnectFour game;
     game.PlayMove(0);
     game.PlayMove(5);
@@ -209,9 +209,72 @@ TEST(InitialiseStateFromMemory, CheckBoardCopy2) {
     game.WriteStateToTensorMemory(tensor.origin());
 
     ConnectFour game2;
-    game2.InitialiseStateFromMemory(tensor.origin());
+    game2.InitialiseFromState(tensor.origin());
 
     game.PlayMove(5);
+
+    ASSERT_FALSE(game == game2);
+}
+
+TEST(InitialiseFromCanonicalState, Default) {
+    ConnectFour game;
+    boost::multi_array<float, 3> test_board(boost::extents[6][7][2]);
+    test_board[0][0][0] = 1.0;
+    test_board[1][0][1] = 1.0;
+    test_board[2][0][0] = 1.0;
+    game.InitialiseFromCanonicalState(test_board.origin());
+
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteCanonicalStateToTensorMemory(tensor.origin());
+    for (size_t i = 0; i != 6; ++i)
+        for (size_t j = 0; j != 7; ++j) {
+            if (i == 0 && j == 0)
+                ASSERT_EQ(tensor[i][j][0], 1.0f);
+            else if (i == 1 && j == 0)
+                ASSERT_EQ(tensor[i][j][1], 1.0f);
+            else if (i == 2 && j == 0)
+                ASSERT_EQ(tensor[i][j][0], 1.0f);
+            else {
+                ASSERT_EQ(tensor[i][j][0], 0.0f);
+                ASSERT_EQ(tensor[i][j][1], 0.0f);
+            }
+        }
+}
+
+TEST(InitialiseFromCanonicalState, CheckBoardCopy) {
+    ConnectFour game;
+    game.PlayMove(0);
+    game.PlayMove(5);
+    game.PlayMove(1);
+    game.PlayMove(0);
+    game.PlayMove(0);
+    game.PlayMove(5);
+    game.PlayMove(5);
+
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteCanonicalStateToTensorMemory(tensor.origin());
+
+    ConnectFour game2;
+    game2.InitialiseFromCanonicalState(tensor.origin());
+
+    ASSERT_TRUE(game == game2);
+}
+
+TEST(InitialiseFromCanonicalState, CheckBoardCopy2) {
+    ConnectFour game;
+    game.PlayMove(0);
+    game.PlayMove(5);
+    game.PlayMove(1);
+    game.PlayMove(0);
+    game.PlayMove(0);
+    game.PlayMove(5);
+    game.PlayMove(5);
+
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteStateToTensorMemory(tensor.origin());
+
+    ConnectFour game2;
+    game2.InitialiseFromCanonicalState(tensor.origin());
 
     ASSERT_FALSE(game == game2);
 }
