@@ -179,13 +179,7 @@ TEST(InitialiseFromState, Default) {
 
 TEST(InitialiseFromState, CheckBoardCopy) {
     ConnectFour game;
-    game.PlayMove(0);
-    game.PlayMove(5);
-    game.PlayMove(1);
-    game.PlayMove(0);
-    game.PlayMove(0);
-    game.PlayMove(5);
-    game.PlayMove(5);
+    game.PlayFromString("0510055");
 
     boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
     game.WriteStateToTensorMemory(tensor.origin());
@@ -197,13 +191,7 @@ TEST(InitialiseFromState, CheckBoardCopy) {
 
 TEST(InitialiseFromState, CheckBoardCopy2) {
     ConnectFour game;
-    game.PlayMove(0);
-    game.PlayMove(5);
-    game.PlayMove(1);
-    game.PlayMove(0);
-    game.PlayMove(0);
-    game.PlayMove(5);
-    game.PlayMove(5);
+    game.PlayFromString("0510055");
 
     boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
     game.WriteStateToTensorMemory(tensor.origin());
@@ -243,13 +231,7 @@ TEST(InitialiseFromCanonicalState, Default) {
 
 TEST(InitialiseFromCanonicalState, CheckBoardCopy) {
     ConnectFour game;
-    game.PlayMove(0);
-    game.PlayMove(5);
-    game.PlayMove(1);
-    game.PlayMove(0);
-    game.PlayMove(0);
-    game.PlayMove(5);
-    game.PlayMove(5);
+    game.PlayFromString("0510055");
 
     boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
     game.WriteCanonicalStateToTensorMemory(tensor.origin());
@@ -262,13 +244,7 @@ TEST(InitialiseFromCanonicalState, CheckBoardCopy) {
 
 TEST(InitialiseFromCanonicalState, CheckBoardCopy2) {
     ConnectFour game;
-    game.PlayMove(0);
-    game.PlayMove(5);
-    game.PlayMove(1);
-    game.PlayMove(0);
-    game.PlayMove(0);
-    game.PlayMove(5);
-    game.PlayMove(5);
+    game.PlayFromString("0510055");
 
     boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
     game.WriteStateToTensorMemory(tensor.origin());

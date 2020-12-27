@@ -178,11 +178,7 @@ TEST(InitialiseFromState, Default) {
 
 TEST(InitialiseFromState, CheckBoardCopy) {
     TicTacToe game;
-    game.PlayMove(0);
-    game.PlayMove(1);
-    game.PlayMove(2);
-    game.PlayMove(3);
-    game.PlayMove(4);
+    game.PlayFromString("01234");
 
     boost::multi_array<float, 3> tensor(boost::extents[3][3][2]);
     game.WriteStateToTensorMemory(tensor.origin());
@@ -194,11 +190,7 @@ TEST(InitialiseFromState, CheckBoardCopy) {
 
 TEST(InitialiseFromState, CheckBoardCopy2) {
     TicTacToe game;
-    game.PlayMove(0);
-    game.PlayMove(1);
-    game.PlayMove(2);
-    game.PlayMove(3);
-    game.PlayMove(4);
+    game.PlayFromString("01234");
 
     boost::multi_array<float, 3> tensor(boost::extents[3][3][2]);
     game.WriteStateToTensorMemory(tensor.origin());

@@ -99,9 +99,7 @@ TEST(InitialiseFromState, Default) {
 
 TEST(InitialiseFromState, CheckBoardCopy) {
     Bandits game;
-    game.PlayMove(0);
-    game.PlayMove(1);
-    game.PlayMove(2);
+    game.PlayFromString("0123");
 
     boost::multi_array<float, 1> tensor(boost::extents[10]);
     game.WriteStateToTensorMemory(tensor.origin());
@@ -109,20 +107,6 @@ TEST(InitialiseFromState, CheckBoardCopy) {
     Bandits game2;
     game2.InitialiseFromState(tensor.origin());
     ASSERT_TRUE(game == game2);
-}
-
-TEST(InitialiseFromState, CheckBoardCopy2) {
-    Bandits game;
-    game.PlayMove(0);
-    game.PlayMove(1);
-    game.PlayMove(2);
-
-    boost::multi_array<float, 1> tensor(boost::extents[10]);
-    game.WriteStateToTensorMemory(tensor.origin());
-    game.PlayMove(3);
-    Bandits game2;
-    game2.InitialiseFromState(tensor.origin());
-    ASSERT_FALSE(game == game2);
 }
 
 TEST(InitialiseFromCanonicalState, Default) {
@@ -150,9 +134,7 @@ TEST(InitialiseFromCanonicalState, Default) {
 
 TEST(InitialiseFromCanonicalState, CheckBoardCopy) {
     Bandits game;
-    game.PlayMove(0);
-    game.PlayMove(1);
-    game.PlayMove(2);
+    game.PlayFromString("0123");
 
     boost::multi_array<float, 1> tensor(boost::extents[10]);
     game.WriteCanonicalStateToTensorMemory(tensor.origin());
