@@ -55,6 +55,6 @@ experiments/*.txt
 
 # File used to customise bash on startup, 
 # see https://gist.github.com/scmx/242caa249b0ea343e2588adea14479e6
-.docker-ptompt
+.docker-prompt
 
 
