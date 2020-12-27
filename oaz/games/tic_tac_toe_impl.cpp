@@ -9,6 +9,10 @@ using namespace oaz::games;
 
 TicTacToe::TicTacToe() : m_status(0) {}
 
+void TicTacToe::Reset() {
+    *this = TicTacToe();
+}
+
 void TicTacToe::PlayFromString(std::string moves) {
     for (char& c : moves) {
         PlayMove(c - '0');
@@ -164,6 +168,7 @@ void TicTacToe::WriteCanonicalStateToTensorMemory(float* destination) const {
 }
 
 void TicTacToe::InitialiseFromState(float* input_board) {
+    Reset();
     size_t player_0 = 0;
     size_t player_1 = 1;
 
@@ -184,6 +189,7 @@ void TicTacToe::InitialiseFromState(float* input_board) {
 }
 
 void TicTacToe::InitialiseFromCanonicalState(float* input_board) {
+    Reset();
     boost::multi_array_ref<float, 3> data(input_board, boost::extents[3][3][2]);
 
     float current_player_count = 0.0;

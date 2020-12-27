@@ -48,6 +48,7 @@ class Bandits : public Game {
     void WriteCanonicalStateToTensorMemory(float*) const;
     void InitialiseFromCanonicalState(float*);
     void InitialiseFromState(float*);
+    void Reset();
     std::unique_ptr<Game> Clone() const;
 
     bool operator==(const Bandits&) const;

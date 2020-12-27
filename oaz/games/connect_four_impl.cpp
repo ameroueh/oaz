@@ -9,6 +9,12 @@ using namespace oaz::games;
 
 ConnectFour::ConnectFour() : m_status(0) {}
 
+void ConnectFour::Reset() {
+    // Probably need to explicitly release memory containing the data associated to old game?
+    // or does garbage collection realise that data is now unreferenced?
+    *this = ConnectFour();
+}
+
 void ConnectFour::PlayFromString(std::string moves) {
     for (char& c : moves)
         PlayMove(c - '0');
@@ -184,6 +190,7 @@ void ConnectFour::WriteCanonicalStateToTensorMemory(float* destination) const {
 }
 
 void ConnectFour::InitialiseFromState(float* input_board) {
+    Reset();
     size_t player_0 = 0;
     size_t player_1 = 1;
 
@@ -204,6 +211,7 @@ void ConnectFour::InitialiseFromState(float* input_board) {
 }
 
 void ConnectFour::InitialiseFromCanonicalState(float* input_board) {
+    Reset();
     boost::multi_array_ref<float, 3> data(input_board, boost::extents[6][7][2]);
 
     float current_player_count = 0.0;

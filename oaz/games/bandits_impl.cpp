@@ -9,6 +9,11 @@ using namespace oaz::games;
 
 Bandits::Bandits() {}
 
+void Bandits::Reset() {
+    // Probably need to explicitly release memory containing the data associated to old game?
+    *this = Bandits();
+}
+
 void Bandits::PlayFromString(std::string moves) {
     for (char& c : moves) {
         PlayMove(c - '0');
@@ -60,6 +65,7 @@ void Bandits::WriteCanonicalStateToTensorMemory(float* destination) const {
 }
 
 void Bandits::InitialiseFromState(float* input_board) {
+    Reset();
     boost::multi_array_ref<float, 1> data(input_board, boost::extents[10]);
 
     for (size_t i = 0; i != 10; ++i) {
@@ -70,6 +76,7 @@ void Bandits::InitialiseFromState(float* input_board) {
 }
 
 void Bandits::InitialiseFromCanonicalState(float* input_board) {
+    Reset();
     boost::multi_array_ref<float, 1> data(input_board, boost::extents[10]);
 
     for (size_t i = 0; i != 10; ++i) {
