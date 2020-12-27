@@ -57,6 +57,14 @@ TEST(ClassMethods, Default) {
     ASSERT_EQ(game_ptr->ClassMethods().GetBoardShape()[0], 10);
 }
 
+TEST(Reset, Default) {
+    Bandits game;
+    game.PlayFromString("0510055");
+    game.Reset();
+    Bandits empty_game;
+    ASSERT_TRUE(game == empty_game);
+}
+
 TEST(WriteStateToTensorMemory, Default) {
     Bandits game;
     game.PlayMove(0);
@@ -105,6 +113,19 @@ TEST(InitialiseFromState, CheckBoardCopy) {
     game.WriteStateToTensorMemory(tensor.origin());
 
     Bandits game2;
+    game2.InitialiseFromState(tensor.origin());
+    ASSERT_TRUE(game == game2);
+}
+
+TEST(InitialiseFromState, CheckGameInProgressInitialisation) {
+    Bandits game;
+    game.PlayFromString("0510055");
+
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteStateToTensorMemory(tensor.origin());
+
+    Bandits game2;
+    game2.PlayFromString("0123313");
     game2.InitialiseFromState(tensor.origin());
     ASSERT_TRUE(game == game2);
 }

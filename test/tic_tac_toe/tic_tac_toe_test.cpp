@@ -119,6 +119,14 @@ TEST(ClassMethods, Default) {
     ASSERT_EQ(game_ptr->ClassMethods().GetBoardShape()[2], 2);
 }
 
+TEST(Reset, Default) {
+    TicTacToe game;
+    game.PlayFromString("012");
+    game.Reset();
+    TicTacToe empty_game;
+    ASSERT_TRUE(game == empty_game);
+}
+
 TEST(WriteStateToTensorMemory, Default) {
     TicTacToe game;
     game.PlayMove(0);
@@ -230,11 +238,10 @@ TEST(InitialiseFromCanonicalState, Default) {
 
 TEST(InitialiseFromCanonicalState, CheckBoardCopy) {
     TicTacToe game;
-    game.PlayMove(0);
-    game.PlayMove(1);
-    game.PlayMove(2);
+    game.PlayFromString("012");
 
-    boost::multi_array<float, 3> tensor(boost::extents[3][3][2]);
+    boost::multi_array<float, 3>
+        tensor(boost::extents[3][3][2]);
     game.WriteCanonicalStateToTensorMemory(tensor.origin());
 
     TicTacToe game2;
@@ -245,17 +252,30 @@ TEST(InitialiseFromCanonicalState, CheckBoardCopy) {
 
 TEST(InitialiseFromCanonicalState, CheckBoardCopy2) {
     TicTacToe game;
-    game.PlayMove(0);
-    game.PlayMove(1);
-    game.PlayMove(2);
+    game.PlayFromString("012");
 
-    boost::multi_array<float, 3> tensor(boost::extents[3][3][2]);
+    boost::multi_array<float, 3>
+        tensor(boost::extents[3][3][2]);
     game.WriteStateToTensorMemory(tensor.origin());
 
     TicTacToe game2;
     game2.InitialiseFromCanonicalState(tensor.origin());
 
     ASSERT_FALSE(game == game2);
+}
+
+TEST(InitialiseFromState, CheckGameInProgressInitialisation) {
+    TicTacToe game;
+    game.PlayFromString("012");
+
+    boost::multi_array<float, 3>
+        tensor(boost::extents[6][7][2]);
+    game.WriteStateToTensorMemory(tensor.origin());
+
+    TicTacToe game2;
+    game2.PlayFromString("0176");
+    game2.InitialiseFromState(tensor.origin());
+    ASSERT_TRUE(game == game2);
 }
 
 TEST(GameMap, Instantiation) {

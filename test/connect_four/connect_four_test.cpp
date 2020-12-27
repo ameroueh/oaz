@@ -120,6 +120,14 @@ TEST(ClassMethods, Default) {
     ASSERT_EQ(game_ptr->ClassMethods().GetBoardShape()[2], 2);
 }
 
+TEST(Reset, Default) {
+    ConnectFour game;
+    game.PlayFromString("0510055");
+    game.Reset();
+    ConnectFour empty_game;
+    ASSERT_TRUE(game == empty_game);
+}
+
 TEST(WriteStateToTensorMemory, Default) {
     ConnectFour game;
     game.PlayMove(0);
@@ -202,6 +210,19 @@ TEST(InitialiseFromState, CheckBoardCopy2) {
     game.PlayMove(5);
 
     ASSERT_FALSE(game == game2);
+}
+
+TEST(InitialiseFromState, CheckGameInProgressInitialisation) {
+    ConnectFour game;
+    game.PlayFromString("0510055");
+
+    boost::multi_array<float, 3> tensor(boost::extents[6][7][2]);
+    game.WriteStateToTensorMemory(tensor.origin());
+
+    ConnectFour game2;
+    game2.PlayFromString("0123313");
+    game2.InitialiseFromState(tensor.origin());
+    ASSERT_TRUE(game == game2);
 }
 
 TEST(InitialiseFromCanonicalState, Default) {
