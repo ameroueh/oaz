@@ -46,6 +46,8 @@ class Bandits : public Game {
     float GetScore() const;
     void WriteStateToTensorMemory(float*) const;
     void WriteCanonicalStateToTensorMemory(float*) const;
+    void InitialiseFromCanonicalState(float*);
+    void InitialiseFromState(float*);
     std::unique_ptr<Game> Clone() const;
 
     bool operator==(const Bandits&) const;
@@ -55,6 +57,7 @@ class Bandits : public Game {
    private:
     static constexpr std::bitset<10> WINNING_BITS = std::bitset<10>(0b101010101ll);
     std::bitset<10> m_board;
+    void Reset();
 };
 }  // namespace oaz::games
 
