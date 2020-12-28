@@ -5,13 +5,13 @@
 
 import logging
 import os
-import pytest
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import joblib
 import numpy as np
+import pytest
 from logzero import setup_logger
 
 from pyoaz.training import Trainer
@@ -39,10 +39,7 @@ def train_model():
                 "optimizer": "adam",
                 "policy_factor": 1.0,
             },
-            "save": {
-                "save_path": save_dir.name,
-                "checkpoint_every": 100,
-            },
+            "save": {"save_path": save_dir.name, "checkpoint_every": 100,},
             "benchmark": {
                 "tournament_frequency": 1,
                 "n_tournament_games": 10,
