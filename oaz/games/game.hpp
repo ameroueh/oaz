@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace oaz::games {
 
@@ -21,6 +22,7 @@ class Game {
         virtual const std::vector<int>& GetBoardShape() const = 0;
         virtual GameMap* CreateGameMap() const = 0;
     };
+
     virtual const Class& ClassMethods() const = 0;
 
     virtual void PlayFromString(std::string) = 0;
@@ -31,6 +33,8 @@ class Game {
     virtual bool IsFinished() const = 0;
     virtual void WriteStateToTensorMemory(float*) const = 0;
     virtual void WriteCanonicalStateToTensorMemory(float*) const = 0;
+    virtual void InitialiseFromState(float*) = 0;
+    virtual void InitialiseFromCanonicalState(float*) = 0;
     virtual std::unique_ptr<Game> Clone() const = 0;
 
     virtual ~Game(){};
