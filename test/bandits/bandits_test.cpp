@@ -57,14 +57,6 @@ TEST(ClassMethods, Default) {
     ASSERT_EQ(game_ptr->ClassMethods().GetBoardShape()[0], 10);
 }
 
-TEST(Reset, Default) {
-    Bandits game;
-    game.PlayFromString("0510055");
-    game.Reset();
-    Bandits empty_game;
-    ASSERT_TRUE(game == empty_game);
-}
-
 TEST(WriteStateToTensorMemory, Default) {
     Bandits game;
     game.PlayMove(0);

@@ -10,8 +10,6 @@ using namespace oaz::games;
 ConnectFour::ConnectFour() : m_status(0) {}
 
 void ConnectFour::Reset() {
-    // Probably need to explicitly release memory containing the data associated to old game?
-    // or does garbage collection realise that data is now unreferenced?
     *this = ConnectFour();
 }
 

@@ -10,7 +10,6 @@ using namespace oaz::games;
 Bandits::Bandits() {}
 
 void Bandits::Reset() {
-    // Probably need to explicitly release memory containing the data associated to old game?
     *this = Bandits();
 }
 

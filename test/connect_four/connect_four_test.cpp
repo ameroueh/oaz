@@ -120,14 +120,6 @@ TEST(ClassMethods, Default) {
     ASSERT_EQ(game_ptr->ClassMethods().GetBoardShape()[2], 2);
 }
 
-TEST(Reset, Default) {
-    ConnectFour game;
-    game.PlayFromString("0510055");
-    game.Reset();
-    ConnectFour empty_game;
-    ASSERT_TRUE(game == empty_game);
-}
-
 TEST(WriteStateToTensorMemory, Default) {
     ConnectFour game;
     game.PlayMove(0);

@@ -49,7 +49,6 @@ class ConnectFour : public Game {
     void WriteCanonicalStateToTensorMemory(float*) const;
     void InitialiseFromState(float*);
     void InitialiseFromCanonicalState(float*);
-    void Reset();
     std::unique_ptr<Game> Clone() const;
 
     bool operator==(const ConnectFour&) const;
@@ -81,6 +80,7 @@ class ConnectFour : public Game {
     void MaybeEndGame(bool, size_t);
     void SetWinner(size_t);
     void DeclareFinished();
+    void Reset();
 
     Board m_player0_tokens;
     Board m_player1_tokens;

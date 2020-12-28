@@ -119,14 +119,6 @@ TEST(ClassMethods, Default) {
     ASSERT_EQ(game_ptr->ClassMethods().GetBoardShape()[2], 2);
 }
 
-TEST(Reset, Default) {
-    TicTacToe game;
-    game.PlayFromString("012");
-    game.Reset();
-    TicTacToe empty_game;
-    ASSERT_TRUE(game == empty_game);
-}
-
 TEST(WriteStateToTensorMemory, Default) {
     TicTacToe game;
     game.PlayMove(0);

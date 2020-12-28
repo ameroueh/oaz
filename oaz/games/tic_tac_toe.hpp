@@ -47,7 +47,6 @@ class TicTacToe : public Game {
     void WriteCanonicalStateToTensorMemory(float*) const;
     void InitialiseFromState(float*);
     void InitialiseFromCanonicalState(float*);
-    void Reset();
     std::unique_ptr<Game> Clone() const;
 
     bool operator==(const TicTacToe&);
@@ -67,6 +66,7 @@ class TicTacToe : public Game {
     void MaybeEndGame(bool, size_t);
     void SetWinner(size_t);
     void DeclareFinished();
+    void Reset();
     bool Player0Won() const;
     bool Player1Won() const;
 
