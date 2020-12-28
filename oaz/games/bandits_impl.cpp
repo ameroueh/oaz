@@ -9,6 +9,10 @@ using namespace oaz::games;
 
 Bandits::Bandits() {}
 
+void Bandits::Reset() {
+    *this = Bandits();
+}
+
 void Bandits::PlayFromString(std::string moves) {
     for (char& c : moves) {
         PlayMove(c - '0');
@@ -57,6 +61,28 @@ void Bandits::WriteStateToTensorMemory(float* destination) const {
 
 void Bandits::WriteCanonicalStateToTensorMemory(float* destination) const {
     WriteStateToTensorMemory(destination);
+}
+
+void Bandits::InitialiseFromState(float* input_board) {
+    Reset();
+    boost::multi_array_ref<float, 1> data(input_board, boost::extents[10]);
+
+    for (size_t i = 0; i != 10; ++i) {
+        if (data[i] == 1.0f)
+            m_board.set(i);
+    }
+    //TODO Check victory
+}
+
+void Bandits::InitialiseFromCanonicalState(float* input_board) {
+    Reset();
+    boost::multi_array_ref<float, 1> data(input_board, boost::extents[10]);
+
+    for (size_t i = 0; i != 10; ++i) {
+        if (data[i] == 1.0f)
+            m_board.set(i);
+    }
+    //TODO Check victory
 }
 
 uint64_t Bandits::GetState() const {
