@@ -2,10 +2,23 @@ class Game:
     def __init__(self, core):
         self._core = core
 
+    @classmethod
+    def from_numpy(cls, board, is_canonical=True):
+        game = cls()
+        if board.shape != game.board.shape:
+            raise ValueError(
+                f"Board has shape {board.shape} Expected shape: "
+                f"{game.board.shape}"
+            )
+        if is_canonical:
+            return game._core.from_numpy_canonical(board)
+        return game._core.from_numpy(board)
+
     def play_move(self, move):
         if move not in self.available_moves:
             raise ValueError(
-                f"Move {move} is not available (available moves: {self.available_moves}"
+                f"Move {move} is not available (available moves: "
+                f"{self.available_moves}"
             )
         self._core.play_move(move)
 
