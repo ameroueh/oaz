@@ -12,7 +12,7 @@ import tensorflow.compat.v1.keras.backend as K
 import toml
 from keras_contrib.callbacks import CyclicLR
 from logzero import setup_logger
-from tensorflow.keras.models import load_model
+from tensorflow.compat.v1.keras.models import load_model
 
 # from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.memory import MemoryBuffer
