@@ -20,7 +20,7 @@ from pyoaz.memory import MemoryBuffer
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.training.utils import (
-    compute_entropy,
+    compute_policy_entropy,
     get_gt_values,
     load_benchmark,
     play_best_self,
@@ -159,10 +159,12 @@ class Trainer:
             )
 
             dataset = self.perform_self_play(stage_params, debug_mode)
-            entropy = compute_entropy(dataset["Policies"])
+            entropy = compute_policy_entropy(dataset["Policies"])
             self.history["mcts_entropy"].append(entropy)
             self.memory.update(dataset, logger=self.logger)
             train_history = self.update_model(stage_params)
+
+            self.compute_position_entropies(stage_params)
 
             self.history["val_value_loss"].extend(
                 train_history.history["val_value_loss"]
@@ -217,6 +219,22 @@ class Trainer:
 
         dataset = self._dataset_apply_symmetry(dataset)
         return dataset
+
+    def compute_position_entropies(self, stage_params):
+        dataset = self.memory.recall(
+            shuffle=False, n_sample=stage_params["training_samples"]
+        )
+        boards = dataset["Boards"]
+        self.logger.info(f"Computing info of {len(boards)} positions")
+        policy, value = self.model.predict(dataset["Boards"])
+        entropy = compute_policy_entropy(policy)
+        self.logger.info(f"mean entropy {entropy.mean()}")
+
+        weighted_entropy = entropy * np.abs(value)
+        self.logger.info(f"mean weighted entropy {weighted_entropy.mean()}")
+
+        self.history["model_entropy"].append(entropy)
+        self.history["model_weighted_entropy"].append(weighted_entropy)
 
     def update_model(self, stage_params):
         dataset = self.memory.recall(
@@ -468,12 +486,35 @@ class Trainer:
 
         joblib.dump(self.history, self.save_path / "history.joblib")
 
+        entropy_dir = self.save_path / "entropy"
+        entropy_dir.mkdir(exist_ok=True)
+
         plt.figure()
         plt.hist(self.history["mcts_entropy"][-1], label="entropies")
         plt.legend()
         plot_path = (
-            self.save_path / "mcts_entropy_gen_"
+            entropy_dir / "mcts_entropy_gen_"
             f"{len(self.history['mcts_entropy'])}.png"
+        )
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
+        plt.hist(self.history["model_entropy"][-1], label="entropies")
+        plt.legend()
+        plot_path = (
+            entropy_dir / "model_entropy_gen_"
+            f"{len(self.history['model_entropy'])}.png"
+        )
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
+        plt.hist(self.history["model_weighted_entropy"][-1], label="entropies")
+        plt.legend()
+        plot_path = (
+            entropy_dir / "model_weighted_entropy_gen_"
+            f"{len(self.history['model_weighted_entropy'])}.png"
         )
         plt.savefig(plot_path)
         plt.close()
