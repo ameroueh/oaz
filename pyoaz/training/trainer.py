@@ -8,7 +8,6 @@ from pathlib import Path
 import joblib
 import numpy as np
 import tensorflow.compat.v1 as tf
-
 import tensorflow.compat.v1.keras.backend as K
 import toml
 from keras_contrib.callbacks import CyclicLR
@@ -27,8 +26,6 @@ from pyoaz.training.utils import (
     play_tournament,
     running_mean,
 )
-from tensorflow.compat.v1.keras.models import load_model
-
 
 tf.disable_v2_behavior()
 
