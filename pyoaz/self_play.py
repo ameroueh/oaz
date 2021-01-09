@@ -1,19 +1,34 @@
 """ Module containing self-play class for connect four. Later this could be
     made game-agnostic.
 """
-
 from threading import Thread
-from typing import Dict, List, Tuple
+from typing import Dict, Iterable, List, Union, Tuple
 
 import numpy as np
-from tqdm import tqdm
 from logzero import setup_logger
+from tqdm import tqdm
 
 from pyoaz.cache.simple_cache import SimpleCache
 from pyoaz.evaluator.nn_evaluator import Model, NNEvaluator
 from pyoaz.search import Search
 from pyoaz.selection import AZSelector
 from pyoaz.thread_pool import ThreadPool
+
+
+def stack_datasets(datasets):
+    all_boards = []
+    all_values = []
+    all_policies = []
+    for dataset in datasets:
+        all_boards.append(dataset["Boards"])
+        all_values.extend(dataset["Values"])
+        all_policies.extend(dataset["Policies"])
+
+    return {
+        "Boards": np.vstack(all_boards),
+        "Values": np.array(all_values),
+        "Policies": np.vstack(all_policies),
+    }
 
 
 class SelfPlay:
@@ -30,35 +45,72 @@ class SelfPlay:
         alpha: float = 1.0,
         cache_size: int = None,
         logger=None,
+        verbosity=1,
     ):
         self.game = game
+        self.policy_size = len(game().available_moves)
         self.dimensions = self.game().board.shape
         self.n_tree_workers = n_tree_workers
         self.n_games_per_worker = n_games_per_worker
         self.n_simulations_per_move = n_simulations_per_move
-        self.n_workers = n_workers
         self.n_threads = n_threads
         self.evaluator_batch_size = evaluator_batch_size
         self.epsilon = epsilon
+        self.verbosity = verbosity
         self.alpha = alpha
-        self.selector = AZSelector()
-        self.thread_pool = ThreadPool(n_workers)
-        self.cache_size = cache_size
-        if self.cache_size == -1:
-            # hard coding ~ 30 moves per game on average
-            self.cache_size = n_games_per_worker * n_threads * 30
-
-        self.discount_factor = 1.0
-        self.logger = logger
         if logger is None:
             self.logger = setup_logger()
+        self.logger = logger
+        self.selector = AZSelector()
+        self.thread_pool = ThreadPool(n_workers)
+        self.reset_cache(cache_size, n_workers)
 
-    def self_play(self, session, discount_factor=1.0, debug=False) -> Dict:
-        self.logger.debug(
-            f"n_simulations_per_move: {self.n_simulations_per_move}"
-        )
+        self.discount_factor = 1.0
 
-        self.discount_factor = discount_factor
+    def reset_cache(self, cache_size, n_workers):
+        self.cache = None
+        if cache_size == -1:
+            # hard coding ~ 30 moves per game on average
+            cache_size = self.n_games_per_worker * self.n_threads * 50
+        if cache_size is not None:
+            self.logger.info(f"Setting up cache of size {cache_size}")
+            self.cache = SimpleCache(self.game(), cache_size)
+
+    def self_play_from_positions(
+        self,
+        starting_positions: np.ndarray,
+        n_replays: Union[int, Iterable],
+        session,
+        discount_factor=1.0,
+        debug=False,
+    ):
+        # TODO rename replays
+
+        # Maybe not the best way to do this, a lot of time not at 100% if I do things this way
+        if isinstance(n_replays, int):
+            n_replays = [n_replays for _ in range(len(starting_positions))]
+
+        datasets = []
+        for position, n_replay in zip(starting_positions, n_replays):
+            dataset = self.self_play(
+                session,
+                n_replay,
+                starting_position=position,
+                discount_factor=discount_factor,
+                debug=debug,
+            )
+            datasets.append(dataset)
+
+        return stack_datasets(datasets)
+
+    def self_play(
+        self,
+        session,
+        n_games_per_worker,
+        starting_position=None,
+        discount_factor=1.0,
+        debug=False,
+    ) -> Dict:
 
         model = Model(
             session=session,
@@ -66,17 +118,18 @@ class SelfPlay:
             policy_node_name="policy/Softmax",
         )
 
-        cache = None
-        if self.cache_size is not None:
-            self.logger.info(f"Setting up cache of size {self.cache_size}")
-            cache = SimpleCache(self.game(), self.cache_size)
         self.evaluator = NNEvaluator(
             model=model,
-            cache=cache,
+            cache=self.cache,
             thread_pool=self.thread_pool,
             dimensions=self.dimensions,
             batch_size=self.evaluator_batch_size,
         )
+        self.logger.debug(
+            f"n_simulations_per_move: {self.n_simulations_per_move}"
+        )
+
+        self.discount_factor = discount_factor
 
         all_datasets = [
             {"Boards": [], "Values": [], "Policies": []}
@@ -86,7 +139,13 @@ class SelfPlay:
         if debug:
             self.logger.debug("DEBUG MODE")
             # Debugging: skip the threading:
-            self._worker_self_play(all_datasets, 0, None)
+            self._worker_self_play(
+                all_datasets,
+                n_games_per_worker,
+                0,
+                None,
+                starting_position=starting_position,
+            )
 
             all_datasets[0]["Boards"] = np.array(all_datasets[0]["Boards"])
             all_datasets[0]["Values"] = np.array(all_datasets[0]["Values"])
@@ -97,8 +156,7 @@ class SelfPlay:
         # Threading Mode:
 
         with tqdm(
-            total=self.n_threads * self.n_games_per_worker,
-            desc="Self-play games",
+            total=self.n_threads * n_games_per_worker, desc="Self-play games",
         ) as pbar:
             threads = [
                 Thread(
@@ -113,58 +171,69 @@ class SelfPlay:
             for t in threads:
                 t.join()
 
-        all_boards = []
-        all_values = []
-        all_policies = []
-        for dataset in all_datasets:
-            all_boards.append(dataset["Boards"])
-            all_values.extend(dataset["Values"])
-            all_policies.extend(dataset["Policies"])
-
-        final_dataset = {
-            "Boards": np.vstack(all_boards),
-            "Values": np.array(all_values),
-            "Policies": np.vstack(all_policies),
-        }
-
+        final_dataset = stack_datasets(all_datasets)
         stats = self.evaluator.statistics
         avg_duration = (
             stats["time_evaluation_end_ns"] - stats["time_evaluation_start_ns"]
         ).mean()
-        self.logger.info(
-            f"Average evaluation time in ms: {avg_duration / 1e6}"
-        )
-        self.logger.info(
-            "Proportion of forced evaluations: "
-            f"{stats['evaluation_forced'].mean()}"
-        )
-        self.logger.info(
-            "Average size of batches sent to evaluator: "
-            f"{stats['n_elements'].mean()}"
-        )
-        self.logger.info(
-            "Proportion of empty batches sent: "
-            f" {(stats['n_elements'] == 0).mean()} "
-        )
 
-        self.logger.info(
-            "Average filled proportion of each evaluation batch: "
-            f"{(stats['n_elements'].sum() / stats['size'].sum())}"
-        )
+        if self.verbosity > 1:
+            self.logger.info(
+                f"Average evaluation time in ms: {avg_duration / 1e6}"
+            )
+            self.logger.info(
+                "Proportion of forced evaluations: "
+                f"{stats['evaluation_forced'].mean()}"
+            )
+            self.logger.info(
+                "Average size of batches sent to evaluator: "
+                f"{stats['n_elements'].mean()}"
+            )
+            self.logger.info(
+                "Proportion of empty batches sent: "
+                f" {(stats['n_elements'] == 0).mean()} "
+            )
+
+            self.logger.info(
+                "Average filled proportion of each evaluation batch: "
+                f"{(stats['n_elements'].sum() / stats['size'].sum())}"
+            )
 
         return final_dataset
 
-    def _worker_self_play(self, dataset, id, update_progress=None):
+    def _worker_self_play(
+        self,
+        dataset,
+        n_games_per_worker,
+        id,
+        update_progress=None,
+        starting_position=None,
+    ):
         self.logger.debug(f"Starting thread {id}")
-        self._self_play(dataset[id], id, update_progress=update_progress)
+        self._self_play(
+            dataset[id],
+            n_games_per_worker,
+            id,
+            update_progress=update_progress,
+            starting_position=starting_position,
+        )
 
-    def _self_play(self, dataset, thread_id, update_progress=None):
+    def _self_play(
+        self,
+        dataset,
+        n_games_per_worker,
+        thread_id,
+        update_progress=None,
+        starting_position=None,
+    ):
 
         all_boards = []
         all_scores = []
         all_policies = []
-        for i in range(self.n_games_per_worker):
-            boards, scores, policies = self._play_one_game(i, thread_id)
+        for i in range(n_games_per_worker):
+            boards, scores, policies = self._play_one_game(
+                i, thread_id, starting_position=starting_position
+            )
             all_boards.extend(boards)
             all_scores.extend(scores)
             all_policies.extend(policies)
@@ -175,12 +244,16 @@ class SelfPlay:
         dataset["Values"].extend(all_scores)
         dataset["Policies"].extend(all_policies)
 
-    def _play_one_game(self, game_idx, thread_id) -> Tuple[List, List, List]:
+    def _play_one_game(
+        self, game_idx, thread_id, starting_position=None
+    ) -> Tuple[List, List, List]:
         self.logger.debug(f"Thread {thread_id} starting game {game_idx}...")
         boards = []
         policies = []
-        game = self.game()
-        policy_size = len(game.available_moves)
+        if starting_position is None:
+            game = self.game()
+        else:
+            game = self.game.from_numpy(starting_position, is_canonical=True)
 
         # Sometimes act randomly for the first few moves
         # if np.random.uniform() < 0.1:
@@ -213,7 +286,7 @@ class SelfPlay:
             )
             root = search.tree_root
 
-            policy = np.zeros(shape=policy_size, dtype=np.float32)
+            policy = np.zeros(shape=self.policy_size, dtype=np.float32)
             for i in range(root.n_children):
 
                 child = root.get_child(i)
@@ -230,7 +303,7 @@ class SelfPlay:
             policies.append(policy)
             self.logger.debug(f"policy: \n{policy}")
 
-            move = int(np.random.choice(np.arange(policy_size), p=policy))
+            move = int(np.random.choice(np.arange(self.policy_size), p=policy))
             # move = best_child.move
 
             # self.logger.info(f"Playing move {move}")
@@ -241,7 +314,7 @@ class SelfPlay:
             game.play_move(move)
 
         boards.append(game.canonical_board)
-        policy = np.ones(shape=policy_size, dtype=np.float32)
+        policy = np.ones(shape=self.policy_size, dtype=np.float32)
         policy = policy / policy.sum()
         policies.append(policy)
 
