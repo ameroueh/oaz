@@ -99,7 +99,7 @@ def train_model():
     }
 
     trainer = Trainer(configuration, logger=LOGGER)
-    trainer.train()
+    trainer.train(debug_mode=True)
     history = joblib.load(Path(save_dir) / "history.joblib")
 
     n_generations = len(history["best_generation"])
