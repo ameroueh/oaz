@@ -11,12 +11,6 @@ from pyoaz.bots.mcts_bot import MCTSBot
 from pyoaz.tournament import Participant, Tournament
 
 
-def compute_policy_entropy(policies, eps=1e-10):
-    entropy = policies * np.log(policies + eps)
-    entropy = entropy.sum(-1)
-    return -entropy
-
-
 def load_benchmark(benchmark_path):
     benchmark_path = Path(benchmark_path)
     boards_path = benchmark_path / "benchmark_boards.npy"
