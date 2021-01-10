@@ -91,6 +91,7 @@ class SelfPlay:
             n_replays = [n_replays for _ in range(len(starting_positions))]
 
         datasets = []
+
         for position, n_replay in zip(starting_positions, n_replays):
             dataset = self.self_play(
                 session,
@@ -138,6 +139,7 @@ class SelfPlay:
 
         if debug:
             self.logger.debug("DEBUG MODE")
+
             # Debugging: skip the threading:
             self._worker_self_play(
                 all_datasets,
@@ -150,6 +152,7 @@ class SelfPlay:
             all_datasets[0]["Boards"] = np.array(all_datasets[0]["Boards"])
             all_datasets[0]["Values"] = np.array(all_datasets[0]["Values"])
             all_datasets[0]["Policies"] = np.array(all_datasets[0]["Policies"])
+
             return all_datasets[0]
 
         self.logger.debug("THREADING MODE")
@@ -161,7 +164,12 @@ class SelfPlay:
             threads = [
                 Thread(
                     target=self._worker_self_play,
-                    args=(all_datasets, i, pbar.update),
+                    kwargs={
+                        "dataset": all_datasets,
+                        "n_games_per_worker": n_games_per_worker,
+                        "id": i,
+                        "update_progress": pbar.update,
+                    },
                 )
                 for i in range(self.n_threads)
             ]

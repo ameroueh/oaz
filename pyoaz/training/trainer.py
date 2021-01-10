@@ -17,7 +17,7 @@ from tensorflow.compat.v1.keras.models import load_model
 # from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.memory import MemoryBuffer
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
-from pyoaz.self_play import SelfPlay
+from pyoaz.self_play import SelfPlay, stack_datasets
 from pyoaz.training.utils import (
     compute_policy_entropy,
     get_gt_values,
@@ -156,9 +156,47 @@ class Trainer:
             )
 
             dataset = self.perform_self_play(stage_params, debug_mode)
-            entropy = compute_policy_entropy(dataset["Policies"])
-            self.history["mcts_entropy"].append(entropy)
+
+            dataset = self._dataset_apply_symmetry(dataset)
             self.memory.update(dataset, logger=self.logger)
+
+            # Entropy stuff
+            mcts_entropy = compute_policy_entropy(dataset["Policies"])
+
+            entropy, weighted_entropy = self.compute_position_entropies(
+                stage_params
+            )
+
+            self.history["model_entropy"].append(entropy)
+            self.history["model_weighted_entropy"].append(weighted_entropy)
+
+            self.history["model_average_entropy"].append(entropy.mean())
+            self.history["model_average_weighted_entropy"].append(
+                weighted_entropy.mean()
+            )
+            indices = np.argsort(entropy)
+            # grab highest_entropy indices
+            indices = indices[:-100]
+
+            starting_positions = dataset["Boards"][indices]
+
+            session = K.get_session()
+            new_dataset = self.self_play_controller.self_play_from_positions(
+                starting_positions=starting_positions,
+                n_replays=1,
+                session=session,
+                discount_factor=stage_params["discount_factor"],
+                debug=debug_mode,
+            )
+
+            new_dataset = self.perform_self_play(
+                stage_params, debug_mode, n_games_per_worker=1, reuse=True,
+            )
+
+            dataset = stack_datasets([dataset, new_dataset])
+
+            self.history["mcts_entropy"].append(mcts_entropy)
+            self.history["mcts_average_entropy"].append(mcts_entropy.mean())
             train_history = self.update_model(stage_params)
 
             self.compute_position_entropies(stage_params)
@@ -169,7 +207,6 @@ class Trainer:
             self.history["val_policy_loss"].extend(
                 train_history.history["val_policy_loss"]
             )
-
             self.history["val_loss"].extend(train_history.history["val_loss"])
             self.evaluation_step(dataset)
 
@@ -197,18 +234,29 @@ class Trainer:
             self.generation += 1
             self.gen_in_stage = 0
 
-    def perform_self_play(self, stage_params, debug_mode):
+    def perform_self_play(
+        self, stage_params, debug_mode, reuse=False, n_games_per_worker=None,
+    ):
+        # TODO REFACTOR
+
+        if not n_games_per_worker:
+            n_games_per_worker = stage_params["n_games_per_worker"]
 
         session = K.get_session()
+        # I don't like this
+        if not reuse:
 
-        self_play_controller = self._get_self_play_controller(
-            stage_params["n_games_per_worker"],
-            stage_params["n_simulations_per_move"],
-            debug_mode=debug_mode,
-        )
+            self.self_play_controller = self._get_self_play_controller(
+                n_games_per_worker,
+                stage_params["n_simulations_per_move"],
+                debug_mode=debug_mode,
+            )
+
         start_time = time.time()
-        dataset = self_play_controller.self_play(
+
+        dataset = self.self_play_controller.self_play(
             session,
+            n_games_per_worker,
             discount_factor=stage_params["discount_factor"],
             debug=debug_mode,
         )
@@ -223,15 +271,12 @@ class Trainer:
         )
         boards = dataset["Boards"]
         self.logger.info(f"Computing info of {len(boards)} positions")
-        policy, value = self.model.predict(dataset["Boards"])
+        policy, value = self.model.predict(dataset["Boards"], batch_size=512)
         entropy = compute_policy_entropy(policy)
+        weighted_entropy = entropy * np.abs(value.squeeze())
         self.logger.info(f"mean entropy {entropy.mean()}")
-
-        weighted_entropy = entropy * np.abs(value)
         self.logger.info(f"mean weighted entropy {weighted_entropy.mean()}")
-
-        self.history["model_entropy"].append(entropy)
-        self.history["model_weighted_entropy"].append(weighted_entropy)
+        return entropy, weighted_entropy
 
     def update_model(self, stage_params):
         dataset = self.memory.recall(
@@ -513,6 +558,26 @@ class Trainer:
             entropy_dir / "model_weighted_entropy_gen_"
             f"{len(self.history['model_weighted_entropy'])}.png"
         )
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
+
+        plt.plot(
+            running_mean(self.history["mcts_average_entropy"]),
+            label="mcts_average_entropy",
+        )
+        plt.plot(
+            running_mean(self.history["model_average_entropy"]),
+            label="model_average_entropy",
+        )
+        plt.plot(
+            running_mean(self.history["model_average_weighted_entropy"]),
+            label="model_average_weighted_entropy",
+        )
+
+        plt.legend()
+        plot_path = entropy_dir / "average_entropies.png"
         plt.savefig(plot_path)
         plt.close()
 
