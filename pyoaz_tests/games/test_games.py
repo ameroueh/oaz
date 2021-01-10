@@ -15,6 +15,7 @@ def test_bandits():
     game2 = Bandits.from_numpy(board, is_canonical=False)
     board2 = game2.board
     np.testing.assert_array_equal(board, board2)
+    assert type(game2) == type(game)
 
 
 def test_bandits_canonical():
@@ -27,6 +28,7 @@ def test_bandits_canonical():
     game2 = Bandits.from_numpy(board, is_canonical=True)
     board2 = game2.canonical_board
     np.testing.assert_array_equal(board, board2)
+    assert type(game2) == type(game)
 
 
 def test_connect_four():
@@ -38,6 +40,7 @@ def test_connect_four():
     game2 = ConnectFour.from_numpy(board, is_canonical=False)
     board2 = game2.board
     np.testing.assert_array_equal(board, board2)
+    assert type(game2) == type(game)
 
 
 def test_connect_four_canonical():
@@ -50,6 +53,7 @@ def test_connect_four_canonical():
     game2 = ConnectFour.from_numpy(board, is_canonical=True)
     board2 = game2.canonical_board
     np.testing.assert_array_equal(board, board2)
+    assert type(game2) == type(game)
 
 
 def test_tic_tac_toe():
@@ -62,6 +66,7 @@ def test_tic_tac_toe():
     game2 = TicTacToe.from_numpy(board, is_canonical=False)
     board2 = game2.board
     np.testing.assert_array_equal(board, board2)
+    assert type(game2) == type(game)
 
 
 def test_tic_tac_toe_canonical():
@@ -74,3 +79,4 @@ def test_tic_tac_toe_canonical():
     game2 = TicTacToe.from_numpy(board, is_canonical=True)
     board2 = game2.canonical_board
     np.testing.assert_array_equal(board, board2)
+    assert type(game2) == type(game)
