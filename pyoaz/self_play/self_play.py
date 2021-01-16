@@ -2,7 +2,7 @@
     made game-agnostic.
 """
 from threading import Thread
-from typing import Dict, Iterable, List, Union, Tuple
+from typing import Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 from logzero import setup_logger
@@ -14,15 +14,18 @@ from pyoaz.search import Search
 from pyoaz.selection import AZSelector
 from pyoaz.thread_pool import ThreadPool
 
+from .game_pool import empty_game_generator, game_generator
+
 
 def stack_datasets(datasets):
     all_boards = []
     all_values = []
     all_policies = []
     for dataset in datasets:
-        all_boards.append(dataset["Boards"])
-        all_values.extend(dataset["Values"])
-        all_policies.extend(dataset["Policies"])
+        if dataset["Boards"] != []:
+            all_boards.append(dataset["Boards"])
+            all_values.extend(dataset["Values"])
+            all_policies.extend(dataset["Policies"])
 
     return {
         "Boards": np.vstack(all_boards),
@@ -76,39 +79,39 @@ class SelfPlay:
             self.logger.info(f"Setting up cache of size {cache_size}")
             self.cache = SimpleCache(self.game(), cache_size)
 
-    def self_play_from_positions(
-        self,
-        starting_positions: np.ndarray,
-        n_replays: Union[int, Iterable],
-        session,
-        discount_factor=1.0,
-        debug=False,
-    ):
-        # TODO rename replays
+    # def self_play_from_positions(
+    #     self,
+    #     starting_positions: np.ndarray,
+    #     n_replays: Union[int, Iterable],
+    #     session,
+    #     discount_factor=1.0,
+    #     debug=False,
+    # ):
+    #     # TODO rename replays
 
-        # Maybe not the best way to do this, a lot of time not at 100% if I do things this way
-        if isinstance(n_replays, int):
-            n_replays = [n_replays for _ in range(len(starting_positions))]
+    #     # Maybe not the best way to do this, a lot of time not at 100% if I do things this way
+    #     if isinstance(n_replays, int):
+    #         n_replays = [n_replays for _ in range(len(starting_positions))]
 
-        datasets = []
+    #     datasets = []
 
-        for position, n_replay in zip(starting_positions, n_replays):
-            dataset = self.self_play(
-                session,
-                n_replay,
-                starting_position=position,
-                discount_factor=discount_factor,
-                debug=debug,
-            )
-            datasets.append(dataset)
+    #     for position, n_replay in zip(starting_positions, n_replays):
+    #         dataset = self.self_play(
+    #             session,
+    #             n_replay,
+    #             starting_position=position,
+    #             discount_factor=discount_factor,
+    #             debug=debug,
+    #         )
+    #         datasets.append(dataset)
 
-        return stack_datasets(datasets)
+    #     return stack_datasets(datasets)
 
     def self_play(
         self,
         session,
-        n_games_per_worker,
-        starting_position=None,
+        starting_positions=None,
+        n_repeats=1,
         discount_factor=1.0,
         debug=False,
     ) -> Dict:
@@ -137,49 +140,28 @@ class SelfPlay:
             for _ in range(self.n_threads)
         ]
 
-        if debug:
-            self.logger.debug("DEBUG MODE")
-
-            # Debugging: skip the threading:
-            self._worker_self_play(
-                all_datasets,
-                n_games_per_worker,
-                0,
-                None,
-                starting_position=starting_position,
-            )
-
-            all_datasets[0]["Boards"] = np.array(all_datasets[0]["Boards"])
-            all_datasets[0]["Values"] = np.array(all_datasets[0]["Values"])
-            all_datasets[0]["Policies"] = np.array(all_datasets[0]["Policies"])
-
-            return all_datasets[0]
-
-        self.logger.debug("THREADING MODE")
-        # Threading Mode:
-
-        with tqdm(
-            total=self.n_threads * n_games_per_worker, desc="Self-play games",
-        ) as pbar:
-            threads = [
-                Thread(
-                    target=self._worker_self_play,
-                    kwargs={
-                        "dataset": all_datasets,
-                        "n_games_per_worker": n_games_per_worker,
-                        "id": i,
-                        "update_progress": pbar.update,
-                    },
-                )
-                for i in range(self.n_threads)
+        if starting_positions is not None:
+            games = [
+                self.game.from_numpy(board, is_canonical=True)
+                for board in starting_positions
             ]
-            for t in threads:
-                t.start()
+            games = [game for game in games if not game.finished]
+            game_gen = game_generator(games, n_repeats)
+            n_games = len(games)
+            self.logger.debug(f"From posiitons  {n_games}")
+            flag = True
 
-            for t in threads:
-                t.join()
+        else:
+            n_games = self.n_threads * self.n_games_per_worker
+            game_gen = empty_game_generator(self.game, n_games)
+            flag = False
+
+        self.work_self_play(
+            all_datasets, game_gen, debug, n_games=n_games, flag=flag
+        )
 
         final_dataset = stack_datasets(all_datasets)
+
         stats = self.evaluator.statistics
         avg_duration = (
             stats["time_evaluation_end_ns"] - stats["time_evaluation_start_ns"]
@@ -209,39 +191,67 @@ class SelfPlay:
 
         return final_dataset
 
-    def _worker_self_play(
-        self,
-        dataset,
-        n_games_per_worker,
-        id,
-        update_progress=None,
-        starting_position=None,
+    def work_self_play(
+        self, all_datasets, game_gen, debug, n_games=None, flag=False
     ):
-        self.logger.debug(f"Starting thread {id}")
-        self._self_play(
-            dataset[id],
-            n_games_per_worker,
-            id,
-            update_progress=update_progress,
-            starting_position=starting_position,
-        )
+
+        if debug:
+            self.logger.debug("DEBUG MODE")
+
+            # Debugging: skip the threading:
+            self._self_play(
+                all_datasets[0], game_gen, None, n_games, flag=flag
+            )
+
+            all_datasets[0]["Boards"] = np.array(all_datasets[0]["Boards"])
+            all_datasets[0]["Values"] = np.array(all_datasets[0]["Values"])
+            all_datasets[0]["Policies"] = np.array(all_datasets[0]["Policies"])
+
+        else:
+            self.logger.debug("THREADING MODE")
+            # Threading Mode:
+
+            with tqdm(
+                total=self.n_threads * self.n_games_per_worker,
+                desc="Self-play games",
+            ) as pbar:
+                threads = [
+                    Thread(
+                        target=self._self_play,
+                        kwargs={
+                            "dataset": all_datasets[i],
+                            "game_gen": game_gen,
+                            "update_progress": pbar.update,
+                        },
+                    )
+                    for i in range(self.n_threads)
+                ]
+                for i, t in enumerate(threads):
+                    self.logger.debug(f"Starting thread {i}")
+                    t.start()
+                for t in threads:
+                    t.join()
+        return all_datasets
 
     def _self_play(
-        self,
-        dataset,
-        n_games_per_worker,
-        thread_id,
-        update_progress=None,
-        starting_position=None,
+        self, dataset, game_gen, update_progress=None, n_games=None, flag=False
     ):
 
         all_boards = []
         all_scores = []
         all_policies = []
-        for i in range(n_games_per_worker):
-            boards, scores, policies = self._play_one_game(
-                i, thread_id, starting_position=starting_position
+        self.logger.debug(f"Starting self _play {n_games}")
+        if n_games:
+            pbar = tqdm(
+                enumerate(game_gen),
+                total=n_games,
+                desc="self-Playing games..",
+                leave=True,
             )
+        else:
+            pbar = enumerate(game_gen)
+        for i, game in pbar:
+            boards, scores, policies = self._play_one_game(i, game, flag=flag)
             all_boards.extend(boards)
             all_scores.extend(scores)
             all_policies.extend(policies)
@@ -253,15 +263,22 @@ class SelfPlay:
         dataset["Policies"].extend(all_policies)
 
     def _play_one_game(
-        self, game_idx, thread_id, starting_position=None
+        self, game_idx, game, flag=False
     ) -> Tuple[List, List, List]:
-        self.logger.debug(f"Thread {thread_id} starting game {game_idx}...")
+        if self.verbosity > 1:
+            self.logger.debug(f"Thread  starting game {game_idx}...")
         boards = []
         policies = []
-        if starting_position is None:
-            game = self.game()
-        else:
-            game = self.game.from_numpy(starting_position, is_canonical=True)
+
+        if flag:
+            self.logger.debug(
+                f"Starting position {game_idx} {int(game.board.sum())}"
+            )
+            self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
+            self.verbosity = 2
+            import pdb
+
+            pdb.set_trace()
 
         # Sometimes act randomly for the first few moves
         # if np.random.uniform() < 0.1:
@@ -277,11 +294,12 @@ class SelfPlay:
         #             move = int(np.random.choice(game.available_moves))
         #             game.play_move(move)
         while not game.finished:
-            self.logger.debug(
-                f"Thread {thread_id} game {game_idx} move number "
-                f"{int(game.board.sum())}"
-            )
-            self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
+            if self.verbosity > 1:
+                self.logger.debug(
+                    f"Thread game {game_idx} move number "
+                    f"{int(game.board.sum())}"
+                )
+                self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
             search = Search(
                 game=game,
                 selector=self.selector,
@@ -309,7 +327,8 @@ class SelfPlay:
             # There's an off-by-one error in the Search's n_sim_per_move
             policy = policy / (self.n_simulations_per_move - 1)
             policies.append(policy)
-            self.logger.debug(f"policy: \n{policy}")
+            if self.verbosity > 1:
+                self.logger.debug(f"policy: \n{policy}")
 
             move = int(np.random.choice(np.arange(self.policy_size), p=policy))
             # move = best_child.move
@@ -318,15 +337,20 @@ class SelfPlay:
             # self.logger.info(f"availalbe move {game.available_moves} ")
 
             boards.append(game.canonical_board)
-            self.logger.debug(f"Playing move {move}")
             game.play_move(move)
+            if self.verbosity > 1:
+                self.logger.debug(f"Playing move {move}")
+                self.logger.debug(f"New position: ")
+                self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
 
         boards.append(game.canonical_board)
         policy = np.ones(shape=self.policy_size, dtype=np.float32)
         policy = policy / policy.sum()
         policies.append(policy)
-
-        self.logger.debug(f"Game is finished! Final board score: {game.score}")
+        if self.verbosity > 1:
+            self.logger.debug(
+                f"Game is finished! Final board score: {game.score}"
+            )
 
         # A position's score depends on the winner of the game and the active
         # player for that position
@@ -335,10 +359,10 @@ class SelfPlay:
         player_array[1::2] = -1
         scores = game.score * player_array
         scores *= np.power(self.discount_factor, np.arange(len(boards))[::-1])
-
-        self.logger.debug("Final Board")
-        self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
-        self.logger.debug("Final list of board scores")
-        self.logger.debug(scores)
+        if self.verbosity > 1:
+            self.logger.debug("Final Board")
+            self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
+            self.logger.debug("Final list of board scores")
+            self.logger.debug(scores)
 
         return boards, scores, policies
