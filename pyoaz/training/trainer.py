@@ -163,8 +163,12 @@ class Trainer:
             # Entropy stuff
             mcts_entropy = compute_policy_entropy(dataset["Policies"])
 
-            entropy, weighted_entropy = self.compute_position_entropies(
-                stage_params
+            (
+                entropy,
+                weighted_entropy,
+                starting_positions,
+            ) = self.compute_position_entropies(
+                stage_params, return_positions=True, n=100
             )
 
             self.history["model_entropy"].append(entropy)
@@ -174,24 +178,24 @@ class Trainer:
             self.history["model_average_weighted_entropy"].append(
                 weighted_entropy.mean()
             )
-            indices = np.argsort(entropy)
-            # grab highest_entropy indices
-            indices = indices[:-100]
+            # indices = np.argsort(entropy)
+            # # grab highest_entropy indices
+            # indices = indices[:-100]
 
-            starting_positions = dataset["Boards"][indices]
+            # starting_positions = dataset["Boards"][indices]
 
             session = K.get_session()
-            new_dataset = self.self_play_controller.self_play_from_positions(
+            new_dataset = self.self_play_controller.self_play(
+                session,
                 starting_positions=starting_positions,
-                n_replays=1,
-                session=session,
+                n_repeats=10,
                 discount_factor=stage_params["discount_factor"],
                 debug=debug_mode,
             )
 
-            new_dataset = self.perform_self_play(
-                stage_params, debug_mode, n_games_per_worker=1, reuse=True,
-            )
+            # new_dataset = self.perform_self_play(
+            #     stage_params, debug_mode, n_games_per_worker=1, reuse=True,
+            # )
 
             dataset = stack_datasets([dataset, new_dataset])
 
@@ -256,7 +260,6 @@ class Trainer:
 
         dataset = self.self_play_controller.self_play(
             session,
-            n_games_per_worker,
             discount_factor=stage_params["discount_factor"],
             debug=debug_mode,
         )
@@ -265,7 +268,9 @@ class Trainer:
         dataset = self._dataset_apply_symmetry(dataset)
         return dataset
 
-    def compute_position_entropies(self, stage_params):
+    def compute_position_entropies(
+        self, stage_params, return_positions=False, n=100
+    ):
         dataset = self.memory.recall(
             shuffle=False, n_sample=stage_params["training_samples"]
         )
@@ -276,6 +281,13 @@ class Trainer:
         weighted_entropy = entropy * np.abs(value.squeeze())
         self.logger.info(f"mean entropy {entropy.mean()}")
         self.logger.info(f"mean weighted entropy {weighted_entropy.mean()}")
+
+        if return_positions:
+            indices = np.argsort(entropy)
+            indices = indices[:-n]
+            starting_positions = dataset["Boards"][indices]
+            return entropy, weighted_entropy, starting_positions
+
         return entropy, weighted_entropy
 
     def update_model(self, stage_params):

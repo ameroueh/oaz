@@ -36,10 +36,16 @@ def test_connect_four():
     game.play_move(1)
     game.play_move(2)
     game.play_move(3)
-    board = game.board
+    board = game.board.copy()
     game2 = ConnectFour.from_numpy(board, is_canonical=False)
-    board2 = game2.board
+    board2 = game2.board.copy()
     np.testing.assert_array_equal(board, board2)
+
+    game2.play_move(1)
+    game2.play_move(2)
+    game2.play_move(3)
+    assert (game.board != game2.board).any()
+
     assert type(game2) == type(game)
 
 
