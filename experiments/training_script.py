@@ -5,10 +5,9 @@ import sys
 
 import toml
 from logzero import setup_logger
+from pathlib import Path
 
 from pyoaz.training import Trainer
-
-LOGGER = setup_logger()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -35,11 +34,13 @@ def overwrite_config(configuration, args_dict):
             pass
 
 
-def set_logging(debug_mode=False):
+def setup_logging(logfile=None, debug_mode=False):
+    logger = setup_logger(logfile=logfile)
     if debug_mode:
-        LOGGER.level = logging.DEBUG
+        logger.level = logging.DEBUG
     else:
-        LOGGER.level = logging.INFO
+        logger.level = logging.INFO
+    return logger
 
 
 def main(args):
@@ -52,9 +53,12 @@ def main(args):
 
     overwrite_config(configuration, vars(args))
 
-    set_logging(debug_mode=args.debug_mode)
+    logger = setup_logging(
+        logfile=Path(configuration["save"]["save_path"]) / "logs.log",
+        debug_mode=args.debug_mode,
+    )
 
-    trainer = Trainer(configuration, load_path=args.load_path, logger=LOGGER)
+    trainer = Trainer(configuration, load_path=args.load_path, logger=logger)
 
     try:
         trainer.train(debug_mode=args.debug_mode)
