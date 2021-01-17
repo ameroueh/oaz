@@ -1,18 +1,14 @@
-# import pyoaz.games.connect_four
-
-import os
-
 import tensorflow.compat.v1 as tf
+
 from pyoaz.models import create_connect_four_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.games.connect_four import ConnectFour
 
-os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
-
 
 def test_self_play():
-    _ = create_connect_four_model()
     with tf.Session() as session:
+        tf.keras.backend.set_session(session)
+        create_connect_four_model()
         session.run(tf.global_variables_initializer())
         self_play = SelfPlay(
             game=ConnectFour,
@@ -23,4 +19,4 @@ def test_self_play():
             n_threads=4,
             evaluator_batch_size=1,
         )
-        _ = self_play.self_play(session, debug=True)
+        self_play.self_play(session, debug=True)
