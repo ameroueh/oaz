@@ -40,6 +40,7 @@ def test_connect_four():
     game2 = ConnectFour.from_numpy(board, is_canonical=False)
     board2 = game2.board.copy()
     np.testing.assert_array_equal(board, board2)
+    assert type(game2) == type(game)
 
     game2.play_move(1)
     game2.play_move(2)
