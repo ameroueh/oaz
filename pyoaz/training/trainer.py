@@ -701,6 +701,23 @@ class Trainer:
         plt.close()
 
         plt.figure()
+        plt.plot(
+            np.cumsum(self.history["generation_duration"]),
+            self.history["accuracy"],
+            alpha=0.5,
+            label="accuracy",
+        )
+        plt.plot(
+            np.cumsum(self.history["generation_duration"]),
+            running_mean(self.history["accuracy"]),
+            label="Smoothed accuracy",
+        )
+        plt.legend()
+        plot_path = self.save_path / "timed_accuracy_plot.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
         plt.plot(self.history["self_play_mse"], label="Self Play MSE")
         plt.plot(
             self.history["self_play_accuracy"], label="Self Play Accuracy"
