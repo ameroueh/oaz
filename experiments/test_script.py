@@ -1,8 +1,8 @@
-from pyoaz.games.connect_four import ConnectFour
-import numpy as np
 import random
-from pyoaz.self_play.game_pool import empty_game_generator, game_generator
+
 from tqdm.auto import tqdm
+
+from pyoaz.games.connect_four import ConnectFour
 
 boards = []
 
@@ -25,7 +25,7 @@ print("Playing from collected boards")
 
 games = [ConnectFour.from_numpy(board) for board in boards]
 games = [game for game in games if not game.finished]
-game_gen = game_generator(games, 1)
+
 for game in tqdm(games, total=len(games)):
     while not game.finished:
         moves = game.available_moves
