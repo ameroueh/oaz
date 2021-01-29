@@ -190,12 +190,17 @@ class Trainer:
 
             # Play more moves from known interesting positions
             if stage_params["n_replayed_positions"]:
-                new_dataset = self.get_past_starting_positions(
-                    sample_size=stage_params["training_samples"],
+                starting_positions = self.get_past_starting_positions(
+                    dataset=dataset,
                     n_replayed_positions=stage_params["n_replayed_positions"],
                     n_repeated=stage_params["n_repeats"],
                     sort_method=stage_params["sort_method"],
                 )
+
+                new_dataset = self.self_play_from_starting_positions(
+                    starting_positions, stage_params, debug_mode
+                )
+
                 new_dataset = self._dataset_apply_symmetry(new_dataset)
                 self.memory.update(new_dataset, logger=self.logger)
 
@@ -285,7 +290,7 @@ class Trainer:
                 )
             )
 
-    def update_metrics(self, train_history):
+    def update_train_metrics(self, train_history):
 
         self.history["val_value_loss"].extend(
             train_history.history["val_value_loss"]
@@ -315,6 +320,24 @@ class Trainer:
             debug=debug_mode,
         )
         self.history["generation_duration"].append(time.time() - start_time)
+        return dataset
+
+    def self_play_from_starting_positions(
+        self, starting_positions, stage_params, debug_mode,
+    ):
+
+        session = K.get_session()
+
+        start_time = time.time()
+
+        dataset = self.self_play_controller.self_play(
+            session,
+            starting_positions=starting_positions,
+            n_repeats=stage_params["n_repeats"],
+            discount_factor=stage_params["discount_factor"],
+            debug=debug_mode,
+        )
+        self.history["generation_duration"][-1] += time.time() - start_time
         return dataset
 
     def get_past_starting_positions(
@@ -612,58 +635,58 @@ class Trainer:
 
         joblib.dump(self.history, self.save_path / "history.joblib")
 
-        entropy_dir = self.save_path / "entropy"
-        entropy_dir.mkdir(exist_ok=True)
+        # entropy_dir = self.save_path / "entropy"
+        # entropy_dir.mkdir(exist_ok=True)
 
-        plt.figure()
-        plt.hist(self.history["mcts_entropy"][-1], label="entropies")
-        plt.legend()
-        plot_path = (
-            entropy_dir / "mcts_entropy_gen_"
-            f"{len(self.history['mcts_entropy'])}.png"
-        )
-        plt.savefig(plot_path)
-        plt.close()
+        # plt.figure()
+        # plt.hist(self.history["mcts_entropy"][-1], label="entropies")
+        # plt.legend()
+        # plot_path = (
+        #     entropy_dir / "mcts_entropy_gen_"
+        #     f"{len(self.history['mcts_entropy'])}.png"
+        # )
+        # plt.savefig(plot_path)
+        # plt.close()
 
-        plt.figure()
-        plt.hist(self.history["model_entropy"][-1], label="entropies")
-        plt.legend()
-        plot_path = (
-            entropy_dir / "model_entropy_gen_"
-            f"{len(self.history['model_entropy'])}.png"
-        )
-        plt.savefig(plot_path)
-        plt.close()
+        # plt.figure()
+        # plt.hist(self.history["model_entropy"][-1], label="entropies")
+        # plt.legend()
+        # plot_path = (
+        #     entropy_dir / "model_entropy_gen_"
+        #     f"{len(self.history['model_entropy'])}.png"
+        # )
+        # plt.savefig(plot_path)
+        # plt.close()
 
-        plt.figure()
-        plt.hist(self.history["model_weighted_entropy"][-1], label="entropies")
-        plt.legend()
-        plot_path = (
-            entropy_dir / "model_weighted_entropy_gen_"
-            f"{len(self.history['model_weighted_entropy'])}.png"
-        )
-        plt.savefig(plot_path)
-        plt.close()
+        # plt.figure()
+        # plt.hist(self.history["model_weighted_entropy"][-1], label="entropies")
+        # plt.legend()
+        # plot_path = (
+        #     entropy_dir / "model_weighted_entropy_gen_"
+        #     f"{len(self.history['model_weighted_entropy'])}.png"
+        # )
+        # plt.savefig(plot_path)
+        # plt.close()
 
-        plt.figure()
+        # plt.figure()
 
-        plt.plot(
-            running_mean(self.history["mcts_average_entropy"]),
-            label="mcts_average_entropy",
-        )
-        plt.plot(
-            running_mean(self.history["model_average_entropy"]),
-            label="model_average_entropy",
-        )
-        plt.plot(
-            running_mean(self.history["model_average_weighted_entropy"]),
-            label="model_average_weighted_entropy",
-        )
+        # plt.plot(
+        #     running_mean(self.history["mcts_average_entropy"]),
+        #     label="mcts_average_entropy",
+        # )
+        # plt.plot(
+        #     running_mean(self.history["model_average_entropy"]),
+        #     label="model_average_entropy",
+        # )
+        # plt.plot(
+        #     running_mean(self.history["model_average_weighted_entropy"]),
+        #     label="model_average_weighted_entropy",
+        # )
 
-        plt.legend()
-        plot_path = entropy_dir / "average_entropies.png"
-        plt.savefig(plot_path)
-        plt.close()
+        # plt.legend()
+        # plot_path = entropy_dir / "average_entropies.png"
+        # plt.savefig(plot_path)
+        # plt.close()
 
         plt.figure()
         plt.plot(self.history["mse"], alpha=0.5, label="MSE")

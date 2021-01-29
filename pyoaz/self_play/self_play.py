@@ -192,7 +192,7 @@ class SelfPlay:
         else:
             n_games = len(starting_positions) * n_repeats
 
-        game_queue = self.create_work(starting_positions, n_repeats)
+        game_queue = self.create_work(n_games, starting_positions, n_repeats)
 
         # Accumulator for each thread
         dataset_queue = Queue()
