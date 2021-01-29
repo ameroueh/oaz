@@ -517,7 +517,7 @@ class Trainer:
         self.logger.info(f"Saving model at {self.save_path / 'model.pb'}")
         self.model.save(str(self.save_path / "model.pb"))
         joblib.dump(self.memory, self.save_path / "memory.joblib")
-        self._save_plots()
+        self.update_plots()
 
     def _dataset_apply_symmetry(self, dataset):
 
