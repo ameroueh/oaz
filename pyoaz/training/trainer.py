@@ -17,7 +17,7 @@ from tensorflow.compat.v1.keras.models import load_model
 # from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.memory import MemoryBuffer
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
-from pyoaz.self_play import SelfPlay, stack_datasets
+from pyoaz.self_play import SelfPlay
 from pyoaz.training.utils import (
     compute_policy_entropy,
     get_gt_values,
