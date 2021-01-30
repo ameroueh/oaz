@@ -187,7 +187,7 @@ class Trainer:
             dataset = self.perform_self_play(stage_params, debug_mode)
 
             # Keep track of positions played
-            self.history["positions_played"].append(len(dataset))
+            self.history["positions_played"].append(len(dataset["Boards"]))
 
             # Apply symmetry, get more positions
             dataset = self._dataset_apply_symmetry(dataset)
@@ -209,7 +209,9 @@ class Trainer:
                 )
 
                 # Keep track of positions played
-                self.history["positions_played"][-1] += len(new_dataset)
+                self.history["positions_played"][-1] += len(
+                    new_dataset["Boards"]
+                )
 
                 new_dataset = self._dataset_apply_symmetry(new_dataset)
 
