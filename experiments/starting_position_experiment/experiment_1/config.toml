@@ -1,0 +1,193 @@
+game = "connect_four"
+[[stages]]
+n_generations = 2
+discount_factor = 0.99
+n_games_per_worker = 4
+n_simulations_per_move = 200
+buffer_length = 70000
+n_purge = 0
+n_repeats = 5
+sort_method = "entropy"
+learning_rate = 0.001
+momentum = 0.9
+training_samples = 40000
+update_epochs = 1
+
+[[stages]]
+buffer_length = 70000
+discount_factor = 0.99
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 4
+n_generations = 2
+n_purge = 35000
+n_repeats = 2
+n_simulations_per_move = 200
+sort_method = "entropy"
+training_samples = 40000
+update_epochs = 1
+
+[[stages]]
+buffer_length = 70000
+discount_factor = 0.99
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 4
+n_generations = 2
+n_purge = 35000
+n_repeats = 2
+n_simulations_per_move = 200
+sort_method = "entropy"
+training_samples = 40000
+update_epochs = 1
+
+[[stages]]
+buffer_length = 70000
+discount_factor = 0.99
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 8
+n_generations = 2
+n_purge = 35000
+n_repeats = 2
+n_simulations_per_move = 200
+sort_method = "entropy"
+training_samples = 40000
+update_epochs = 1
+
+[[stages]]
+buffer_length = 70000
+discount_factor = 0.99
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 8
+n_generations = 2
+n_purge = 35000
+n_repeats = 2
+n_simulations_per_move = 200
+sort_method = "entropy"
+training_samples = 40000
+update_epochs = 1
+
+[[stages]]
+buffer_length = 400000
+discount_factor = 0.999
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 15
+n_generations = 2
+n_purge = 100000
+n_repeats = 1
+n_simulations_per_move = 400
+sort_method = "entropy"
+training_samples = 80000
+update_epochs = 2
+
+[[stages]]
+buffer_length = 400000
+discount_factor = 0.999
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 15
+n_generations = 2
+n_purge = 100000
+n_repeats = 1
+n_simulations_per_move = 400
+sort_method = "entropy"
+training_samples = 80000
+update_epochs = 2
+
+[[stages]]
+buffer_length = 400000
+discount_factor = 0.999
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 15
+n_generations = 2
+n_purge = 100000
+n_repeats = 1
+n_simulations_per_move = 400
+sort_method = "entropy"
+training_samples = 80000
+update_epochs = 2
+
+[[stages]]
+buffer_length = 2400000
+discount_factor = 1.0
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 30
+n_generations = 5
+n_purge = 250000
+n_repeats = 1
+n_simulations_per_move = 800
+sort_method = "entropy"
+training_samples = 300000
+update_epochs = 20
+
+[[stages]]
+buffer_length = 2400000
+discount_factor = 1.0
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 30
+n_generations = 5
+n_purge = 300000
+n_repeats = 1
+n_simulations_per_move = 800
+sort_method = "entropy"
+training_samples = 300000
+update_epochs = 20
+
+[[stages]]
+buffer_length = 2400000
+discount_factor = 1.0
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 30
+n_generations = 5
+n_purge = 300000
+n_repeats = 1
+n_simulations_per_move = 800
+sort_method = "entropy"
+training_samples = 300000
+update_epochs = 20
+
+[[stages]]
+buffer_length = 2400000
+discount_factor = 1.0
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 30
+n_generations = 10
+n_purge = 0
+n_repeats = 1
+n_simulations_per_move = 800
+sort_method = "entropy"
+training_samples = 300000
+update_epochs = 20
+
+[model]
+activation = "tanh"
+n_resnet_blocks = 7
+optimizer = "adam"
+policy_factor = 1.0
+
+[save]
+checkpoint_every = 5
+save_path = "experiment_1"
+
+[self_play]
+alpha = 1.0
+epsilon = 0.25
+evaluator_batch_size = 256
+n_threads = 256
+n_tree_workers = 4
+n_workers = 4
+
+[benchmark]
+benchmark_path = "benchmark/connect_four"
+mcts_bot_iterations = [ 100, 1000,]
+n_best_self_games = 100
+n_tournament_games = 100
+tournament_frequency = 5
