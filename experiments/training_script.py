@@ -35,6 +35,7 @@ def overwrite_config(configuration, args_dict):
 
 
 def setup_logging(logfile=None, debug_mode=False):
+
     logger = setup_logger(logfile=logfile)
     if debug_mode:
         logger.level = logging.DEBUG
@@ -53,9 +54,11 @@ def main(args):
 
     overwrite_config(configuration, vars(args))
 
+    save_path = Path(configuration["save"]["save_path"])
+    save_path.mkdir(exist_ok=True)
+
     logger = setup_logging(
-        logfile=Path(configuration["save"]["save_path"]) / "logs.log",
-        debug_mode=args.debug_mode,
+        logfile=save_path / "logs.log", debug_mode=args.debug_mode,
     )
 
     trainer = Trainer(configuration, load_path=args.load_path, logger=logger)

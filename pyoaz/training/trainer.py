@@ -8,24 +8,24 @@ from pathlib import Path
 import joblib
 import numpy as np
 import tensorflow.compat.v1 as tf
-
 import tensorflow.compat.v1.keras.backend as K
 import toml
 from keras_contrib.callbacks import CyclicLR
 from logzero import setup_logger
+from tensorflow.compat.v1.keras.models import load_model
 
 # from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.memory import MemoryBuffer
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.training.utils import (
+    compute_policy_entropy,
     get_gt_values,
     load_benchmark,
+    play_best_self,
     play_tournament,
     running_mean,
-    play_best_self,
 )
-from tensorflow.compat.v1.keras.models import load_model
 
 tf.disable_v2_behavior()
 
@@ -101,7 +101,16 @@ class Trainer:
         with open(self.save_path / "config.toml", "w") as f:
             f.write(toml.dumps(self.configuration))
 
-    def train(self, debug_mode=False):
+    def train(self, debug_mode: bool = False) -> None:
+        """ Main methopd, launches the whole training procedure. setup objects,
+            benchmarking and iterate through training stages.
+
+        Parameters
+        ----------
+        debug_mode : bool, optional
+            Sets logging level, by default False
+        """
+
         try:
             self.checkpoint_path = (
                 Path(self.configuration["save"]["save_path"]) / "checkpoints"
@@ -132,7 +141,21 @@ class Trainer:
             self.train_stage(stage_params, debug_mode)
             self.stage_idx += 1
 
-    def train_stage(self, stage_params, debug_mode):
+    def train_stage(self, stage_params: dict, debug_mode: bool) -> None:
+        """ Perform one stage of training. First, positions are generated
+            through self play. They are then added to a buffer. If set, we then
+            do another pass of selfplay on where old moves are revisited. Those
+            are added to the buffer. Finally the model is updated, and we
+            update training and validation metrics as well as possible
+            checkpoint the model.
+
+        Parameters
+        ----------
+        stage_params : dict
+            Parameters for that stage
+        debug_mode : bool
+            Sets logging level
+        """
 
         stage_params = self.configuration["stages"][self.stage_idx]
         optimizer = self._get_optimizer(stage_params)
@@ -143,75 +166,237 @@ class Trainer:
             },
             optimizer=optimizer,
         )
-        # Purger older memories if starting a new stage, and change bugger
+
+        # Purge older memories if starting a new stage, and change buffer
         # length
         if self.gen_in_stage == 0:
             self.memory.purge(stage_params["n_purge"])
         self.memory.set_maxlen(stage_params["buffer_length"])
 
         for _ in range(self.gen_in_stage, stage_params["n_generations"]):
+            # TODO Maybe better to have a train_gen method and train_gen_from positions
+            # so that we update the model twice:once after collecting normal positions,
+            # once after collecting positions starting from known interesting positions.
+            # Use the memory buffer without shuffling to do that
 
             self.logger.info(
                 f"Training cycle {self.generation} / {self.total_generations}"
             )
 
+            # Generate positions
             dataset = self.perform_self_play(stage_params, debug_mode)
+
+            # Keep track of positions played
+            self.history["positions_played"].append(len(dataset["Boards"]))
+
+            # Apply symmetry, get more positions
+            dataset = self._dataset_apply_symmetry(dataset)
+
+            # Store positions in memory buffer
             self.memory.update(dataset, logger=self.logger)
+
+            # Play more moves from known interesting positions
+            if stage_params["n_replayed_positions"]:
+                starting_positions = self.get_past_starting_positions(
+                    dataset=dataset,
+                    n_replayed_positions=stage_params["n_replayed_positions"],
+                    n_repeated=stage_params["n_repeats"],
+                    sort_method=stage_params["sort_method"],
+                )
+
+                new_dataset = self.self_play_from_starting_positions(
+                    starting_positions, stage_params, debug_mode
+                )
+
+                # Keep track of positions played
+                self.history["positions_played"][-1] += len(
+                    new_dataset["Boards"]
+                )
+
+                new_dataset = self._dataset_apply_symmetry(new_dataset)
+
+                self.memory.update(new_dataset, logger=self.logger)
+
+            # # Entropy stuff
+            # mcts_entropy = compute_policy_entropy(dataset["Policies"])
+
+            # (
+            #     entropy,
+            #     weighted_entropy,
+            #     starting_positions,
+            # ) = self.compute_position_entropies(
+            #     stage_params,
+            #     return_positions=True,
+            #     n=stage_params["n_replayed_positions"],
+            # )
+
+            # self.history["model_entropy"].append(entropy)
+            # self.history["model_weighted_entropy"].append(weighted_entropy)
+
+            # self.history["model_average_entropy"].append(entropy.mean())
+            # self.history["model_average_weighted_entropy"].append(
+            #     weighted_entropy.mean()
+            # )
+            # # TODO get entropy before board sym?
+            # total_games = (
+            #     stage_params["n_repeats"]
+            #     * stage_params["n_replayed_positions"]
+            # )
+            # self.logger.info(
+            #     "Replaying highest entropy positions. "
+            #     f"{total_games} will be replayed"
+            # )
+            # session = K.get_session()
+
+            # new_dataset = self.self_play_controller.self_play(
+            #     session,
+            #     starting_positions=starting_positions,
+            #     n_repeats=stage_params["n_repeats"],
+            #     discount_factor=stage_params["discount_factor"],
+            #     debug=debug_mode,
+            # )
+
+            # # new_dataset = self.perform_self_play(
+            # #     stage_params, debug_mode, n_games_per_worker=1, reuse=True,
+            # # )
+
+            # dataset = stack_datasets([dataset, new_dataset])
+
+            # self.history["mcts_entropy"].append(mcts_entropy)
+            # self.history["mcts_average_entropy"].append(mcts_entropy.mean())
+
+            # Update phase. Train the model
             train_history = self.update_model(stage_params)
 
-            self.history["val_value_loss"].extend(
-                train_history.history["val_value_loss"]
-            )
-            self.history["val_policy_loss"].extend(
-                train_history.history["val_policy_loss"]
-            )
+            # Keep track of training metrics
+            self.update_train_metrics(train_history)
 
-            self.history["val_loss"].extend(train_history.history["val_loss"])
+            # Validate and benchmark
             self.evaluation_step(dataset)
 
-            is_checkpoint_gen = (
-                self.generation
-                % self.configuration["save"]["checkpoint_every"]
-                == 0
-            )
-            if self.checkpoint_path and is_checkpoint_gen:
-                self.logger.info(
-                    f"Checkpointing model generation {self.generation}"
-                )
-                self.model.save(
-                    str(
-                        self.checkpoint_path
-                        / f"model-checkpoint-generation-{self.generation}.pb"
-                    )
-                )
-            self._save_plots()
+            # Plot results
+            self.update_plots()  # TODO
 
-            self._update_best_self()
+            # Checkpoint model
+            self.model_checkpoint()
 
-            self.history["best_generation"].append(self.best_generation)
+            # Keep track of the best model so far
+            self.update_best_self()
 
             self.generation += 1
             self.gen_in_stage = 0
 
-    def perform_self_play(self, stage_params, debug_mode):
+    def model_checkpoint(self):
+
+        is_checkpoint_gen = (
+            self.generation % self.configuration["save"]["checkpoint_every"]
+            == 0
+        )
+        if self.checkpoint_path and is_checkpoint_gen:
+            self.logger.info(
+                f"Checkpointing model generation {self.generation}"
+            )
+            self.model.save(
+                str(
+                    self.checkpoint_path
+                    / f"model-checkpoint-generation-{self.generation}.pb"
+                )
+            )
+
+    def update_train_metrics(self, train_history):
+
+        self.history["val_value_loss"].extend(
+            train_history.history["val_value_loss"]
+        )
+        self.history["val_policy_loss"].extend(
+            train_history.history["val_policy_loss"]
+        )
+        self.history["val_loss"].extend(train_history.history["val_loss"])
+
+    def perform_self_play(
+        self, stage_params, debug_mode,
+    ):
 
         session = K.get_session()
 
-        self_play_controller = self._get_self_play_controller(
+        self.self_play_controller = self._get_self_play_controller(
             stage_params["n_games_per_worker"],
             stage_params["n_simulations_per_move"],
             debug_mode=debug_mode,
         )
+
         start_time = time.time()
-        dataset = self_play_controller.self_play(
+
+        dataset = self.self_play_controller.self_play(
             session,
             discount_factor=stage_params["discount_factor"],
             debug=debug_mode,
         )
         self.history["generation_duration"].append(time.time() - start_time)
-
-        dataset = self._dataset_apply_symmetry(dataset)
         return dataset
+
+    def self_play_from_starting_positions(
+        self, starting_positions, stage_params, debug_mode,
+    ):
+
+        session = K.get_session()
+
+        start_time = time.time()
+
+        dataset = self.self_play_controller.self_play(
+            session,
+            starting_positions=starting_positions,
+            n_repeats=stage_params["n_repeats"],
+            discount_factor=stage_params["discount_factor"],
+            debug=debug_mode,
+        )
+        self.history["generation_duration"][-1] += time.time() - start_time
+        return dataset
+
+    def get_past_starting_positions(
+        self, dataset, n_replayed_positions, n_repeated, sort_method,
+    ):
+        boards = dataset["Boards"]
+        if sort_method == "random":
+            indices = np.random.randint(0, len(boards))
+
+        elif sort_method == "entropy":
+
+            policy, value = self.model.predict(boards, batch_size=512)
+            entropy = compute_policy_entropy(policy)
+            # weighted_entropy = entropy * np.abs(value.squeeze())
+            indices = np.argsort(entropy)[-n_replayed_positions:]
+        else:
+            raise NotImplementedError(
+                f"sort method {sort_method} not " "implemented yet"
+            )
+
+        starting_positions = dataset["Boards"][indices]
+
+        return starting_positions
+
+    def compute_position_entropies(
+        self, stage_params, return_positions=False, n=10
+    ):
+        dataset = self.memory.recall(
+            shuffle=False, n_sample=stage_params["training_samples"]
+        )
+        boards = dataset["Boards"]
+        self.logger.info(f"Computing info of {len(boards)} positions")
+        policy, value = self.model.predict(dataset["Boards"], batch_size=512)
+        entropy = compute_policy_entropy(policy)
+        weighted_entropy = entropy * np.abs(value.squeeze())
+        self.logger.info(f"mean entropy {entropy.mean()}")
+        self.logger.info(f"mean weighted entropy {weighted_entropy.mean()}")
+
+        if return_positions:
+            indices = np.argsort(entropy)
+            indices = indices[-n:]
+            starting_positions = dataset["Boards"][indices]
+
+            return entropy, weighted_entropy, starting_positions
+
+        return entropy, weighted_entropy
 
     def update_model(self, stage_params):
         dataset = self.memory.recall(
@@ -345,7 +530,7 @@ class Trainer:
         self.logger.info(f"Saving model at {self.save_path / 'model.pb'}")
         self.model.save(str(self.save_path / "model.pb"))
         joblib.dump(self.memory, self.save_path / "memory.joblib")
-        self._save_plots()
+        self.update_plots()
 
     def _dataset_apply_symmetry(self, dataset):
 
@@ -453,7 +638,7 @@ class Trainer:
         else:
             raise NotImplementedError("Wrong optimizer")
 
-    def _save_plots(self):
+    def update_plots(self):
         # Need to do some funky import ordreing to avoid tkinter bug, see:
         # https://stackoverflow.com/questions/27147300/matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
         import matplotlib
@@ -462,6 +647,59 @@ class Trainer:
         import matplotlib.pyplot as plt
 
         joblib.dump(self.history, self.save_path / "history.joblib")
+
+        # entropy_dir = self.save_path / "entropy"
+        # entropy_dir.mkdir(exist_ok=True)
+
+        # plt.figure()
+        # plt.hist(self.history["mcts_entropy"][-1], label="entropies")
+        # plt.legend()
+        # plot_path = (
+        #     entropy_dir / "mcts_entropy_gen_"
+        #     f"{len(self.history['mcts_entropy'])}.png"
+        # )
+        # plt.savefig(plot_path)
+        # plt.close()
+
+        # plt.figure()
+        # plt.hist(self.history["model_entropy"][-1], label="entropies")
+        # plt.legend()
+        # plot_path = (
+        #     entropy_dir / "model_entropy_gen_"
+        #     f"{len(self.history['model_entropy'])}.png"
+        # )
+        # plt.savefig(plot_path)
+        # plt.close()
+
+        # plt.figure()
+        # plt.hist(self.history["model_weighted_entropy"][-1], label="entropies")
+        # plt.legend()
+        # plot_path = (
+        #     entropy_dir / "model_weighted_entropy_gen_"
+        #     f"{len(self.history['model_weighted_entropy'])}.png"
+        # )
+        # plt.savefig(plot_path)
+        # plt.close()
+
+        # plt.figure()
+
+        # plt.plot(
+        #     running_mean(self.history["mcts_average_entropy"]),
+        #     label="mcts_average_entropy",
+        # )
+        # plt.plot(
+        #     running_mean(self.history["model_average_entropy"]),
+        #     label="model_average_entropy",
+        # )
+        # plt.plot(
+        #     running_mean(self.history["model_average_weighted_entropy"]),
+        #     label="model_average_weighted_entropy",
+        # )
+
+        # plt.legend()
+        # plot_path = entropy_dir / "average_entropies.png"
+        # plt.savefig(plot_path)
+        # plt.close()
 
         plt.figure()
         plt.plot(self.history["mse"], alpha=0.5, label="MSE")
@@ -489,12 +727,63 @@ class Trainer:
         plt.close()
 
         plt.figure()
+        plt.plot(
+            np.cumsum(self.history["positions_played"]),
+            self.history["mse"],
+            alpha=0.5,
+            label="MSE",
+        )
+        plt.plot(
+            np.cumsum(self.history["positions_played"]),
+            running_mean(self.history["mse"]),
+            label="Smoothed MSE",
+        )
+        plt.legend()
+        plot_path = self.save_path / "mse_per_positions.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
         plt.plot(self.history["accuracy"], alpha=0.5, label="Accuracy")
         plt.plot(
             running_mean(self.history["accuracy"]), label="Smoothed Accuracy"
         )
         plt.legend()
         plot_path = self.save_path / "accuracy_plot.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
+        plt.plot(
+            np.cumsum(self.history["generation_duration"]),
+            self.history["accuracy"],
+            alpha=0.5,
+            label="accuracy",
+        )
+        plt.plot(
+            np.cumsum(self.history["generation_duration"]),
+            running_mean(self.history["accuracy"]),
+            label="Smoothed accuracy",
+        )
+        plt.legend()
+        plot_path = self.save_path / "timed_accuracy_plot.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
+        plt.plot(
+            np.cumsum(self.history["positions_played"]),
+            self.history["accuracy"],
+            alpha=0.5,
+            label="accuracy",
+        )
+        plt.plot(
+            np.cumsum(self.history["positions_played"]),
+            running_mean(self.history["accuracy"]),
+            label="Smoothed accuracy",
+        )
+        plt.legend()
+        plot_path = self.save_path / "accuracy_per_positions.png"
         plt.savefig(plot_path)
         plt.close()
 
@@ -551,7 +840,7 @@ class Trainer:
                 "pyoaz.games.tic_tac_toe"
             )
 
-    def _update_best_self(self):
+    def update_best_self(self):
         best_path = self.checkpoint_path / "best_model.pb"
 
         if (self.generation == 0) and best_path.exists():
@@ -573,3 +862,5 @@ class Trainer:
             self.logger.info("Saving new best model")
             self.model.save(str(best_path))
             self.best_generation = self.generation
+
+        self.history["best_generation"].append(self.best_generation)

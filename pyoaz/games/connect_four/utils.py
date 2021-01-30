@@ -44,7 +44,7 @@ def _board_symmetry(boards: np.ndarray) -> Tuple[np.ndarray, int]:
         Array containing all equivalent positions
     """
 
-    all_boards = np.concatenate([boards, np.flip(boards, axis=1)])
+    all_boards = np.concatenate([boards, np.flip(boards, axis=2)])
     return all_boards
 
 
