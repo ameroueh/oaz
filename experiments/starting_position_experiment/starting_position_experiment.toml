@@ -1,0 +1,228 @@
+game = "connect_four"
+
+# Define model-specific parameters
+[model]
+activation = "tanh"
+n_resnet_blocks = 7
+optimizer = "adam"
+policy_factor = 1.0
+
+# Define parameters for checkpointing and logging of the experiment
+[save]
+checkpoint_every = 5
+save_path = "no_starting_position"
+
+# Define self-play parameters
+# Number of base games plated is n_threads * n_games_per_worker
+[self_play]
+alpha = 1.0
+epsilon = 0.25
+evaluator_batch_size = 256
+n_threads = 256
+n_tree_workers = 4
+n_workers = 4
+
+# Define benchmarking parameters. Benchmarking happens after every generation
+[benchmark]
+benchmark_path = "benchmark/connect_four" #Path where benchmarking boards can be found
+mcts_bot_iterations = [
+  100,
+  1000,
+] #List of iteration. Each item will create a MCTS bot that uses this number of iterations during benchmarking        
+n_best_self_games = 100 #Number of games that the NN will play against its past best iterations. If the newest iteration draws or wins, it becomes the new best iteration
+n_tournament_games = 100 #Number of games played for every tournament matchup
+tournament_frequency = 5 #How often a benchmarking tournament is played
+
+#Below we define stages. Training will iterate through each stage, changing
+# using stage parameters as required
+
+[[stages]]
+n_generations = 2 #Number of generations for the stage.
+
+# Each generation corresponds to position generation through self-play and a weight update.
+
+# self-play parameters for that stage
+discount_factor = 0.99
+n_games_per_worker = 4
+n_simulations_per_move = 200
+
+# generated positions are put in a memory buffer which is sampled during training
+buffer_length = 70000 #Size of the memory buffer use to store past positions
+n_purge = 0 #How many old positions to purge from the memory buffer
+
+# After this is done, there is an option to generate more games starting from known past positions
+
+n_repeats = 5 #Number of times that the positions above will be repeated during self-play
+# n_replayed_positions = 100 # Number of positions to start from. If None, this phase is skipped
+sort_method = "entropy" #The method by which we keep past positions. Can be "entropy" or "random". "Entropy" keeps the highest entropy positions.
+
+#parameters for update phase
+learning_rate = 0.001 
+momentum = 0.9 
+training_samples = 40000 #Number of past positions to train on at update phase
+update_epochs = 1 #Number of training epochs 
+
+[[stages]]
+buffer_length = 70000
+discount_factor = 0.99
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 4
+n_generations = 2
+n_purge = 35000
+n_repeats = 2
+# n_replayed_positions = 500
+n_simulations_per_move = 200
+sort_method = "entropy"
+training_samples = 40000
+update_epochs = 1
+
+[[stages]]
+buffer_length = 70000
+discount_factor = 0.99
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 4
+n_generations = 2
+n_purge = 35000
+n_repeats = 2
+# n_replayed_positions = 500
+n_simulations_per_move = 200
+sort_method = "entropy"
+training_samples = 40000
+update_epochs = 1
+
+[[stages]]
+buffer_length = 70000
+discount_factor = 0.99
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 8
+n_generations = 2
+n_purge = 35000
+n_repeats = 2
+# n_replayed_positions = 500
+n_simulations_per_move = 200
+sort_method = "entropy"
+training_samples = 40000
+update_epochs = 1
+
+[[stages]]
+buffer_length = 70000
+discount_factor = 0.99
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 8
+n_generations = 2
+n_purge = 35000
+n_repeats = 2
+# n_replayed_positions = 500
+n_simulations_per_move = 200
+sort_method = "entropy"
+training_samples = 40000
+update_epochs = 1
+
+[[stages]]
+buffer_length = 400000
+discount_factor = 0.999
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 15
+n_generations = 2
+n_purge = 100000
+n_repeats = 1
+# n_replayed_positions = 100
+n_simulations_per_move = 400
+sort_method = "entropy"
+training_samples = 80000
+update_epochs = 2
+
+[[stages]]
+buffer_length = 400000
+discount_factor = 0.999
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 15
+n_generations = 2
+n_purge = 100000
+n_repeats = 1
+# n_replayed_positions = 100
+n_simulations_per_move = 400
+sort_method = "entropy"
+training_samples = 80000
+update_epochs = 2
+
+[[stages]]
+buffer_length = 400000
+discount_factor = 0.999
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 15
+n_generations = 2
+n_purge = 100000
+n_repeats = 1
+# n_replayed_positions = 100
+n_simulations_per_move = 400
+sort_method = "entropy"
+training_samples = 80000
+update_epochs = 2
+
+[[stages]]
+buffer_length = 2400000
+discount_factor = 1.0
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 30
+n_generations = 5
+n_purge = 250000
+n_repeats = 1
+# n_replayed_positions = 100
+n_simulations_per_move = 800
+sort_method = "entropy"
+training_samples = 300000
+update_epochs = 20
+
+[[stages]]
+buffer_length = 2400000
+discount_factor = 1.0
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 30
+n_generations = 5
+n_purge = 300000
+n_repeats = 1
+# n_replayed_positions = 100
+n_simulations_per_move = 800
+sort_method = "entropy"
+training_samples = 300000
+update_epochs = 20
+
+[[stages]]
+buffer_length = 2400000
+discount_factor = 1.0
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 30
+n_generations = 5
+n_purge = 300000
+n_repeats = 1
+# n_replayed_positions = 100
+n_simulations_per_move = 800
+sort_method = "entropy"
+training_samples = 300000
+update_epochs = 20
+
+[[stages]]
+buffer_length = 2400000
+discount_factor = 1.0
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 30
+n_generations = 10
+n_purge = 0
+n_repeats = 1
+# n_replayed_positions = 100
+n_simulations_per_move = 800
+sort_method = "entropy"
+training_samples = 300000
+update_epochs = 20

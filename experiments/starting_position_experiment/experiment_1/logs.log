@@ -1,0 +1,4 @@
+[32m[I 210130 15:36:53 trainer:135][39m Starting stage  0.
+[32m[I 210130 15:36:53 trainer:137][39m Playing 200 simulations per move
+[32m[I 210130 15:36:53 trainer:183][39m Training cycle 0 / 41
+[32m[I 210130 15:36:53 self_play:90][39m Setting up cache of size 51200
