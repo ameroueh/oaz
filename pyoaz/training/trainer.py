@@ -174,6 +174,10 @@ class Trainer:
         self.memory.set_maxlen(stage_params["buffer_length"])
 
         for _ in range(self.gen_in_stage, stage_params["n_generations"]):
+            # TODO Maybe better to have a train_gen method and train_gen_from positions
+            # so that we update the model twice:once after collecting normal positions,
+            # once after collecting positions starting from known interesting positions.
+            # Use the memory buffer without shuffling to do that
 
             self.logger.info(
                 f"Training cycle {self.generation} / {self.total_generations}"
@@ -181,6 +185,9 @@ class Trainer:
 
             # Generate positions
             dataset = self.perform_self_play(stage_params, debug_mode)
+
+            # Keep track of positions played
+            self.history["positions_played"].append(len(dataset))
 
             # Apply symmetry, get more positions
             dataset = self._dataset_apply_symmetry(dataset)
@@ -201,7 +208,11 @@ class Trainer:
                     starting_positions, stage_params, debug_mode
                 )
 
+                # Keep track of positions played
+                self.history["positions_played"][-1] += len(new_dataset)
+
                 new_dataset = self._dataset_apply_symmetry(new_dataset)
+
                 self.memory.update(new_dataset, logger=self.logger)
 
             # # Entropy stuff
@@ -714,6 +725,23 @@ class Trainer:
         plt.close()
 
         plt.figure()
+        plt.plot(
+            np.cumsum(self.history["positions_played"]),
+            self.history["mse"],
+            alpha=0.5,
+            label="MSE",
+        )
+        plt.plot(
+            np.cumsum(self.history["positions_played"]),
+            running_mean(self.history["mse"]),
+            label="Smoothed MSE",
+        )
+        plt.legend()
+        plot_path = self.save_path / "mse_per_positions.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
         plt.plot(self.history["accuracy"], alpha=0.5, label="Accuracy")
         plt.plot(
             running_mean(self.history["accuracy"]), label="Smoothed Accuracy"
@@ -737,6 +765,23 @@ class Trainer:
         )
         plt.legend()
         plot_path = self.save_path / "timed_accuracy_plot.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        plt.figure()
+        plt.plot(
+            np.cumsum(self.history["positions_played"]),
+            self.history["accuracy"],
+            alpha=0.5,
+            label="accuracy",
+        )
+        plt.plot(
+            np.cumsum(self.history["positions_played"]),
+            running_mean(self.history["accuracy"]),
+            label="Smoothed accuracy",
+        )
+        plt.legend()
+        plot_path = self.save_path / "accuracy_per_positions.png"
         plt.savefig(plot_path)
         plt.close()
 
