@@ -5,7 +5,7 @@
 
 namespace oaz::mcts {
 
-	using MCTSSearch = Search<UCTSelector<SearchNode>>;
+using MCTSSearch = Search<UCTSelector<SearchNode>>;
 }
 
 #endif

@@ -207,16 +207,28 @@ target_link_libraries(thread_pool oaz_python_module)
 python_add_module(evaluator oaz/python/evaluator.cpp)
 target_link_libraries(evaluator oaz_python_module)
 
-python_add_module(simulation_evaluator oaz/python/simulation_evaluator.cpp)
+python_add_module(
+	simulation_evaluator 
+	oaz/python/simulation_evaluator.cpp
+	oaz/simulation/simulation_evaluator.cpp
+)
 target_link_libraries(simulation_evaluator oaz_python_module)
 
 python_add_module(selection oaz/python/selection.cpp)
 target_link_libraries(selection oaz_python_module)
 
-python_add_module(search oaz/python/search.cpp)
+python_add_module(
+	search 
+	oaz/python/search.cpp
+	oaz/mcts/search.cpp
+)
 target_link_libraries(search oaz_python_module)
 
-python_add_module(nn_evaluator oaz/python/nn_evaluator.cpp)
+python_add_module(
+	nn_evaluator 
+	oaz/python/nn_evaluator.cpp
+	oaz/neural_network/nn_evaluator.cpp
+)
 target_link_libraries(nn_evaluator oaz_python_module tensorflow swig pybind11)
 
 python_add_module(game oaz/python/game.cpp)
@@ -225,10 +237,10 @@ target_link_libraries(game oaz_python_module)
 python_add_module(cache oaz/python/cache.cpp)
 target_link_libraries(cache oaz_python_module)
 
-python_add_module(simple_cache oaz/python/simple_cache.cpp)
+python_add_module(simple_cache oaz/python/simple_cache.cpp oaz/cache/simple_cache.hpp)
 target_link_libraries(simple_cache oaz_python_module)
 
-python_add_module(connect_four oaz/python/game_derived.cpp)
+python_add_module(connect_four oaz/python/game_derived.cpp oaz/games/connect_four.cpp)
 target_link_libraries(connect_four oaz_python_module)
 target_compile_definitions(
 	connect_four
@@ -238,7 +250,7 @@ target_compile_definitions(
 	-DMODULE_NAME=connect_four
 )
 
-python_add_module(tic_tac_toe oaz/python/game_derived.cpp)
+python_add_module(tic_tac_toe oaz/python/game_derived.cpp oaz/games/tic_tac_toe.cpp)
 target_link_libraries(tic_tac_toe oaz_python_module)
 target_compile_definitions(
 	tic_tac_toe
@@ -248,7 +260,7 @@ target_compile_definitions(
 	-DMODULE_NAME=tic_tac_toe
 )
 
-python_add_module(bandits oaz/python/game_derived.cpp)
+python_add_module(bandits oaz/python/game_derived.cpp oaz/games/bandits.cpp)
 target_link_libraries(bandits oaz_python_module)
 target_compile_definitions(
 	bandits
@@ -282,32 +294,32 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/test)
 add_executable(bitboard_test test/bitboard/bitboard_test.cpp)
 target_link_libraries(bitboard_test oaz_base oaz_test)
 
-add_executable(connect_four_test test/connect_four/connect_four_test.cpp)
+add_executable(connect_four_test test/connect_four/connect_four_test.cpp oaz/games/connect_four.cpp oaz/mcts/search.cpp)
 target_link_libraries(connect_four_test oaz_base oaz_test)
 
-add_executable(simple_cache_test test/cache/simple_cache_test.cpp)
+add_executable(simple_cache_test test/cache/simple_cache_test.cpp oaz/games/tic_tac_toe.cpp)
 target_link_libraries(simple_cache_test oaz_base oaz_test)
 
-add_executable(tic_tac_toe_test test/tic_tac_toe/tic_tac_toe_test.cpp)
+add_executable(tic_tac_toe_test test/tic_tac_toe/tic_tac_toe_test.cpp oaz/games/tic_tac_toe.cpp)
 target_link_libraries(tic_tac_toe_test oaz_base oaz_test)
 
-add_executable(bandits_test test/bandits/bandits_test.cpp)
+add_executable(bandits_test test/bandits/bandits_test.cpp oaz/games/bandits.cpp)
 target_link_libraries(bandits_test oaz_base oaz_test)
 
 add_executable(mcts_test test/mcts/mcts_test.cpp)
 target_link_libraries(mcts_test oaz_base oaz_test)
 
-add_executable(mcts_search_test test/mcts/mcts_search_test.cpp)
+add_executable(mcts_search_test test/mcts/mcts_search_test.cpp oaz/mcts/search.cpp oaz/games/connect_four.cpp oaz/mcts/search.cpp oaz/simulation/simulation_evaluator.cpp)
 target_link_libraries(mcts_search_test oaz_base oaz_test)
 
-add_executable(az_search_test test/az/az_search_test.cpp)
+add_executable(az_search_test test/az/az_search_test.cpp oaz/games/connect_four.cpp oaz/mcts/search.cpp oaz/neural_network/nn_evaluator.cpp)
 target_link_libraries(az_search_test oaz_base oaz_test tensorflow_with_cc_library)
 add_dependencies(az_search_test generate_evaluator_test_data)
 
-add_executable(mcts_connect_four_test test/mcts/mcts_connect_four_test.cpp)
+add_executable(mcts_connect_four_test test/mcts/mcts_connect_four_test.cpp oaz/games/connect_four.cpp oaz/mcts/search.cpp oaz/simulation/simulation_evaluator.cpp)
 target_link_libraries(mcts_connect_four_test oaz_base oaz_test)
 
-add_executable(simulation_evaluator_test test/simulation/simulation_evaluator_test.cpp)
+add_executable(simulation_evaluator_test test/simulation/simulation_evaluator_test.cpp oaz/games/connect_four.cpp oaz/mcts/search.cpp oaz/simulation/simulation_evaluator.cpp)
 target_link_libraries(simulation_evaluator_test oaz_base oaz_test)
 
 add_executable(thread_pool_test test/thread_pool/thread_pool_test.cpp)
@@ -336,7 +348,7 @@ add_custom_target(
 	${PROJECT_BINARY_DIR}/test
 )
 
-add_executable(nn_evaluator_test test/neural_network/nn_evaluator_test.cpp)
+add_executable(nn_evaluator_test test/neural_network/nn_evaluator_test.cpp oaz/games/connect_four.cpp oaz/neural_network/nn_evaluator.cpp)
 target_link_libraries(nn_evaluator_test oaz_base oaz_test tensorflow_with_cc_library)
 add_dependencies(nn_evaluator_test generate_evaluator_test_data)
 

@@ -2,8 +2,8 @@
 #define __SIMULATION_EVALUATOR_H__
 
 #include <memory>
-#include <vector>
 #include <random>
+#include <vector>
 
 #include "boost/multi_array.hpp"
 #include "oaz/evaluator/evaluator.hpp"
@@ -11,25 +11,19 @@
 
 namespace oaz::simulation {
 
-	class SimulationEvaluator : public oaz::evaluator::Evaluator {
-		public:
-			SimulationEvaluator(
-				std::shared_ptr<oaz::thread_pool::ThreadPool>
-			);
-			void RequestEvaluation(
-				oaz::games::Game*, 
-				float*,
-				boost::multi_array_ref<float, 1>,
-				oaz::thread_pool::Task*
-			);
+class SimulationEvaluator : public oaz::evaluator::Evaluator {
+ public:
+  SimulationEvaluator(std::shared_ptr<oaz::thread_pool::ThreadPool>);
+  void RequestEvaluation(oaz::games::Game*, float*,
+                         boost::multi_array_ref<float, 1>,
+                         oaz::thread_pool::Task*);
 
-		private:
-			float Simulate(oaz::games::Game&);
-			std::mt19937 m_generator;
-			
-			std::shared_ptr<oaz::thread_pool::ThreadPool> m_thread_pool;
-	};
-}
+ private:
+  float Simulate(oaz::games::Game&);
+  std::mt19937 m_generator;
 
-#include "simulation_evaluator_impl.cpp"
-#endif 
+  std::shared_ptr<oaz::thread_pool::ThreadPool> m_thread_pool;
+};
+}  // namespace oaz::simulation
+
+#endif

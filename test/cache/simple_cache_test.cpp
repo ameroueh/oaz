@@ -25,12 +25,12 @@ using namespace testing;
 /* }; */
 
 TEST (InstantiationTest, Default) {
-	TicTacToe game;
+	oaz::games::TicTacToe game;
 	SimpleCache cache(game, 100);
 }
 
 TEST (Evaluate, NotInDB) {
-	TicTacToe game;
+	oaz::games::TicTacToe game;
 	SimpleCache cache(game, 100);
 	float value = 0;
 	boost::multi_array<float, 1> policy(boost::extents[9]);
@@ -38,7 +38,7 @@ TEST (Evaluate, NotInDB) {
 }
 
 TEST (Insert, Default) {
-	TicTacToe game;
+	oaz::games::TicTacToe game;
 	SimpleCache cache(game, 100);
 	float value = 0;
 	boost::multi_array<float, 1> policy(boost::extents[9]);
@@ -48,7 +48,7 @@ TEST (Insert, Default) {
 }
 
 TEST (Evaluate, InDB) {
-	TicTacToe game;
+	oaz::games::TicTacToe game;
 	SimpleCache cache(game, 100);
 	float value = 0;
 	boost::multi_array<float, 1> policy(boost::extents[9]);
@@ -67,7 +67,7 @@ TEST (Evaluate, InDB) {
 }
 
 TEST (InstantiationTest, LargeInstance) {
-	TicTacToe game;
+	oaz::games::TicTacToe game;
 	SimpleCache cache(game, 5000000);
 }
 
