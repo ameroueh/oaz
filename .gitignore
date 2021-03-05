@@ -58,4 +58,4 @@ experiments/*.txt
 .docker-prompt
 
 # iPython notebook checkpoits 
-.ipynb-checkpoints/
+.ipynb_checkpoints/
