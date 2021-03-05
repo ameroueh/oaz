@@ -19,7 +19,7 @@ TEST (Instantiation, Default) {
 TEST (RequestEvaluation, Default) {
 	auto pool = make_shared<oaz::thread_pool::ThreadPool>(1);
 	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
-	ConnectFour game;
+	oaz::games::ConnectFour game;
 	boost::multi_array<float, 1> policy(boost::extents[7]);
 	float value;
 	
@@ -36,7 +36,7 @@ TEST (RequestEvaluation, Default) {
 }
 
 void EvaluateGames(
-	std::vector<ConnectFour>* games,
+	std::vector<oaz::games::ConnectFour>* games,
 	oaz::queue::SafeQueue<size_t>* indices_q, 
 	oaz::thread_pool::Task* task, 
 	std::shared_ptr<oaz::simulation::SimulationEvaluator> evaluator, 
@@ -50,7 +50,7 @@ void EvaluateGames(
 		indices_q->pop();
 		indices_q->Unlock();
 		
-		ConnectFour& game = (*games)[index];
+		oaz::games::ConnectFour& game = (*games)[index];
 	
 		size_t len = index % (moves.size() + 1);
 
@@ -77,7 +77,7 @@ TEST (RandomGames, Default) {
 	auto pool = make_shared<oaz::thread_pool::ThreadPool>(1);
 	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
 
-	std::vector<ConnectFour> games(10000);
+	std::vector<oaz::games::ConnectFour> games(10000);
 	oaz::queue::SafeQueue<size_t> indices;
 	for(size_t i=0; i!=10000; ++i) 
 		indices.push(i);
@@ -97,7 +97,7 @@ TEST (RandomGames, Default) {
 TEST (MultithreadedRandomGames, Default) {
 	auto pool = make_shared<oaz::thread_pool::ThreadPool>(2);
 	auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
-	std::vector<ConnectFour> games(10000);
+	std::vector<oaz::games::ConnectFour> games(10000);
 	oaz::queue::SafeQueue<size_t> indices;
 	for(size_t i=0; i!=10000; ++i) 
 		indices.push(i);

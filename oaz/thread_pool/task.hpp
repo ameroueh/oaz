@@ -2,11 +2,10 @@
 #define __TASK_HPP__
 
 namespace oaz::thread_pool {
-	class Task {
-		public:
-			virtual void operator()() = 0;
-			virtual ~Task(){}
-	};
-}
+class Task {
+ public:
+  virtual void operator()() = 0;
+  virtual ~Task() {}
+};
+}  // namespace oaz::thread_pool
 #endif
-

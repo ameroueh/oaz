@@ -4,10 +4,10 @@
 #include "stdint.h"
 
 namespace oaz::cache {
-	class SimplyCacheable {
-		public:
-			virtual uint64_t GetStateAsUint64() const = 0;			
-			virtual ~SimplyCacheable() {}
-	};
-}
+class SimplyCacheable {
+ public:
+  virtual uint64_t GetStateAsUint64() const = 0;
+  virtual ~SimplyCacheable() {}
+};
+}  // namespace oaz::cache
 #endif
