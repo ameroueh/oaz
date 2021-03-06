@@ -61,8 +61,8 @@ Python package
 ++++++++++++++
 
 Although OAZ can be used as a C++ library, a Python
-package with Python bindings to the C++ code as code 
-facilitate running self-play and training is 
+package with Python bindings to the C++ code as well as code 
+facilitating running self-play and training is 
 provided. To build and install it, run:
 
 .. code-block:: bash
