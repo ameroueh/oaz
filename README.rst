@@ -20,119 +20,70 @@ Now initialize the submodules:
  $ git submodule init
  $ git submodule update
 
-.. code-block:: bash
+Build the Docker image
+++++++++++++++++++++++
 
- $ cd oaz/extern/tensorflow
- $ git apply ../../patches/tensorflow.patch
+The easiest way of running OAZ is by building the Docker image.
+This image installs all the required dependencies, and can be used 
+to compile and run the OAZ C++ code, and create install the Python package `pyoaz`.
+Building the image may take a while (several hours) as tensorflow shared libraries
+are built as part of the process. Note that the image creates a user `oaz` with default UID 1000 (this can be overridden) for normal usage not requiring privileged access, and creates a directory `/home/oaz/io` meant to contain a host directory (typically the oaz repository). This image is meant to help developing OAZ.
 
-We recommend creating a Python environment for OAZ,
-e.g. with Miniconda:
-
-.. code-block:: bash
-
- $ conda create -n oaz python=3.6
- $ conda activate oaz
-
-Install GCC:
-
-.. code-block:: bash
-
- $ sudo apt-get install gcc g++
-
-Download and install Bazel 0.26.1, for example
-on Linux:
-
-.. code-block:: bash
-
- $ wget https://github.com/bazelbuild/bazel/releases/download/0.26.1/bazel-0.26.1-installer-linux-x86_64.sh 
- $ chmod +x bazel-0.26.1-installer-linux-x86_64.sh
- $ ./bazel-0.26.1-installer-linux-x86_64.sh --user
-
-Build TensorFlow from source:
-
-.. code-block:: bash
- $ pip install six numpy wheel setuptools mock 'future>=0.17.1'
- $ pip install keras_applications --no-deps
- $ pip install keras_preprocessing --no-deps 
- $ cd oaz/extern/tensorflow
- $ ./configure
- $ bazel build //tensorflow/tools/pip_package:build_pip_package
- $ ./bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg
- $ cd /tmp/tensorflow_pkg
- $ pip install tensorflow-version-tags.whl
-
-You must also manually compile ``libtensorflow.so`` and ``libtensorflow_cc.so``:
-
-.. code-block:: bash
-
- $ cd oaz/extern/tensorflow
- $ bazel build //tensorflow:libtensorflow.so
- $ bazel build //tensorflow:libtensorflow_cc.so
-
-Install cmake:
-.. code-block:: bash
-
- $ sudo apt-get install cmake
-
-Install Boost:
-
-.. code-block:: bash
-
- $ sudo apt-get install libboost-all-dev
-
-Install the HDF5 development libraries:
-
-.. code-block:: bash
-
- $ sudo apt-get install libhdf5-dev
-
-Install required Python dependencies:
-
-.. code-block:: bash
-
- $ pip install click keras==2.1.3
-
-
-
-Build
-+++++
 
 Run
 
 .. code-block:: bash
 
  $ cd oaz
- $ cmake . -B build
+ $ docker build . -t oaz
 
-to build the project.
+to build the image.
 
-Example
-+++++++
+C++ test suite
+++++++++++++++
 
-To test the alpha zero training loop for Tic Tac Toe, do:
+To test the alpha zero training loop for Tic Tac Toe,
+create a container running bash with
 
 .. code-block:: bash
 
- $ cd build
- $ make az_self_play_tic_tac_toe
- $ cp ../experiments/az_model_tic_tac_toe.py bin
- $ cd bin
- $ python az_model_tic_tac_toe.py train-agent
+ $ cd oaz
+ $ docker run --rm --gpus all -it --mount source=$(pwd),destination=/home/oaz/io,type=bind oaz'
 
-Test suite
-++++++++++
+Then, in the container, run
+
+.. code-block:: bash
+
+ $ cmake . -B build && cd build && make -j$(nproc) 
+
+to build all the tests and shared libraries, then run
+
+.. code-block:: bash
+
+ $ ctest .
+
+to run the tests. 
+
+Installing the Python package
++++++++++++++++++++++++++++++
+
+Although OAZ can be used as a C++ library, a Python
+package with Python bindings to the C++ code as well
+modules to facilitate running self-play and training is 
+provided. To build and install it, run:
+
+.. code-block:: bash
+
+ $ python setup.py bdist_wheel && cd dist && pip install .
+
+
+Python test suite 
++++++++++++++++++
 
 Run
 
 .. code-block:: bash
  
- $ cd oaz/build
- $ make 
+ $ cd pyoaz_tests && pytest .
 
-and then
-
-.. code-block:: bash
-
- $ make test
-
-to build and run all the tests.
+to run the Python tests.
