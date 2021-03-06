@@ -1,0 +1,1 @@
+Experiment outputs go here. Correspond to running Self Play as normal, always starting from an empty board position

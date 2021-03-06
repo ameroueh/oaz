@@ -4,118 +4,93 @@
 #include "tensorflow/core/framework/tensor.h"
 
 namespace oaz::nn {
-	
-	template <class Game>
-	class TrainingBatch {
-		
-		public:
-			TrainingBatch(size_t size): 
-				m_current_index(0),
-				m_n_reads(0),
-				m_size(size) {
-					std::vector<long long int> dimensions = Game::getBoardDimensions();
-					m_board_size_bytes = std::accumulate(
-						dimensions.begin(), 
-						dimensions.end(), 
-						1,
-						std::multiplies<long long int>()
-					) * sizeof(float);
-					
-					m_value_size_bytes = sizeof(float);
-					m_policy_size_bytes = Game::getPolicySize() * sizeof(float);
-					
-					std::vector<long long int> tensor_dimensions = {(long long int) size};
-					tensor_dimensions.insert(tensor_dimensions.end(), dimensions.begin(), dimensions.end());
-					m_board_batch = tensorflow::Tensor(
-						tensorflow::DT_FLOAT,
-						tensorflow::TensorShape(tensor_dimensions)
-					);
-					
-					m_value_label_batch = tensorflow::Tensor(
-						tensorflow::DT_FLOAT,
-						tensorflow::TensorShape(
-						 {(long long int) size}
-						)
-					);
 
-					m_policy_label_batch = tensorflow::Tensor(
-						tensorflow::DT_FLOAT,
-						tensorflow::TensorShape(
-						 {(long long int) size, (long long int) Game::getPolicySize()})
-					);
-			}
-			
-			void readElementFromMemory(
-				size_t index, 
-				float* board_source,
-				float* value_label_source,
-				float* policy_label_source) {
-				float* board_destination = &m_board_batch.template tensor<float, Game::NBoardDimensions + 1>()(index, 0, 0, 0);
-				float* policy_label_destination = &m_policy_label_batch.template tensor<float, 2>()(index, 0);
-				float* value_label_destination = &m_value_label_batch.template tensor<float, 1>()(index);
+template <class Game>
+class TrainingBatch {
+ public:
+  TrainingBatch(size_t size) : m_current_index(0), m_n_reads(0), m_size(size) {
+    std::vector<long long int> dimensions = Game::getBoardDimensions();
+    m_board_size_bytes = std::accumulate(dimensions.begin(), dimensions.end(),
+                                         1, std::multiplies<long long int>()) *
+                         sizeof(float);
 
-				std::memcpy(board_destination, board_source, m_board_size_bytes);
-				std::memcpy(value_label_destination, value_label_source, m_value_size_bytes);
-				std::memcpy(policy_label_destination, policy_label_source, m_policy_size_bytes);
-				++m_n_reads;
-			}
+    m_value_size_bytes = sizeof(float);
+    m_policy_size_bytes = Game::getPolicySize() * sizeof(float);
 
-			bool availableForTraining() {
-				return (m_current_index == m_n_reads) && full();
-			}
+    std::vector<long long int> tensor_dimensions = {(long long int)size};
+    tensor_dimensions.insert(tensor_dimensions.end(), dimensions.begin(),
+                             dimensions.end());
+    m_board_batch = tensorflow::Tensor(
+        tensorflow::DT_FLOAT, tensorflow::TensorShape(tensor_dimensions));
 
-			size_t acquireIndex() {
-				size_t index = m_current_index;
-				++m_current_index;
-				return	index;
-			}
+    m_value_label_batch = tensorflow::Tensor(
+        tensorflow::DT_FLOAT, tensorflow::TensorShape({(long long int)size}));
 
-			size_t getSize() const {
-				return m_size;
-			}
-			
-			tensorflow::Tensor& getBoardTensor() {
-				return m_board_batch;
-			}
-			
-			tensorflow::Tensor& getValueLabelTensor() {
-				return m_value_label_batch;
-			}
-			
-			tensorflow::Tensor& getPolicyLabelTensor() {
-				return m_policy_label_batch;
-			}
+    m_policy_label_batch = tensorflow::Tensor(
+        tensorflow::DT_FLOAT,
+        tensorflow::TensorShape(
+            {(long long int)size, (long long int)Game::getPolicySize()}));
+  }
 
-			void lock() {
-				m_lock.lock();
-			}
-			
-			void unlock() {
-				m_lock.unlock();
-			}
+  void readElementFromMemory(size_t index, float* board_source,
+                             float* value_label_source,
+                             float* policy_label_source) {
+    float* board_destination =
+        &m_board_batch.template tensor<float, Game::NBoardDimensions + 1>()(
+            index, 0, 0, 0);
+    float* policy_label_destination =
+        &m_policy_label_batch.template tensor<float, 2>()(index, 0);
+    float* value_label_destination =
+        &m_value_label_batch.template tensor<float, 1>()(index);
 
-			bool full() {
-				return m_current_index >= getSize();
-			}
+    std::memcpy(board_destination, board_source, m_board_size_bytes);
+    std::memcpy(value_label_destination, value_label_source,
+                m_value_size_bytes);
+    std::memcpy(policy_label_destination, policy_label_source,
+                m_policy_size_bytes);
+    ++m_n_reads;
+  }
 
-			size_t getNElements() const {
-				return m_current_index;
-			}
+  bool availableForTraining() {
+    return (m_current_index == m_n_reads) && full();
+  }
 
-		private:
-			oaz::mutex::SpinlockMutex m_lock;
-			
-			size_t m_current_index;
-			size_t m_size;
-			size_t m_board_size_bytes;
-			size_t m_value_size_bytes;
-			size_t m_policy_size_bytes;
-			std::atomic<size_t> m_n_reads;
-			
-			tensorflow::Tensor m_board_batch;
-			tensorflow::Tensor m_policy_label_batch;
-			tensorflow::Tensor m_value_label_batch;
-	};
-}
+  size_t acquireIndex() {
+    size_t index = m_current_index;
+    ++m_current_index;
+    return index;
+  }
+
+  size_t getSize() const { return m_size; }
+
+  tensorflow::Tensor& getBoardTensor() { return m_board_batch; }
+
+  tensorflow::Tensor& getValueLabelTensor() { return m_value_label_batch; }
+
+  tensorflow::Tensor& getPolicyLabelTensor() { return m_policy_label_batch; }
+
+  void lock() { m_lock.lock(); }
+
+  void unlock() { m_lock.unlock(); }
+
+  bool full() { return m_current_index >= getSize(); }
+
+  size_t getNElements() const { return m_current_index; }
+
+ private:
+  oaz::mutex::SpinlockMutex m_lock;
+
+  size_t m_current_index;
+  size_t m_size;
+  size_t m_board_size_bytes;
+  size_t m_value_size_bytes;
+  size_t m_policy_size_bytes;
+  std::atomic<size_t> m_n_reads;
+
+  tensorflow::Tensor m_board_batch;
+  tensorflow::Tensor m_policy_label_batch;
+  tensorflow::Tensor m_value_label_batch;
+};
+}  // namespace oaz::nn
 
 #endif

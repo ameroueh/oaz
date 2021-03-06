@@ -57,4 +57,5 @@ experiments/*.txt
 # see https://gist.github.com/scmx/242caa249b0ea343e2588adea14479e6
 .docker-prompt
 
-
+# iPython notebook checkpoits 
+.ipynb_checkpoints/

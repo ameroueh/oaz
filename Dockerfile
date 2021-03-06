@@ -86,22 +86,25 @@ ARG TF_NEED_MKL=0
 
 RUN ./configure
 
-ARG BAZEL_LOCAL_RAM_RESOURCES=16384
-ARG BAZEL_JOBS=16
+# ARG BAZEL_LOCAL_RAM_RESOURCES=16384
+# ARG BAZEL_JOBS=16
 
-RUN bazel build --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
-		--jobs=$BAZEL_JOBS \
+RUN bazel build \
+		# --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
+		# --jobs=$BAZEL_JOBS \
 		--config=opt \
 		//tensorflow/tools/pip_package:build_pip_package
 RUN ./bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg && \
 	pip install /tmp/tensorflow_pkg/tensorflow-*whl && \
 	rm -rf /tmp/tensorflow
-RUN bazel build --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
-		--jobs=$BAZEL_JOBS \
+RUN bazel build \
+		# --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
+		# --jobs=$BAZEL_JOBS \
 		--config=opt \
 		//tensorflow:libtensorflow.so
-RUN bazel build --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
-		--jobs=$BAZEL_JOBS \
+RUN bazel build \
+		# --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
+		# --jobs=$BAZEL_JOBS \
 		--config=opt \
 		//tensorflow:libtensorflow_cc.so
 
@@ -119,7 +122,7 @@ RUN mkdir /tmp/cmake && \
 	wget https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.tar.gz && \
 	tar -xzvf cmake-$CMAKE_VERSION.tar.gz && \
 	cd /tmp/cmake/cmake-$CMAKE_VERSION && \
-	./bootstrap && \
+	./bootstrap --parallel=$(nproc) && \
 	make -j$(nproc) && \
  	make install && \
 	rm -rf /tmp/cmake
@@ -137,8 +140,3 @@ RUN conda install swig
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-
-# Set up working directory
-
-RUN mkdir /home/oaz/io
-WORKDIR /home/oaz/io

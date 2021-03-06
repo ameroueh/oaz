@@ -11,12 +11,10 @@
 namespace p = boost::python;
 
 BOOST_PYTHON_MODULE(game) {
-    PyEval_InitThreads();
+  PyEval_InitThreads();
 
-    p::class_<std::vector<int> >("IntVec")
-        .def(p::vector_indexing_suite<std::vector<int> >());
+  p::class_<std::vector<int> >("IntVec").def(
+      p::vector_indexing_suite<std::vector<int> >());
 
-    p::class_<
-        oaz::games::Game,
-        boost::noncopyable>("Game", p::no_init);
+  p::class_<oaz::games::Game, boost::noncopyable>("Game", p::no_init);
 }
