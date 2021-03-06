@@ -6,3 +6,4 @@ TODO
 + Implement extra games (Go, Codecup 2021)
 + Add support for distributed evaluators
 + Add support for an arbitrary number of players
++ Set up automated testing on Github
