@@ -25,57 +25,49 @@ Build the Docker image
 
 The easiest way of running OAZ is by building the Docker image.
 This image installs all the required dependencies, and can be used 
-to compile and run the OAZ C++ code, and create install the Python package `pyoaz`.
+to compile and run the OAZ C++ code, and create install the Python package.
 Building the image may take a while (several hours) as tensorflow shared libraries
-are built as part of the process. Note that the image creates a user `oaz` with default UID 1000 (this can be overridden) for normal usage not requiring privileged access, and creates a directory `/home/oaz/io` meant to contain a host directory (typically the oaz repository). This image is meant to help developing OAZ.
-
-
-Run
+are built as part of the process. Note that the image creates a user `oaz` with default
+UID 1000 (this can be overridden) for normal usage not requiring privileged access,
+and creates a directory `/home/oaz/io` meant to contain a host directory (typically the oaz repository).
+This is the working directory of the container. Run
 
 .. code-block:: bash
 
  $ cd oaz
  $ docker build . -t oaz
 
-to build the image.
-
-C++ test suite
-++++++++++++++
-
-To test the alpha zero training loop for Tic Tac Toe,
-create a container running bash with
+to build the image. The rest of this README assumes that the user
+has access to a bash shell on the container, with the OAZ repository
+mounted to `/home/oaz/io`. This can be achieved with:
 
 .. code-block:: bash
 
  $ cd oaz
  $ docker run --rm --gpus all -it --mount source=$(pwd),destination=/home/oaz/io,type=bind oaz'
 
-Then, in the container, run
+C++ test suite
+++++++++++++++
+
+To compile and run the C++ test suite, run
 
 .. code-block:: bash
 
- $ cmake . -B build && cd build && make -j$(nproc) 
+ $ cmake . -B build && cd build && make -j$(nproc) && cd test && ctest
 
-to build all the tests and shared libraries, then run
+to build and run all the tests.
 
-.. code-block:: bash
-
- $ ctest .
-
-to run the tests. 
-
-Installing the Python package
-+++++++++++++++++++++++++++++
+Python package
+++++++++++++++
 
 Although OAZ can be used as a C++ library, a Python
-package with Python bindings to the C++ code as well
-modules to facilitate running self-play and training is 
+package with Python bindings to the C++ code as code 
+facilitate running self-play and training is 
 provided. To build and install it, run:
 
 .. code-block:: bash
 
  $ python setup.py bdist_wheel && cd dist && pip install .
-
 
 Python test suite 
 +++++++++++++++++
