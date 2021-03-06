@@ -8,7 +8,6 @@
 	friend class EvaluationBatch_InitialiseElement_Test ;
 
 
-#include "oaz/neural_network/nn_testing.hpp"
 #include "oaz/neural_network/nn_evaluator.hpp"
 #include "oaz/neural_network/model.hpp"
 #include "oaz/games/connect_four.hpp"
@@ -42,7 +41,7 @@ namespace oaz::nn {
 		oaz::thread_pool::DummyTask task;
 		float* value = nullptr;
 		boost::multi_array_ref<float, 1> policy(nullptr, boost::extents[0]);
-		ConnectFour game;
+		oaz::games::ConnectFour game;
 		EvaluationBatch batch({6, 7, 2}, 64);
 
 		batch.InitialiseElement(
@@ -104,7 +103,7 @@ namespace oaz::nn {
 			boost::extents[7]
 		);
 
-		ConnectFour game;
+		oaz::games::ConnectFour game;
 		evaluator.RequestEvaluation(
 			&game,
 			&value,
@@ -126,7 +125,7 @@ namespace oaz::nn {
 		);
 		auto pool = std::make_shared<oaz::thread_pool::ThreadPool>(1);
 		auto cache = std::make_shared<oaz::cache::SimpleCache>(
-			ConnectFour(),
+			oaz::games::ConnectFour(),
 			100
 		);
 		NNEvaluator evaluator(model, cache, pool, {6, 7, 2}, 64);
@@ -139,7 +138,7 @@ namespace oaz::nn {
 			boost::extents[7]
 		);
 
-		ConnectFour game;
+		oaz::games::ConnectFour game;
 		evaluator.RequestEvaluation(
 			&game,
 			&value,
@@ -174,7 +173,7 @@ namespace oaz::nn {
 		);
 		auto pool = std::make_shared<oaz::thread_pool::ThreadPool>(1);
 		auto cache = std::make_shared<oaz::cache::SimpleCache>(
-			ConnectFour(),
+			oaz::games::ConnectFour(),
 			100
 		);
 		NNEvaluator evaluator(model, cache, pool, {6, 7, 2}, 64);
@@ -187,7 +186,7 @@ namespace oaz::nn {
 			boost::extents[7]
 		);
 
-		ConnectFour game;
+		oaz::games::ConnectFour game;
 		evaluator.RequestEvaluation(
 			&game,
 			&value,
