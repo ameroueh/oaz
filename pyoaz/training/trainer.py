@@ -196,6 +196,7 @@ class Trainer:
             self.memory.update(dataset, logger=self.logger)
 
             # Play more moves from known interesting positions
+
             if stage_params["n_replayed_positions"] != "None":
                 starting_positions = self.get_past_starting_positions(
                     dataset=dataset,
