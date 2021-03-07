@@ -116,8 +116,8 @@ RUN bazel build \
 
 ENV TENSORFLOW_DIR=/home/oaz/tensorflow
 ENV TENSORFLOW_LIB=/home/oaz/tensorflow_lib
-RUN mkdir $TENSORFLOW_LIB
-RUN cp bazel-bin/tensorflow/*.so $TENSORFLOW_LIB
+RUN mkdir -p $TENSORFLOW_LIB
+RUN cp -a bazel-bin/tensorflow/*.so* $TENSORFLOW_LIB
 RUN bazel clean && rm -rf /home/oaz/.cache/bazel
 WORKDIR /home/oaz
 
