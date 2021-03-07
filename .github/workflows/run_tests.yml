@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/ameroueh/oaz-cpu:latest
     steps:
+      - run: sudo chown -R $USER:$USER /__w/oaz
       - uses: actions/checkout@v2
       - run: |
              echo "Hello! I am $EUID" 
