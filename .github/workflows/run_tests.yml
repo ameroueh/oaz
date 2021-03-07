@@ -1,0 +1,17 @@
+name: run test suites
+on: 
+  push:
+    branches:
+      - feature/add-testing-workflow
+  pull_request:
+    branches:
+      - master
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    container: ghcr.io/ameroueh/oaz-cpu:latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+              echo $USER
+        name: display user
