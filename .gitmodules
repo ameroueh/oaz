@@ -1,9 +1,6 @@
 [submodule "extern/googletest"]
 	path = extern/googletest
 	url = ../../google/googletest.git
-[submodule "extern/tensorflow"]
-	path = extern/tensorflow
-	url = https://github.com/tensorflow/tensorflow
 [submodule "extern/json"]
 	path = extern/json
 	url = https://github.com/nlohmann/json
