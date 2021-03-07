@@ -197,7 +197,9 @@ class Trainer:
 
             # Play more moves from known interesting positions
 
-            if stage_params["n_replayed_positions"] != "None":
+            if (stage_params["n_replayed_positions"] != "None") and (
+                (stage_params["n_replayed_positions"] is not None)
+            ):
                 starting_positions = self.get_past_starting_positions(
                     dataset=dataset,
                     n_replayed_positions=stage_params["n_replayed_positions"],

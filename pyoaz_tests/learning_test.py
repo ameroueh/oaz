@@ -70,6 +70,9 @@ def train_model():
                 "n_games_per_worker": 256,
                 "update_epochs": 1,
                 "training_samples": 40000,
+                "n_replayed_positions": 100,
+                "n_repeats": 2,
+                "sort_method": "entropy",
             },
             {
                 "n_generations": 3,
@@ -82,6 +85,9 @@ def train_model():
                 "n_games_per_worker": 256,
                 "update_epochs": 1,
                 "training_samples": 40000,
+                "n_replayed_positions": None,
+                "n_repeats": 2,
+                "sort_method": "entropy",
             },
             {
                 "n_generations": 3,
@@ -94,6 +100,9 @@ def train_model():
                 "n_games_per_worker": 256,
                 "update_epochs": 4,
                 "training_samples": 40000,
+                "n_replayed_positions": 100,
+                "n_repeats": 2,
+                "sort_method": "entropy",
             },
         ],
     }
