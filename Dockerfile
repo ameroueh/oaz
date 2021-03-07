@@ -1,5 +1,5 @@
-ARG NVIDIA_CUDA_IMAGE=11.1-cudnn8-devel-ubuntu18.04
-FROM nvidia/cuda:$NVIDIA_CUDA_IMAGE
+ARG BASE_IMAGE=nvidia/cuda:11.1-cudnn8-devel-ubuntu18.04
+FROM  $BASE_IMAGE
 
 SHELL [ "/bin/bash", "-c" ]
 
@@ -86,29 +86,37 @@ ARG TF_NEED_MKL=0
 
 RUN ./configure
 
-# ARG BAZEL_LOCAL_RAM_RESOURCES=16384
-# ARG BAZEL_JOBS=16
+ARG BAZEL_LOCAL_RAM_RESOURCES="HOST_RAM*.67"
+ARG BAZEL_JOBS="auto"
 
 RUN bazel build \
-		# --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
-		# --jobs=$BAZEL_JOBS \
+		# --platforms=$BAZEL_PLATFORMS \
+		--local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
+		--jobs=$BAZEL_JOBS \
 		--config=opt \
 		//tensorflow/tools/pip_package:build_pip_package
 RUN ./bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg && \
 	pip install /tmp/tensorflow_pkg/tensorflow-*whl && \
 	rm -rf /tmp/tensorflow
 RUN bazel build \
-		# --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
-		# --jobs=$BAZEL_JOBS \
+		# --platforms=$BAZEL_PLATFORMS \
+		--local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
+		--jobs=$BAZEL_JOBS \
 		--config=opt \
 		//tensorflow:libtensorflow.so
 RUN bazel build \
-		# --local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
-		# --jobs=$BAZEL_JOBS \
+		# --platforms=$BAZEL_PLATFORMS \
+		--local_ram_resources=$BAZEL_LOCAL_RAM_RESOURCES \
+		--jobs=$BAZEL_JOBS \
 		--config=opt \
 		//tensorflow:libtensorflow_cc.so
 
 ENV TENSORFLOW_DIR=/home/oaz/tensorflow
+ENV TENSORFLOW_LIB=/home/oaz/tensorflow_lib
+RUN mkdir $TENSORFLOW_LIB
+RUN cp bazel-bin/tensorflow/*.so $TENSORFLOW_LIB
+RUN bazel clean && rm -rf /home/oaz/.cache/bazel
+WORKDIR /home/oaz
 
 # Install cmake
 
@@ -116,7 +124,7 @@ USER root
 ARG CMAKE_VERSION=3.19.1
 RUN apt remove --purge --auto-remove cmake -qy
 RUN apt-get update
-RUN apt-get install libssl-dev -qy
+RUN apt-get install make libssl-dev -qy
 RUN mkdir /tmp/cmake && \
 	cd /tmp/cmake && \
 	wget https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.tar.gz && \
