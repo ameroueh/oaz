@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/ameroueh/oaz-cpu:latest
     steps:
-      - uses: actions/checkout@v2
+      # - uses: actions/checkout@v2
       - run: |
               echo $USER
         name: display user
