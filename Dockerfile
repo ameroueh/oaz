@@ -1,10 +1,13 @@
 ARG BASE_IMAGE=nvidia/cuda:11.1-cudnn8-devel-ubuntu18.04
-FROM  $BASE_IMAGE
+FROM $BASE_IMAGE
 
 SHELL [ "/bin/bash", "-c" ]
 
 # Install toolchain
 RUN apt-get -qq update
+RUN apt-get install -qy software-properties-common
+RUN apt-get -qq update
+RUN add-apt-repository ppa:git-core/ppa
 RUN apt-get install -qy unzip wget gcc g++ git
 
 # Add user
