@@ -9,7 +9,9 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    container: ghcr.io/ameroueh/oaz-cpu:latest
+    container: 
+      image: ghcr.io/ameroueh/oaz-cpu:latest
+      options: --user 1000
     steps:
       - run: chown -R $USER:$USER /__w/oaz
       - uses: actions/checkout@v2
