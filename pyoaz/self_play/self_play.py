@@ -60,9 +60,9 @@ class SelfPlay:
         self.epsilon = epsilon
         self.verbosity = verbosity
         self.alpha = alpha
+        self.logger = logger
         if logger is None:
             self.logger = setup_logger()
-        self.logger = logger
         self.selector = AZSelector()
         self.thread_pool = ThreadPool(n_workers)
 
