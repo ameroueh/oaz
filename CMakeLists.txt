@@ -46,7 +46,7 @@ find_package(SWIG REQUIRED COMPONENTS python)
 set(pybind11_INCLUDE_DIRS "")
 message("pybind11_INCLUDE_DIRS ${pybind11_INCLUDE_DIRS}")
 
-set(TensorFlow_BUILD_DIR $ENV{TENSORFLOW_DIR}/bazel-bin/tensorflow)
+set(TensorFlow_BUILD_DIR $ENV{TENSORFLOW_LIB})
 set(TensorFlow_SOURCE_DIR $ENV{TENSORFLOW_DIR})
 set(TensorFlow_BAZEL_GENFILES $ENV{TENSORFLOW_DIR}/bazel-genfiles)
 find_package(TensorFlow REQUIRED)
