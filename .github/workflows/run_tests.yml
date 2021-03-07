@@ -1,8 +1,8 @@
-name: run test suites
+name: Run test suites
 on: 
   push:
     branches:
-      - feature/add-testing-workflow
+      - master
   pull_request:
     branches:
       - master
@@ -15,6 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: |
-             echo "Hello!"
-             ls
-        name: Display working directory
+            cmake . -B build -DCMAKE_BUILD_TYPE=Debug && cd build && make -j$(nproc) && ctest
+        name: Run C++ test suite
+      # - run: |
+      #       python setup.py bdist_wheel && cd dist && pip install *.whl && cd ../pyoaz_tests && pytest
+
+            
+
