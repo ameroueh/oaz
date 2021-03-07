@@ -14,6 +14,9 @@ jobs:
       options: --user 1001
     steps:
       - uses: actions/checkout@v2
+        name: Checkout repository
+      - run: git submodule update --init --recursive 
+        name: Checkout submodules
       - run: |
             cmake . -B build -DCMAKE_BUILD_TYPE=Debug && cd build && make -j$(nproc) && ctest
         name: Run C++ test suite
