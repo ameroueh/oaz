@@ -10,7 +10,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     container: ghcr.io/ameroueh/oaz-cpu:latest
-    options: --user 1000
+      options: --user 1000
     steps:
       - uses: actions/checkout@v2
       - run: |
