@@ -7,3 +7,4 @@ TODO
 + Add support for distributed evaluators
 + Add support for an arbitrary number of players
 + Set up automated testing on Github
++ Allow games to be coded up from Python + library like Numba or Cython
