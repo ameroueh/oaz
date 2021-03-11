@@ -37,7 +37,7 @@ RUN echo "conda activate oaz" >> ~/.bashrc
 
 # Set-up entrypoint
 RUN echo $'#!/bin/bash \n\
-if [[ $EUID -ne 0 ]]; then \n\
+if [[ $(id -u) -ne 0 ]]; then \n\
 	__conda_setup="$($CONDA_DIR/bin/conda shell.bash hook 2> /dev/null)" \n\
 	eval "$__conda_setup" \n\
 	conda activate oaz\n\
