@@ -29,7 +29,7 @@ jobs:
         run: python3 -m flake8 .
   clang-format:
     name: clang-format
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - name: install clang-format-10
