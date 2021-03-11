@@ -1,10 +1,13 @@
 ARG BASE_IMAGE=nvidia/cuda:11.1-cudnn8-devel-ubuntu18.04
-FROM  $BASE_IMAGE
+FROM $BASE_IMAGE
 
 SHELL [ "/bin/bash", "-c" ]
 
 # Install toolchain
 RUN apt-get -qq update
+RUN apt-get install -qy software-properties-common
+RUN apt-get -qq update
+RUN add-apt-repository ppa:git-core/ppa
 RUN apt-get install -qy unzip wget gcc g++ git
 
 # Add user
@@ -34,7 +37,7 @@ RUN echo "conda activate oaz" >> ~/.bashrc
 
 # Set-up entrypoint
 RUN echo $'#!/bin/bash \n\
-if [[ $EUID -ne 0 ]]; then \n\
+if [[ $(id -u) -ne 0 ]]; then \n\
 	__conda_setup="$($CONDA_DIR/bin/conda shell.bash hook 2> /dev/null)" \n\
 	eval "$__conda_setup" \n\
 	conda activate oaz\n\
@@ -113,8 +116,8 @@ RUN bazel build \
 
 ENV TENSORFLOW_DIR=/home/oaz/tensorflow
 ENV TENSORFLOW_LIB=/home/oaz/tensorflow_lib
-RUN mkdir $TENSORFLOW_LIB
-RUN cp bazel-bin/tensorflow/*.so $TENSORFLOW_LIB
+RUN mkdir -p $TENSORFLOW_LIB
+RUN cp -a bazel-bin/tensorflow/*.so* $TENSORFLOW_LIB
 RUN bazel clean && rm -rf /home/oaz/.cache/bazel
 WORKDIR /home/oaz
 

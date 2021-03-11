@@ -1,4 +1,4 @@
-name: pyoaz
+name: pyoaz formatting and linting
 on: 
   push:
     branches: [master, refactor]
