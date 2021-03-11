@@ -18,10 +18,7 @@ jobs:
       - run: git submodule update --init --recursive 
         name: Checkout submodules
       - run: |
+            conda init bash && source ~/.bashrc && conda activate oaz
             cmake . -B build -DCMAKE_BUILD_TYPE=Debug && cd build && make -j$(nproc) && ctest
         name: Run C++ test suite
-      # - run: |
-      #       python setup.py bdist_wheel && cd dist && pip install *.whl && cd ../pyoaz_tests && pytest
-
-            
-
+        shell: bash
