@@ -18,8 +18,7 @@ RUN useradd -m oaz --uid=${UID}
 # Install miniconda
 
 USER oaz
-WORKDIR /home/oaz
-
+WORKDIR /home/oaz 
 ARG MINICONDA_VERSION=4.7.12.1
 ENV CONDA_DIR /home/oaz/miniconda3
 
@@ -147,7 +146,15 @@ RUN conda install py-boost boost-cpp
 
 RUN conda install swig
 
+# Install clang-format-10
+USER root
+RUN wget --no-check-certificate -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+RUN add-apt-repository 'deb http://apt.llvm.org/bionic/   llvm-toolchain-bionic-10  main'
+RUN apt install clang-format-10 -qy
+RUN ln -s /usr/bin/clang-format-10 /usr/bin/clang-format
+
 # Install OAZ python requirements
 
+USER oaz
 COPY requirements.txt .
 RUN pip install -r requirements.txt
