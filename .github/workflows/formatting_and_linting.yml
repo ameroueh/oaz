@@ -1,8 +1,11 @@
 name: pyoaz formatting and linting
 on: 
   push:
-    branches: [master, refactor]
+    branches: 
+        master
   pull_request:
+    branches:
+        master
 jobs:
   black:
     name: black
@@ -24,3 +27,16 @@ jobs:
         run: python3 -m pip install flake8==3.8.3
       - name: check
         run: python3 -m flake8 .
+  clang-format:
+    name: clang-format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install clang-format-10
+        run: |
+          wget --no-check-certificate -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository 'deb http://apt.llvm.org/bionic/   llvm-toolchain-bionic-10  main'
+          sudo apt-get install clang-format-10 -qy
+      - name: run clang-format-10 
+        run: find oaz -name '*.cpp' -o -name '*.hpp' | clang-format-10 --dry-run --Werror
+
