@@ -2,8 +2,6 @@ dataclasses
 tqdm
 pytest
 logzero
-black==19.10b0
-flake8==3.8.3
 pandas
 joblib
 matplotlib

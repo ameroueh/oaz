@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(oaz)
 
-# DEPENDENCIES 
+# DEPENDENCIES
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/googletest" "extern/googletest")
 set(JSON_BuildTests
@@ -10,11 +10,11 @@ set(JSON_BuildTests
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/json" "extern/json")
 # add_subdiectory("${PROJECT_SOURCE_DIR}/extern/spdlog" "extern/spdlog")
 
-# CMAKE MODULES 
+# CMAKE MODULES
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
-# EXTERNAL DEPENDENCIES 
+# EXTERNAL DEPENDENCIES
 
 execute_process(
   COMMAND python -c "from distutils.sysconfig import get_python_inc; \
@@ -53,7 +53,7 @@ find_package(TensorFlow REQUIRED)
 tensorflow_require_c_library()
 tensorflow_require_source()
 
-# FLAGS 
+# FLAGS
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -66,7 +66,7 @@ set(CMAKE_CXX_FLAGS
 set(CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=${TensorFlow_ABI}")
 
-# INTERFACE LIBRARIES 
+# INTERFACE LIBRARIES
 
 add_library(oaz_base INTERFACE)
 target_include_directories(oaz_base INTERFACE ${PROJECT_SOURCE_DIR}
@@ -104,7 +104,7 @@ target_include_directories(swig INTERFACE ${SWIG_DIR})
 add_library(pybind11 INTERFACE)
 target_include_directories(pybind11 INTERFACE ${pybind11_INCLUDE_DIRS})
 
-# PYTHON MODULES 
+# PYTHON MODULES
 
 python_add_module(thread_pool oaz/python/thread_pool.cpp)
 target_link_libraries(thread_pool oaz_python_module)
@@ -174,7 +174,7 @@ add_dependencies(
   bandits
   tic_tac_toe)
 
-# TESTS 
+# TESTS
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/test)
 
