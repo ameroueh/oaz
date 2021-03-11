@@ -38,5 +38,5 @@ jobs:
           sudo add-apt-repository 'deb http://apt.llvm.org/bionic/   llvm-toolchain-bionic-10  main'
           sudo apt-get install clang-format-10 -qy
       - name: run clang-format-10 
-        run: find oaz -name '*.cpp' -o -name '*.hpp' | clang-format-10 --dry-run --Werror
+        run: find oaz -name '*.cpp' -o -name '*.hpp' | xargs clang-format-10 --dry-run --Werror
 
