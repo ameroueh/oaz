@@ -37,7 +37,7 @@ jobs:
       - name: update pip
         run: python3 -m pip install --upgrade pip setuptools
       - name: install requires
-        run: python3 -m pip install -r dev-requirements.txt
+        run: sudo python3 -m pip install -r dev-requirements.txt
       - name: run cmake-format
         run: cmake-format --check CMakeLists.txt
   clang-format:
