@@ -1,0 +1,24 @@
+name: Run test suites
+on: 
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    container: 
+      image: ghcr.io/ameroueh/oaz-cpu-github:latest
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout repository
+      - run: git submodule update --init --recursive 
+        name: Checkout submodules
+      - run: |
+            conda init bash && source ~/.bashrc && conda activate oaz
+            cmake . -B build -DCMAKE_BUILD_TYPE=Debug && cd build && make -j$(nproc) && ctest
+        name: Run C++ test suite
+        shell: bash
