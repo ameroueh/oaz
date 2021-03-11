@@ -1,4 +1,4 @@
-name: pyoaz formatting and linting
+name: Formatting and linting
 on: 
   push:
     branches: 
