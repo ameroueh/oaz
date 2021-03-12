@@ -3,12 +3,19 @@ import tensorflow.compat.v1 as tf
 from pyoaz.models import create_connect_four_model
 from pyoaz.self_play import SelfPlay
 from pyoaz.games.connect_four import ConnectFour
+from pyoaz.utils import get_keras_model_node_names
 
 
 def test_self_play():
     with tf.Session() as session:
         tf.keras.backend.set_session(session)
-        create_connect_four_model()
+        model = create_connect_four_model()
+        (
+            input_node_name,
+            value_node_name,
+            policy_node_name,
+        ) = get_keras_model_node_names(model)
+        print(input_node_name, value_node_name, policy_node_name)
         session.run(tf.global_variables_initializer())
         self_play = SelfPlay(
             game=ConnectFour,
@@ -19,4 +26,10 @@ def test_self_play():
             n_threads=4,
             evaluator_batch_size=1,
         )
-        self_play.self_play(session, debug=True)
+        self_play.self_play(
+            session,
+            input_node_name,
+            value_node_name,
+            policy_node_name,
+            debug=True,
+        )
