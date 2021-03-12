@@ -137,6 +137,9 @@ class SelfPlay:
     def self_play(
         self,
         session,
+        input_node_name,
+        value_node_name,
+        policy_node_name,
         starting_positions: np.ndarray = None,
         n_repeats: int = 1,
         discount_factor: float = 1.0,
@@ -170,8 +173,9 @@ class SelfPlay:
 
         model = Model(
             session=session,
-            value_node_name="value/Tanh",
-            policy_node_name="policy/Softmax",
+            input_node_name=input_node_name,
+            value_node_name=value_node_name,
+            policy_node_name=policy_node_name,
         )
 
         self.evaluator = NNEvaluator(

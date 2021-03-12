@@ -205,7 +205,7 @@ void NNEvaluator::EvaluateBatch(EvaluationBatch* batch) {
   std::vector<tensorflow::Tensor> outputs;
 
   m_n_evaluation_requests++;
-  m_model->Run({{"input:0", batch->GetBatchTensor().Slice(
+  m_model->Run({{m_model->GetInputNodeName(), batch->GetBatchTensor().Slice(
                                 0, batch->GetNumberOfElements())}},
                {m_model->GetValueNodeName(), m_model->GetPolicyNodeName()}, {},
                &outputs);

@@ -5,11 +5,14 @@ from .nn_evaluator import Model as ModelCore, NNEvaluator as NNEvaluatorCore
 
 
 class Model:
-    def __init__(self, session, value_node_name, policy_node_name):
+    def __init__(
+        self, session, input_node_name, value_node_name, policy_node_name
+    ):
 
         self._session = session
         self._core = ModelCore()
         self._core.set_session(self.session._session)
+        self._core.set_input_node_name(input_node_name)
         self._core.set_value_node_name(value_node_name)
         self._core.set_policy_node_name(policy_node_name)
 
