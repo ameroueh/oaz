@@ -89,9 +89,7 @@ def play_tournament(game, model, n_games=100, mcts_bot_iterations=None):
 
     tournament = Tournament(game)
     win_loss = tournament.start_tournament(
-        participants,
-        n_games=n_games,
-        prioritised_participant=oazbot,
+        participants, n_games=n_games, prioritised_participant=oazbot,
     )
 
     oaz_wins, oaz_losses = win_loss[0, :].sum(), win_loss[:, 0].sum()

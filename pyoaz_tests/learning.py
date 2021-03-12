@@ -42,10 +42,7 @@ def train_model():
             "optimizer": "adam",
             "policy_factor": 1.0,
         },
-        "save": {
-            "save_path": save_dir,
-            "checkpoint_every": 100,
-        },
+        "save": {"save_path": save_dir, "checkpoint_every": 100,},
         "benchmark": {
             "tournament_frequency": 1,
             "n_tournament_games": 10,
