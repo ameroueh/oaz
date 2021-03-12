@@ -22,7 +22,7 @@ class Model {
   void SetPolicyNodeName(std::string policy_node_name) {
     m_policy_node_name = policy_node_name;
   }
-  
+
   void SetInputNodeName(std::string input_node_name) {
     m_input_node_name = input_node_name;
   }
@@ -30,7 +30,7 @@ class Model {
   void SetValueNodeName(std::string value_node_name) {
     m_value_node_name = value_node_name;
   }
-  
+
   std::string GetInputNodeName() const { return m_input_node_name; }
 
   std::string GetPolicyNodeName() const { return m_policy_node_name; }
@@ -72,7 +72,7 @@ tensorflow::Session* CreateSessionAndLoadGraph(std::string path) {
 }
 
 std::shared_ptr<Model> CreateModel(tensorflow::Session* session,
-				   std::string input_node_name,
+                                   std::string input_node_name,
                                    std::string value_node_name,
                                    std::string policy_node_name) {
   auto model = std::make_shared<Model>();
