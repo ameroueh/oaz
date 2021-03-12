@@ -1,5 +1,4 @@
 import tensorflow.compat.v1 as tf
-import tensorflow.compat.v1.keras.backend as K
 
 from pyoaz.bots.az_bot import AZBot
 from pyoaz.games.tic_tac_toe import TicTacToe
