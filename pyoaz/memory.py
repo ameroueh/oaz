@@ -23,7 +23,9 @@ class ArrayBuffer:
         return len(self._array[0])
 
     def enqueue(
-        self, array: np.ndarray, keep_indices: np.ndarray = None,
+        self,
+        array: np.ndarray,
+        keep_indices: np.ndarray = None,
     ) -> np.ndarray:
         """Add new data to the buffer, pushing out old data if necessary"""
 
