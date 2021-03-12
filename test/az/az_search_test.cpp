@@ -31,6 +31,7 @@ namespace oaz::mcts {
 		);
 		auto model = oaz::nn::CreateModel(
 			session.get(), 
+			"input",
 			"value",
 			"policy"
 		);
@@ -64,6 +65,7 @@ namespace oaz::mcts {
 		);
 		auto model = oaz::nn::CreateModel(
 			session.get(), 
+			"input",
 			"value",
 			"policy"
 		);
@@ -101,6 +103,7 @@ namespace oaz::mcts {
 		);
 		auto model = oaz::nn::CreateModel(
 			session.get(), 
+			"input",
 			"value",
 			"policy"
 		);
@@ -136,6 +139,7 @@ namespace oaz::mcts {
 		);
 		auto model = oaz::nn::CreateModel(
 			session.get(), 
+			"input",
 			"value",
 			"policy"
 		);
@@ -173,6 +177,7 @@ namespace oaz::mcts {
 		);
 		auto model = oaz::nn::CreateModel(
 			session.get(), 
+			"input",
 			"value",
 			"policy"
 		);
