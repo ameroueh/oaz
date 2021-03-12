@@ -1,12 +1,12 @@
 #include "nlohmann/json.hpp"
 
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 using json = nlohmann::json;
 
-TEST (JsonTest, Default) {
-	json example;
-	example["test"] = true;
-	ASSERT_TRUE(example["test"]);
+TEST(JsonTest, Default) {
+  json example;
+  example["test"] = true;
+  ASSERT_TRUE(example["test"]);
 }
