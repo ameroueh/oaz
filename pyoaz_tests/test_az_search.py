@@ -47,7 +47,10 @@ def test_az_search():
 
         # AZ search definition
         model = Model(
-            session=session, value_node_name="value", policy_node_name="policy"
+            session=session,
+            input_node_name="input",
+            value_node_name="value",
+            policy_node_name="policy",
         )
         thread_pool = ThreadPool(n_workers=2)
         evaluator = NNEvaluator(
@@ -109,7 +112,10 @@ def test_az_search_with_cache():
 
         # AZ search definition
         model = Model(
-            session=session, value_node_name="value", policy_node_name="policy"
+            session=session,
+            input_node_name="input",
+            value_node_name="value",
+            policy_node_name="policy",
         )
         thread_pool = ThreadPool(n_workers=1)
         cache = SimpleCache(ConnectFour(), 100)

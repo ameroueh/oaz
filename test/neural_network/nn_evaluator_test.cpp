@@ -76,6 +76,7 @@ namespace oaz::nn {
 		std::unique_ptr<tensorflow::Session> session(CreateSessionAndLoadGraph("frozen_model.pb"));
 		auto model = CreateModel(
 			session.get(), 
+			"input",
 			"value",
 			"policy"
 		);
@@ -89,6 +90,7 @@ namespace oaz::nn {
 		);
 		auto model = CreateModel(
 			session.get(), 
+			"input",
 			"value",
 			"policy"
 		);
@@ -120,6 +122,7 @@ namespace oaz::nn {
 		);
 		auto model = CreateModel(
 			session.get(), 
+			"input",
 			"value",
 			"policy"
 		);
@@ -168,6 +171,7 @@ namespace oaz::nn {
 		);
 		auto model = CreateModel(
 			session.get(), 
+			"input",
 			"value",
 			"policy"
 		);

@@ -6,23 +6,22 @@ from pyoaz.evaluator.nn_evaluator import Model, NNEvaluator
 from pyoaz.search import Search, select_best_move_by_visit_count
 from pyoaz.selection import AZSelector
 from pyoaz.thread_pool import ThreadPool
+from pyoaz.utils import get_keras_model_node_names
 
 
 class AZBot(Bot):
     @classmethod
-    def from_keras_model(
-        cls,
-        game_class,
-        model,
-        value_node_name,
-        policy_node_name,
-        *args,
-        **kwargs
-    ):
+    def from_keras_model(cls, game_class, model, *args, **kwargs):
 
         session = K.get_session()
+        (
+            input_node_name,
+            value_node_name,
+            policy_node_name,
+        ) = get_keras_model_node_names(model)
         model = Model(
             session=session,
+            input_node_name=input_node_name,
             value_node_name=value_node_name,
             policy_node_name=policy_node_name,
         )

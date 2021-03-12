@@ -1,3 +1,6 @@
+import tensorflow.compat.v1 as tf
+import tensorflow.compat.v1.keras.backend as K
+
 import logging
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -18,7 +21,9 @@ LOGGER.level = logging.INFO
 # Very simple integration test
 def test_trainer():
     with TemporaryDirectory() as save_dir:
-        CONFIG["save"]["save_path"] = save_dir
+        with tf.Session() as session:
+            K.set_session(session)
+            CONFIG["save"]["save_path"] = save_dir
 
-        trainer = Trainer(configuration=CONFIG, logger=LOGGER)
-        trainer.train()
+            trainer = Trainer(configuration=CONFIG, logger=LOGGER)
+            trainer.train()
