@@ -103,7 +103,7 @@ class Trainer:
             f.write(toml.dumps(self.configuration))
 
     def train(self, debug_mode: bool = False) -> None:
-        """ Main methopd, launches the whole training procedure. setup objects,
+        """Main methopd, launches the whole training procedure. setup objects,
             benchmarking and iterate through training stages.
 
         Parameters
@@ -143,7 +143,7 @@ class Trainer:
             self.stage_idx += 1
 
     def train_stage(self, stage_params: dict, debug_mode: bool) -> None:
-        """ Perform one stage of training. First, positions are generated
+        """Perform one stage of training. First, positions are generated
             through self play. They are then added to a buffer. If set, we then
             do another pass of selfplay on where old moves are revisited. Those
             are added to the buffer. Finally the model is updated, and we
@@ -318,7 +318,9 @@ class Trainer:
         self.history["val_loss"].extend(train_history.history["val_loss"])
 
     def perform_self_play(
-        self, stage_params, debug_mode,
+        self,
+        stage_params,
+        debug_mode,
     ):
 
         session = K.get_session()
@@ -348,7 +350,10 @@ class Trainer:
         return dataset
 
     def self_play_from_starting_positions(
-        self, starting_positions, stage_params, debug_mode,
+        self,
+        starting_positions,
+        stage_params,
+        debug_mode,
     ):
 
         session = K.get_session()
@@ -377,7 +382,11 @@ class Trainer:
         return dataset
 
     def get_past_starting_positions(
-        self, dataset, n_replayed_positions, n_repeated, sort_method,
+        self,
+        dataset,
+        n_replayed_positions,
+        n_repeated,
+        sort_method,
     ):
         boards = dataset["Boards"]
         if sort_method == "random":
