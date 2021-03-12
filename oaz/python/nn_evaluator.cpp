@@ -78,8 +78,10 @@ BOOST_PYTHON_MODULE(nn_evaluator) {
   p::class_<oaz::nn::Model, std::shared_ptr<oaz::nn::Model>,
             boost::noncopyable>("Model", p::init<>())
       .def("set_session", &SetSessionV2)
+      .add_property("input_node_name", &oaz::nn::Model::GetInputNodeName)
       .add_property("value_node_name", &oaz::nn::Model::GetValueNodeName)
       .add_property("policy_node_name", &oaz::nn::Model::GetPolicyNodeName)
+      .def("set_input_node_name", &oaz::nn::Model::SetInputNodeName)
       .def("set_value_node_name", &oaz::nn::Model::SetValueNodeName)
       .def("set_policy_node_name", &oaz::nn::Model::SetPolicyNodeName);
 
