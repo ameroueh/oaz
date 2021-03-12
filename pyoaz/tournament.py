@@ -23,8 +23,7 @@ class Participant:
 
 class Tournament:
     def __init__(
-        self,
-        game,
+        self, game,
     ):
         self.game = game
 
