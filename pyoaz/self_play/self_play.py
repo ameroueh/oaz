@@ -202,7 +202,10 @@ class SelfPlay:
         dataset_queue = Queue()
 
         self.play_games(
-            dataset_queue, game_queue, n_games=n_games, debug=debug,
+            dataset_queue,
+            game_queue,
+            n_games=n_games,
+            debug=debug,
         )
 
         # regroup outputs into one dataset
@@ -250,7 +253,10 @@ class SelfPlay:
             self.logger.debug("THREADING MODE")
             # Threading Mode:
 
-            with tqdm(total=n_games, desc="Self-play games",) as pbar:
+            with tqdm(
+                total=n_games,
+                desc="Self-play games",
+            ) as pbar:
                 threads = [
                     Thread(
                         target=self._self_play,

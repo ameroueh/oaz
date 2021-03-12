@@ -318,7 +318,9 @@ class Trainer:
         self.history["val_loss"].extend(train_history.history["val_loss"])
 
     def perform_self_play(
-        self, stage_params, debug_mode,
+        self,
+        stage_params,
+        debug_mode,
     ):
 
         session = K.get_session()
@@ -348,7 +350,10 @@ class Trainer:
         return dataset
 
     def self_play_from_starting_positions(
-        self, starting_positions, stage_params, debug_mode,
+        self,
+        starting_positions,
+        stage_params,
+        debug_mode,
     ):
 
         session = K.get_session()
@@ -377,7 +382,11 @@ class Trainer:
         return dataset
 
     def get_past_starting_positions(
-        self, dataset, n_replayed_positions, n_repeated, sort_method,
+        self,
+        dataset,
+        n_replayed_positions,
+        n_repeated,
+        sort_method,
     ):
         boards = dataset["Boards"]
         if sort_method == "random":
