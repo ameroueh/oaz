@@ -26,6 +26,7 @@ from pyoaz.training.utils import (
     play_tournament,
     running_mean,
 )
+from pyoaz.utils import get_keras_model_node_names
 
 tf.disable_v2_behavior()
 
@@ -327,11 +328,19 @@ class Trainer:
             stage_params["n_simulations_per_move"],
             debug_mode=debug_mode,
         )
+        (
+            input_node_name,
+            value_node_name,
+            policy_node_name,
+        ) = get_keras_model_node_names(self.model)
 
         start_time = time.time()
 
         dataset = self.self_play_controller.self_play(
             session,
+            input_node_name=input_node_name,
+            value_node_name=value_node_name,
+            policy_node_name=policy_node_name,
             discount_factor=stage_params["discount_factor"],
             debug=debug_mode,
         )
@@ -344,10 +353,21 @@ class Trainer:
 
         session = K.get_session()
 
+        (
+            input_node_name,
+            value_node_name,
+            policy_node_name,
+        ) = get_keras_model_node_names(self.model)
+
+        start_time = time.time()
+
         start_time = time.time()
 
         dataset = self.self_play_controller.self_play(
             session,
+            input_node_name,
+            value_node_name,
+            policy_node_name,
             starting_positions=starting_positions,
             n_repeats=stage_params["n_repeats"],
             discount_factor=stage_params["discount_factor"],
