@@ -1,11 +1,12 @@
-#ifndef __SEARCH_HPP__
-#define __SEARCH_HPP__
+#ifndef OAZ_MCTS_SEARCH_HPP_
+#define OAZ_MCTS_SEARCH_HPP_
 
 #ifndef TEST_FRIENDS
   #define TEST_FRIENDS
 #endif
 
 #include <exception>
+#include <memory>
 #include <random>
 #include <vector>
 
@@ -139,4 +140,4 @@ class Search {
 
 }  // namespace oaz::mcts
 
-#endif
+#endif // OAZ_MCTS_SEARCH_HPP_

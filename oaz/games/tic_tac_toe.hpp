@@ -1,6 +1,9 @@
-#ifndef __TIC_TAC_TOE_HPP__
-#define __TIC_TAC_TOE_HPP__
+#ifndef OAZ_GAMES_TIC_TAC_TOE_HPP_
+#define OAZ_GAMES_TIC_TAC_TOE_HPP_
 
+#include <stdint.h>
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -8,7 +11,6 @@
 #include "oaz/bitboard/bitboard.hpp"
 #include "oaz/games/game.hpp"
 #include "oaz/games/generic_game_map.hpp"
-#include "stdint.h"
 
 namespace oaz::games {
 class TicTacToe : public Game {
@@ -22,7 +24,7 @@ class TicTacToe : public Game {
     static const Class& Methods() {
       static const Class meta;
       return meta;
-    };
+    }
 
    private:
     const std::vector<int> m_board_shape{3, 3, 2};
@@ -69,4 +71,4 @@ class TicTacToe : public Game {
   std::bitset<8> m_status;
 };
 }  // namespace oaz::games
-#endif
+#endif // OAZ_GAMES_TIC_TAC_TOE_HPP_

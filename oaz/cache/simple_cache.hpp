@@ -1,9 +1,12 @@
-#ifndef __SIMPLE_CACHE_HPP__
-#define __SIMPLE_CACHE_HPP__
+#ifndef OAZ_CACHE_SIMPLE_CACHE_HPP_
+#define OAZ_CACHE_SIMPLE_CACHE_HPP_
+
+#include <stdint.h>
 
 #include <atomic>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <utility>
@@ -11,7 +14,6 @@
 #include "boost/multi_array.hpp"
 #include "oaz/cache/cache.hpp"
 #include "oaz/games/game.hpp"
-#include "stdint.h"
 
 namespace oaz::cache {
 
@@ -96,4 +98,4 @@ class SimpleCache : public Cache {
   std::unique_ptr<oaz::games::Game::GameMap> m_map;
 };
 }  // namespace oaz::cache
-#endif
+#endif // OAZ_CACHE_SIMPLE_CACHE_HPP_

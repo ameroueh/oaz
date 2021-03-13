@@ -2,22 +2,21 @@
 
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
-using namespace oaz::games;
+oaz::games::TicTacToe::TicTacToe() : m_status(0) {}
 
-TicTacToe::TicTacToe() : m_status(0) {}
+void oaz::games::TicTacToe::Reset() { *this = TicTacToe(); }
 
-void TicTacToe::Reset() { *this = TicTacToe(); }
-
-void TicTacToe::PlayFromString(std::string moves) {
+void oaz::games::TicTacToe::PlayFromString(std::string moves) {
   for (char& c : moves) {
     PlayMove(c - '0');
   }
 }
 
-void TicTacToe::PlayMove(size_t move) {
+void oaz::games::TicTacToe::PlayMove(size_t move) {
   size_t row = move % 3;
   size_t column = move / 3;
 
@@ -28,28 +27,30 @@ void TicTacToe::PlayMove(size_t move) {
   MaybeEndGame(victory, player);
 }
 
-void TicTacToe::MaybeEndGame(bool victory, size_t player) {
+void oaz::games::TicTacToe::MaybeEndGame(bool victory, size_t player) {
   if (victory) {
     SetWinner(player);
     DeclareFinished();
-  } else if ((m_player0_tokens | m_player1_tokens).Sum() == 9)
-    DeclareFinished();
+  } else {
+    if ((m_player0_tokens | m_player1_tokens).Sum() == 9)
+    	DeclareFinished();
+  }
 }
 
-size_t TicTacToe::GetCurrentPlayer() const {
+size_t oaz::games::TicTacToe::GetCurrentPlayer() const {
   return m_player0_tokens.Sum() == m_player1_tokens.Sum() ? 0 : 1;
 }
 
-const TicTacToe::Board& TicTacToe::GetPlayerBoard(size_t player) const {
+const oaz::games::TicTacToe::Board& oaz::games::TicTacToe::GetPlayerBoard(size_t player) const {
   return (player == 0) ? m_player0_tokens : m_player1_tokens;
 }
 
-TicTacToe::Board& TicTacToe::GetPlayerBoard(size_t player) {
+oaz::games::TicTacToe::Board& oaz::games::TicTacToe::GetPlayerBoard(size_t player) {
   return const_cast<Board&>(
       static_cast<const TicTacToe&>(*this).GetPlayerBoard(player));
 }
 
-bool TicTacToe::CheckVictory(const Board& board, size_t row,
+bool oaz::games::TicTacToe::CheckVictory(const Board& board, size_t row,
                              size_t column) const {
   if ((board.RowSum(row) == 3) || (board.ColumnSum(column) == 3)) {
     return true;
@@ -63,7 +64,7 @@ bool TicTacToe::CheckVictory(const Board& board, size_t row,
   return false;
 }
 
-bool TicTacToe::CheckVictory(const Board& board) const {
+bool oaz::games::TicTacToe::CheckVictory(const Board& board) const {
   bool victory = false;
   for (size_t i = 0; i != 3; ++i)
     for (size_t j = 0; j != 3; ++j)
@@ -74,7 +75,7 @@ bool TicTacToe::CheckVictory(const Board& board) const {
   return victory;
 }
 
-void TicTacToe::CheckVictory() {
+void oaz::games::TicTacToe::CheckVictory() {
   const Board& player0_tokens = GetPlayerBoard(0);
   bool victory0 = CheckVictory(player0_tokens);
   MaybeEndGame(victory0, 0);
@@ -83,11 +84,11 @@ void TicTacToe::CheckVictory() {
   MaybeEndGame(victory1, 1);
 }
 
-void TicTacToe::SetWinner(size_t player) { m_status.set(player); }
+void oaz::games::TicTacToe::SetWinner(size_t player) { m_status.set(player); }
 
-void TicTacToe::DeclareFinished() { m_status.set(2); }
+void oaz::games::TicTacToe::DeclareFinished() { m_status.set(2); }
 
-void TicTacToe::GetAvailableMoves(std::vector<size_t>& moves) const {
+void oaz::games::TicTacToe::GetAvailableMoves(std::vector<size_t>& moves) const {
   moves.clear();
 
   if (IsFinished()) return;
@@ -100,35 +101,36 @@ void TicTacToe::GetAvailableMoves(std::vector<size_t>& moves) const {
   }
 }
 
-bool TicTacToe::IsFinished() const { return m_status.test(2); }
+bool oaz::games::TicTacToe::IsFinished() const { return m_status.test(2); }
 
-bool TicTacToe::Player0Won() const { return m_status.test(0); }
+bool oaz::games::TicTacToe::Player0Won() const { return m_status.test(0); }
 
-bool TicTacToe::Player1Won() const { return m_status.test(1); }
+bool oaz::games::TicTacToe::Player1Won() const { return m_status.test(1); }
 
-float TicTacToe::GetScore() const {
-  if (IsFinished())
+float oaz::games::TicTacToe::GetScore() const {
+  if (IsFinished()) {
     if (Player0Won())
       return 1;
     else if (Player1Won())
       return -1;
     else
       return 0;
-  else
+  } else {
     return 0;
+  }
 }
 
-bool TicTacToe::operator==(const TicTacToe& rhs) {
+bool oaz::games::TicTacToe::operator==(const TicTacToe& rhs) {
   return (m_player0_tokens == rhs.m_player0_tokens) &&
          (m_player1_tokens == rhs.m_player1_tokens) &&
          (m_status == rhs.m_status);
 }
 
-std::unique_ptr<Game> TicTacToe::Clone() const {
+std::unique_ptr<Game> oaz::games::TicTacToe::Clone() const {
   return std::make_unique<TicTacToe>(*this);
 }
 
-void TicTacToe::WriteStateToTensorMemory(float* destination) const {
+void oaz::games::TicTacToe::WriteStateToTensorMemory(float* destination) const {
   boost::multi_array_ref<float, 3> tensor(destination, boost::extents[3][3][2]);
   const Board& player0_tokens = GetPlayerBoard(0);
   for (size_t i = 0; i != 3; ++i)
@@ -140,7 +142,7 @@ void TicTacToe::WriteStateToTensorMemory(float* destination) const {
       tensor[i][j][1] = player1_tokens.Get(i, j) ? 1. : 0.;
 }
 
-void TicTacToe::WriteCanonicalStateToTensorMemory(float* destination) const {
+void oaz::games::TicTacToe::WriteCanonicalStateToTensorMemory(float* destination) const {
   boost::multi_array_ref<float, 3> tensor(destination, boost::extents[3][3][2]);
   const Board& current_player_tokens = GetPlayerBoard(GetCurrentPlayer());
   for (size_t i = 0; i != 3; ++i)
@@ -152,7 +154,7 @@ void TicTacToe::WriteCanonicalStateToTensorMemory(float* destination) const {
       tensor[i][j][1] = other_player_tokens.Get(i, j) ? 1. : 0.;
 }
 
-void TicTacToe::InitialiseFromState(float* input_board) {
+void oaz::games::TicTacToe::InitialiseFromState(float* input_board) {
   Reset();
   size_t player_0 = 0;
   size_t player_1 = 1;
@@ -173,7 +175,7 @@ void TicTacToe::InitialiseFromState(float* input_board) {
   CheckVictory();
 }
 
-void TicTacToe::InitialiseFromCanonicalState(float* input_board) {
+void oaz::games::TicTacToe::InitialiseFromCanonicalState(float* input_board) {
   Reset();
   boost::multi_array_ref<float, 3> data(input_board, boost::extents[3][3][2]);
 
@@ -203,6 +205,6 @@ void TicTacToe::InitialiseFromCanonicalState(float* input_board) {
   CheckVictory();
 }
 
-size_t TicTacToe::GetState() const {
+size_t oaz::games::TicTacToe::GetState() const {
   return m_player0_tokens.GetBits() | (m_player1_tokens.GetBits() << 9);
 }
