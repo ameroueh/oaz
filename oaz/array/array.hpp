@@ -1,5 +1,5 @@
-#ifndef __ARRAY_HPP__
-#define __ARRAY_HPP__
+#ifndef OAZ_ARRAY_ARRAY_HPP_
+#define OAZ_ARRAY_ARRAY_HPP_
 
 #include <cstring>
 #include <tuple>
@@ -45,4 +45,4 @@ class Array : public boost::multi_array<float, sizeof...(dimensions)> {
 };
 }  // namespace oaz::array
 
-#endif
+#endif // OAZ_ARRAY_ARRAY_HPP_

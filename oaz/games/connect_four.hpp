@@ -1,5 +1,7 @@
-#ifndef __CONNECT_FOUR_HPP__
-#define __CONNECT_FOUR_HPP__
+#ifndef OAZ_GAMES_CONNECT_FOUR_HPP_
+#define OAZ_GAMES_CONNECT_FOUR_HPP_
+
+#include <stdint.h>
 
 #include <bitset>
 #include <memory>
@@ -10,7 +12,6 @@
 #include "oaz/bitboard/bitboard.hpp"
 #include "oaz/games/game.hpp"
 #include "oaz/games/generic_game_map.hpp"
-#include "stdint.h"
 
 namespace oaz::games {
 class ConnectFour : public Game {
@@ -84,4 +85,4 @@ class ConnectFour : public Game {
   std::bitset<8> m_status;
 };
 }  // namespace oaz::games
-#endif
+#endif // OAZ_GAMES_CONNECT_FOUR_HPP_
