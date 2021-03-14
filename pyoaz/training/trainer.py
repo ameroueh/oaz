@@ -221,54 +221,6 @@ class Trainer:
 
                 self.memory.update(new_dataset, logger=self.logger)
 
-            # # Entropy stuff
-            # mcts_entropy = compute_policy_entropy(dataset["Policies"])
-
-            # (
-            #     entropy,
-            #     weighted_entropy,
-            #     starting_positions,
-            # ) = self.compute_position_entropies(
-            #     stage_params,
-            #     return_positions=True,
-            #     n=stage_params["n_replayed_positions"],
-            # )
-
-            # self.history["model_entropy"].append(entropy)
-            # self.history["model_weighted_entropy"].append(weighted_entropy)
-
-            # self.history["model_average_entropy"].append(entropy.mean())
-            # self.history["model_average_weighted_entropy"].append(
-            #     weighted_entropy.mean()
-            # )
-            # # TODO get entropy before board sym?
-            # total_games = (
-            #     stage_params["n_repeats"]
-            #     * stage_params["n_replayed_positions"]
-            # )
-            # self.logger.info(
-            #     "Replaying highest entropy positions. "
-            #     f"{total_games} will be replayed"
-            # )
-            # session = K.get_session()
-
-            # new_dataset = self.self_play_controller.self_play(
-            #     session,
-            #     starting_positions=starting_positions,
-            #     n_repeats=stage_params["n_repeats"],
-            #     discount_factor=stage_params["discount_factor"],
-            #     debug=debug_mode,
-            # )
-
-            # # new_dataset = self.perform_self_play(
-            # #     stage_params, debug_mode, n_games_per_worker=1, reuse=True,
-            # # )
-
-            # dataset = stack_datasets([dataset, new_dataset])
-
-            # self.history["mcts_entropy"].append(mcts_entropy)
-            # self.history["mcts_average_entropy"].append(mcts_entropy.mean())
-
             # Update phase. Train the model
             train_history = self.update_model(stage_params)
 
@@ -328,6 +280,7 @@ class Trainer:
             stage_params["n_simulations_per_move"],
             debug_mode=debug_mode,
         )
+
         (
             input_node_name,
             value_node_name,
