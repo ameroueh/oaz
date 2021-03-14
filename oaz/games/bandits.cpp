@@ -18,7 +18,8 @@ void oaz::games::Bandits::PlayFromString(std::string moves) {
 
 void oaz::games::Bandits::PlayMove(size_t move) { m_board.set(move); }
 
-void oaz::games::Bandits::GetAvailableMoves(std::vector<size_t>& available_moves) const {
+void oaz::games::Bandits::GetAvailableMoves(
+    std::vector<size_t>& available_moves) const {
   available_moves.clear();
 
   for (size_t i = 0; i != 10; ++i)
@@ -27,13 +28,15 @@ void oaz::games::Bandits::GetAvailableMoves(std::vector<size_t>& available_moves
 
 bool oaz::games::Bandits::IsFinished() const { return GetCurrentPlayer() == 1; }
 
-size_t oaz::games::Bandits::GetCurrentPlayer() const { return m_board.any() ? 1 : 0; }
+size_t oaz::games::Bandits::GetCurrentPlayer() const {
+  return m_board.any() ? 1 : 0;
+}
 
 float oaz::games::Bandits::GetScore() const {
   return (m_board & WINNING_BITS).any() ? 1. : -1.;
 }
 
-std::unique_ptr<Game> oaz::games::Bandits::Clone() const {
+std::unique_ptr<oaz::games::Game> oaz::games::Bandits::Clone() const {
   return std::make_unique<Bandits>(*this);
 }
 
@@ -46,7 +49,8 @@ void oaz::games::Bandits::WriteStateToTensorMemory(float* destination) const {
   for (size_t i = 0; i != 10; ++i) tensor[i] = m_board.test(i) ? 1. : 0.;
 }
 
-void oaz::games::Bandits::WriteCanonicalStateToTensorMemory(float* destination) const {
+void oaz::games::Bandits::WriteCanonicalStateToTensorMemory(
+    float* destination) const {
   WriteStateToTensorMemory(destination);
 }
 

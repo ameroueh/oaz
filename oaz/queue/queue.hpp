@@ -1,5 +1,5 @@
-#ifndef __QUEUE_HPP__
-#define __QUEUE_HPP__
+#ifndef OAZ_QUEUE_QUEUE_HPP_
+#define OAZ_QUEUE_QUEUE_HPP_
 
 #include <deque>
 #include <queue>
@@ -35,4 +35,4 @@ class SafeDeque : public std::deque<T> {
   oaz::mutex::SpinlockMutex m_mutex;
 };
 }  // namespace oaz::queue
-#endif
+#endif  // OAZ_QUEUE_QUEUE_HPP_

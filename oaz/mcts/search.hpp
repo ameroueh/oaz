@@ -140,4 +140,4 @@ class Search {
 
 }  // namespace oaz::mcts
 
-#endif // OAZ_MCTS_SEARCH_HPP_
+#endif  // OAZ_MCTS_SEARCH_HPP_

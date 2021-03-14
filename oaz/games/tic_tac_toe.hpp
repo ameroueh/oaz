@@ -71,4 +71,4 @@ class TicTacToe : public Game {
   std::bitset<8> m_status;
 };
 }  // namespace oaz::games
-#endif // OAZ_GAMES_TIC_TAC_TOE_HPP_
+#endif  // OAZ_GAMES_TIC_TAC_TOE_HPP_

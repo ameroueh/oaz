@@ -85,4 +85,4 @@ class ConnectFour : public Game {
   std::bitset<8> m_status;
 };
 }  // namespace oaz::games
-#endif // OAZ_GAMES_CONNECT_FOUR_HPP_
+#endif  // OAZ_GAMES_CONNECT_FOUR_HPP_

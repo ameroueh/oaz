@@ -1,5 +1,5 @@
-#ifndef __TIME_HPP__
-#define __TIME_HPP__
+#ifndef OAZ_UTILS_TIME_HPP_
+#define OAZ_UTILS_TIME_HPP_
 
 #include <chrono>
 
@@ -11,4 +11,4 @@ size_t time_now_ns() {
       .count();
 }
 }  // namespace oaz::utils
-#endif
+#endif  // OAZ_UTILS_TIME_HPP_

@@ -56,4 +56,4 @@ class Bandits : public Game {
   void Reset();
 };
 }  // namespace oaz::games
-#endif // OAZ_GAMES_BANDITS_HPP_
+#endif  // OAZ_GAMES_BANDITS_HPP_

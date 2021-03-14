@@ -122,4 +122,4 @@ class BitBoard {
 };
 
 }  // namespace oaz::bitboard
-#endif // OAZ_BITBOARD_BITBOARD_HPP_
+#endif  // OAZ_BITBOARD_BITBOARD_HPP_

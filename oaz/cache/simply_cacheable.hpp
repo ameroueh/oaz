@@ -10,4 +10,4 @@ class SimplyCacheable {
   virtual ~SimplyCacheable() {}
 };
 }  // namespace oaz::cache
-#endif // OAZ_CACHE_SIMPLY_CACHEABLE_HPP_
+#endif  // OAZ_CACHE_SIMPLY_CACHEABLE_HPP_

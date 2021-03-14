@@ -1,6 +1,7 @@
-#ifndef __UTILS_HPP__
-#define __UTILS_HPP__
+#ifndef OAZ_UTILS_UTILS_HPP_
+#define OAZ_UTILS_UTILS_HPP_
 
+#include <iostream>
 #include <vector>
 
 #include "nlohmann/json.hpp"
@@ -72,4 +73,4 @@ bool CheckSearchTree(oaz::mcts::SearchNode* node) {
 
   return overall_correct;
 }
-#endif
+#endif  // OAZ_UTILS_UTILS_HPP_

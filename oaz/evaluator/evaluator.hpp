@@ -2,7 +2,6 @@
 #define OAZ_EVALUATOR_EVALUATOR_HPP_
 
 #include "boost/multi_array.hpp"
-
 #include "oaz/games/game.hpp"
 #include "oaz/thread_pool/thread_pool.hpp"
 
@@ -16,4 +15,4 @@ class Evaluator {
   virtual ~Evaluator() {}
 };
 }  // namespace oaz::evaluator
-#endif // OAZ_EVALUATOR_EVALUATOR_HPP_
+#endif  // OAZ_EVALUATOR_EVALUATOR_HPP_
