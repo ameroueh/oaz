@@ -1,5 +1,5 @@
-#ifndef __SIMULATION_EVALUATOR_H__
-#define __SIMULATION_EVALUATOR_H__
+#ifndef OAZ_SIMULATION_SIMULATION_EVALUATOR_HPP_
+#define OAZ_SIMULATION_SIMULATION_EVALUATOR_HPP_
 
 #include <memory>
 #include <random>
@@ -26,4 +26,4 @@ class SimulationEvaluator : public oaz::evaluator::Evaluator {
 };
 }  // namespace oaz::simulation
 
-#endif
+#endif OAZ_SIMULATION_SIMULATION_EVALUATOR_HPP_

@@ -45,4 +45,4 @@ class Array : public boost::multi_array<float, sizeof...(dimensions)> {
 };
 }  // namespace oaz::array
 
-#endif // OAZ_ARRAY_ARRAY_HPP_
+#endif  // OAZ_ARRAY_ARRAY_HPP_

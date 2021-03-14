@@ -1,15 +1,13 @@
-#ifndef __NN_MODEL_H__
-#define __NN_MODEL_H__
+#ifndef OAZ_NEURAL_NETWORK_MODEL_HPP_
+#define OAZ_NEURAL_NETWORK_MODEL_HPP_
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "oaz/semaphore/semaphore.hpp"
 #include "tensorflow/cc/saved_model/loader.h"
 #include "tensorflow/core/framework/tensor.h"
 #include "tensorflow/core/public/session.h"
-
-using namespace tensorflow;
 
 namespace oaz::nn {
 
@@ -37,10 +35,11 @@ class Model {
 
   std::string GetValueNodeName() const { return m_value_node_name; }
 
-  void Run(const std::vector<std::pair<std::string, Tensor> >& inputs,
-           const std::vector<string>& output_tensor_names,
-           const std::vector<string>& target_node_names,
-           std::vector<Tensor>* outputs) {
+  void Run(
+      const std::vector<std::pair<std::string, tensorflow::Tensor> >& inputs,
+      const std::vector<std::string>& output_tensor_names,
+      const std::vector<std::string>& target_node_names,
+      std::vector<tensorflow::Tensor>* outputs) {
     TF_CHECK_OK(m_session->Run(inputs, output_tensor_names, target_node_names,
                                outputs));
   }
@@ -60,8 +59,8 @@ tensorflow::Session* CreateSession() {
 }
 
 void LoadGraph(tensorflow::Session* session, std::string path) {
-  GraphDef graph_def;
-  ReadBinaryProto(Env::Default(), path, &graph_def);
+  tensorflow::GraphDef graph_def;
+  ReadBinaryProto(tensorflow::Env::Default(), path, &graph_def);
   TF_CHECK_OK(session->Create(graph_def));
 }
 
@@ -83,4 +82,4 @@ std::shared_ptr<Model> CreateModel(tensorflow::Session* session,
   return model;
 }
 }  // namespace oaz::nn
-#endif
+#endif  // OAZ_NEURAL_NETWORK_MODEL_HPP_

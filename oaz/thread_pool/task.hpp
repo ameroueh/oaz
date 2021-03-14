@@ -1,5 +1,5 @@
-#ifndef __TASK_HPP__
-#define __TASK_HPP__
+#ifndef OAZ_THREAD_POOL_TASK_HPP_
+#define OAZ_THREAD_POOL_TASK_HPP_
 
 namespace oaz::thread_pool {
 class Task {
@@ -8,4 +8,4 @@ class Task {
   virtual ~Task() {}
 };
 }  // namespace oaz::thread_pool
-#endif
+#endif  // OAZ_THREAD_POOL_TASK_HPP_

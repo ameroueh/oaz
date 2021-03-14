@@ -32,8 +32,7 @@ void oaz::games::TicTacToe::MaybeEndGame(bool victory, size_t player) {
     SetWinner(player);
     DeclareFinished();
   } else {
-    if ((m_player0_tokens | m_player1_tokens).Sum() == 9)
-    	DeclareFinished();
+    if ((m_player0_tokens | m_player1_tokens).Sum() == 9) DeclareFinished();
   }
 }
 
@@ -41,17 +40,19 @@ size_t oaz::games::TicTacToe::GetCurrentPlayer() const {
   return m_player0_tokens.Sum() == m_player1_tokens.Sum() ? 0 : 1;
 }
 
-const oaz::games::TicTacToe::Board& oaz::games::TicTacToe::GetPlayerBoard(size_t player) const {
+const oaz::games::TicTacToe::Board& oaz::games::TicTacToe::GetPlayerBoard(
+    size_t player) const {
   return (player == 0) ? m_player0_tokens : m_player1_tokens;
 }
 
-oaz::games::TicTacToe::Board& oaz::games::TicTacToe::GetPlayerBoard(size_t player) {
+oaz::games::TicTacToe::Board& oaz::games::TicTacToe::GetPlayerBoard(
+    size_t player) {
   return const_cast<Board&>(
       static_cast<const TicTacToe&>(*this).GetPlayerBoard(player));
 }
 
 bool oaz::games::TicTacToe::CheckVictory(const Board& board, size_t row,
-                             size_t column) const {
+                                         size_t column) const {
   if ((board.RowSum(row) == 3) || (board.ColumnSum(column) == 3)) {
     return true;
   }
@@ -88,7 +89,8 @@ void oaz::games::TicTacToe::SetWinner(size_t player) { m_status.set(player); }
 
 void oaz::games::TicTacToe::DeclareFinished() { m_status.set(2); }
 
-void oaz::games::TicTacToe::GetAvailableMoves(std::vector<size_t>& moves) const {
+void oaz::games::TicTacToe::GetAvailableMoves(
+    std::vector<size_t>& moves) const {
   moves.clear();
 
   if (IsFinished()) return;
@@ -126,7 +128,7 @@ bool oaz::games::TicTacToe::operator==(const TicTacToe& rhs) {
          (m_status == rhs.m_status);
 }
 
-std::unique_ptr<Game> oaz::games::TicTacToe::Clone() const {
+std::unique_ptr<oaz::games::Game> oaz::games::TicTacToe::Clone() const {
   return std::make_unique<TicTacToe>(*this);
 }
 
@@ -142,7 +144,8 @@ void oaz::games::TicTacToe::WriteStateToTensorMemory(float* destination) const {
       tensor[i][j][1] = player1_tokens.Get(i, j) ? 1. : 0.;
 }
 
-void oaz::games::TicTacToe::WriteCanonicalStateToTensorMemory(float* destination) const {
+void oaz::games::TicTacToe::WriteCanonicalStateToTensorMemory(
+    float* destination) const {
   boost::multi_array_ref<float, 3> tensor(destination, boost::extents[3][3][2]);
   const Board& current_player_tokens = GetPlayerBoard(GetCurrentPlayer());
   for (size_t i = 0; i != 3; ++i)

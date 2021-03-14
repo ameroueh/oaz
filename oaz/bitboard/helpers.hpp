@@ -1,9 +1,9 @@
 #ifndef OAZ_BITBOARD_HELPERS_HPP_
-#define OAZ_BITBOARD_HELPERS_HPP
+  #define OAZ_BITBOARD_HELPERS_HPP
 
-#include <stdint.h>
+  #include <stdint.h>
 
-#include <bitset>
+  #include <bitset>
 
 namespace oaz::bitboard {
 template <uint64_t NROWS, uint64_t NCOLS>
@@ -24,4 +24,4 @@ inline uint64_t locount_ll(uint64_t bits) { return __builtin_clzll(~bits); }
 
 inline uint64_t tocount_ll(uint64_t bits) { return __builtin_ctzll(~bits); }
 }  // namespace oaz::bitboard
-#endif // OAZ_BITBOARD_HELPERS_HPP_
+#endif  // OAZ_BITBOARD_HELPERS_HPP_

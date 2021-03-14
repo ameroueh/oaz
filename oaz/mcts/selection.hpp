@@ -1,25 +1,27 @@
-#ifndef __SELECTION_HPP__
-#define __SELECTION_HPP__
+#ifndef OAZ_MCTS_SELECTION_HPP_
+#define OAZ_MCTS_SELECTION_HPP_
+
 #include <cmath>
+#include <memory>
 #include <random>
 
 #include "oaz/mcts/search_node.hpp"
 
-static constexpr float C_EXPLORATION = 1.4142;
-
 namespace oaz::mcts {
+
+static constexpr float C_EXPLORATION = 1.4142;
 
 class Selector {
  public:
-  virtual size_t operator()(SearchNode*) const = 0;
+  virtual size_t operator()(oaz::mcts::SearchNode*) const = 0;
   virtual std::unique_ptr<Selector> Clone() const = 0;
 
-  virtual ~Selector(){};
+  virtual ~Selector() {}
 };
 
 class UCTSelector : public Selector {
  public:
-  size_t operator()(SearchNode* node) const {
+  size_t operator()(oaz::mcts::SearchNode* node) const {
     size_t best_child_index = 0;
     float best_score = 0;
     for (size_t i = 0; i != node->GetNChildren(); ++i) {
@@ -36,7 +38,8 @@ class UCTSelector : public Selector {
   }
 
  private:
-  float GetChildScore(SearchNode* parent, SearchNode* child) const {
+  float GetChildScore(oaz::mcts::SearchNode* parent,
+                      oaz::mcts::SearchNode* child) const {
     float q = (child->GetNVisits() == 0)
                   ? 0
                   : child->GetAccumulatedValue() / child->GetNVisits();
@@ -49,7 +52,7 @@ class UCTSelector : public Selector {
 
 class AZSelector : public Selector {
  public:
-  size_t operator()(SearchNode* node) const {
+  size_t operator()(oaz::mcts::SearchNode* node) const {
     size_t best_child_index = 0;
     float best_score = 0;
     for (size_t i = 0; i != node->GetNChildren(); ++i) {
@@ -66,7 +69,8 @@ class AZSelector : public Selector {
   }
 
  private:
-  float GetChildScore(SearchNode* parent, SearchNode* child) const {
+  float GetChildScore(oaz::mcts::SearchNode* parent,
+                      oaz::mcts::SearchNode* child) const {
     float q = (child->GetNVisits() == 0)
                   ? 0
                   : child->GetAccumulatedValue() / child->GetNVisits();
@@ -77,4 +81,4 @@ class AZSelector : public Selector {
   }
 };
 }  // namespace oaz::mcts
-#endif
+#endif  // OAZ_MCTS_SELECTION_HPP_

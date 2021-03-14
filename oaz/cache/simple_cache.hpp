@@ -98,4 +98,4 @@ class SimpleCache : public Cache {
   std::unique_ptr<oaz::games::Game::GameMap> m_map;
 };
 }  // namespace oaz::cache
-#endif // OAZ_CACHE_SIMPLE_CACHE_HPP_
+#endif  // OAZ_CACHE_SIMPLE_CACHE_HPP_

@@ -23,4 +23,4 @@ class Cache {
   virtual ~Cache() {}
 };
 }  // namespace oaz::cache
-#endif // OAZ_CACHE_CACHE_HPP_
+#endif  // OAZ_CACHE_CACHE_HPP_

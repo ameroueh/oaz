@@ -1,5 +1,7 @@
-#ifndef __THREAD_POOL_HPP__
-#define __THREAD_POOL_HPP__
+#ifndef OAZ_THREAD_POOL_THREAD_POOL_HPP_
+#define OAZ_THREAD_POOL_THREAD_POOL_HPP_
+
+// Include original license
 
 #include <condition_variable>
 #include <functional>
@@ -16,13 +18,13 @@
 namespace oaz::thread_pool {
 class ThreadPool {
  public:
-  ThreadPool(size_t);
-  void enqueue(Task*);
+  explicit ThreadPool(size_t);
+  void enqueue(oaz::thread_pool::Task*);
   ~ThreadPool();
 
  private:
   std::vector<std::thread> workers;
-  std::queue<Task*> tasks;
+  std::queue<oaz::thread_pool::Task*> tasks;
   std::mutex queue_mutex;
   std::condition_variable condition;
   bool stop;
@@ -32,7 +34,7 @@ inline ThreadPool::ThreadPool(size_t threads) : stop(false) {
   for (size_t i = 0; i < threads; ++i)
     workers.emplace_back([this] {
       for (;;) {
-        Task* task;
+        oaz::thread_pool::Task* task;
 
         {
           std::unique_lock<std::mutex> lock(this->queue_mutex);
@@ -47,7 +49,7 @@ inline ThreadPool::ThreadPool(size_t threads) : stop(false) {
     });
 }
 
-inline void ThreadPool::enqueue(Task* task) {
+inline void ThreadPool::enqueue(oaz::thread_pool::Task* task) {
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
 
@@ -67,4 +69,4 @@ inline ThreadPool::~ThreadPool() {
   for (std::thread& worker : workers) worker.join();
 }
 }  // namespace oaz::thread_pool
-#endif
+#endif  // OAZ_THREAD_POOL_THREAD_POOL_HPP_

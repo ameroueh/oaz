@@ -1,5 +1,5 @@
-#ifndef __MUTEX_HPP__
-#define __MUTEX_HPP__
+#ifndef OAZ_MUTEX_MUTEX_HPP_
+#define OAZ_MUTEX_MUTEX_HPP_
 
 #include <atomic>
 
@@ -19,4 +19,4 @@ class SpinlockMutex {
   std::atomic<bool> m_locked;
 };
 }  // namespace oaz::mutex
-#endif
+#endif  // OAZ_MUTEX_MUTEX_HPP_

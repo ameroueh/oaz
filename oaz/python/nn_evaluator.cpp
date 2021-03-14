@@ -1,6 +1,13 @@
 #include "oaz/neural_network/nn_evaluator.hpp"
 
 #include <pybind11/pybind11.h>
+/* #include "runtime.swg" */
+/* #include "swigrun.swg" */
+/* #include "python/pyhead.swg" */
+/* #include "python/pyrun.swg" */
+/* #include "python/pythreads.swg" */
+/* #include "swigerrors.swg" */
+/* #include "swiglabels.swg" */
 
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
@@ -10,13 +17,6 @@
 
 #include "Python.h"
 #include "oaz/neural_network/model.hpp"
-/* #include "runtime.swg" */
-/* #include "swigrun.swg" */
-/* #include "python/pyhead.swg" */
-/* #include "python/pyrun.swg" */
-/* #include "python/pythreads.swg" */
-/* #include "swigerrors.swg" */
-/* #include "swiglabels.swg" */
 #include "tensorflow/c/c_api.h"
 #include "tensorflow/c/c_api_internal.h"
 
@@ -27,7 +27,8 @@ namespace py = pybind11;
 namespace oaz::nn {
 
 np::ndarray GetStatistics(oaz::nn::NNEvaluator& evaluator) {
-  std::vector<EvaluationBatchStatistics> stats = evaluator.GetStatistics();
+  std::vector<oaz::nn::EvaluationBatchStatistics> stats =
+      evaluator.GetStatistics();
   np::ndarray array = np::zeros(p::make_tuple(stats.size(), 6),
                                 np::dtype::get_builtin<size_t>());
   for (size_t i = 0; i != stats.size(); ++i) {
