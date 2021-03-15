@@ -1,4 +1,4 @@
-name: Run test suites
+name: Run tests
 on: 
   push:
     branches:
@@ -20,5 +20,10 @@ jobs:
       - run: |
             conda init bash && source ~/.bashrc && conda activate oaz
             cmake . -B build -DCMAKE_BUILD_TYPE=Debug && cd build && make -j$(nproc) && ctest
-        name: Run C++ test suite
+        name: Run C++ tests
+        shell: bash
+      - run: |
+            conda init bash && source ~/.bashrc && conda activate oaz
+            python setup.py bdist_wheel && pip install dist/*whl && cd pyoaz_tests && pytest
+        name: Run Python tests
         shell: bash
