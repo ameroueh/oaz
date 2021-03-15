@@ -52,9 +52,9 @@ def train_model():
         },
         "self_play": {
             "n_tree_workers": 4,
-            "n_threads": 8,
+            "n_threads": 256,
             "n_workers": 4,
-            "evaluator_batch_size": 4,
+            "evaluator_batch_size": 256,
             "epsilon": 0.25,
             "alpha": 1.0,
         },
@@ -67,10 +67,10 @@ def train_model():
                 "n_purge": 0,
                 "n_simulations_per_move": 200,
                 "discount_factor": 0.99,
-                "n_games_per_worker": 256,
+                "n_games_per_worker": 4,
                 "update_epochs": 1,
                 "training_samples": 40000,
-                "n_replayed_positions": 100,
+                "n_replayed_positions": "None",
                 "n_repeats": 2,
                 "sort_method": "entropy",
             },
@@ -82,10 +82,10 @@ def train_model():
                 "n_purge": 35000,
                 "n_simulations_per_move": 400,
                 "discount_factor": 0.99,
-                "n_games_per_worker": 256,
+                "n_games_per_worker": 4,
                 "update_epochs": 1,
                 "training_samples": 40000,
-                "n_replayed_positions": None,
+                "n_replayed_positions": "None",
                 "n_repeats": 2,
                 "sort_method": "entropy",
             },
@@ -97,10 +97,10 @@ def train_model():
                 "n_purge": 35000,
                 "n_simulations_per_move": 800,
                 "discount_factor": 1.0,
-                "n_games_per_worker": 256,
+                "n_games_per_worker": 4,
                 "update_epochs": 4,
                 "training_samples": 40000,
-                "n_replayed_positions": 100,
+                "n_replayed_positions": "None",
                 "n_repeats": 2,
                 "sort_method": "entropy",
             },
@@ -108,7 +108,7 @@ def train_model():
     }
 
     trainer = Trainer(configuration, logger=LOGGER)
-    trainer.train(debug_mode=True)
+    trainer.train(debug_mode=False)
     history = joblib.load(Path(save_dir) / "history.joblib")
 
     n_generations = len(history["best_generation"])
@@ -121,12 +121,17 @@ def train_model():
     }
 
 
-def test_generation_improvement(train_model):
+def test_generation_improvement(caplog, train_model):
+    caplog.set_level(logging.INFO)
 
     # Check that the model improved a minimum number of times
 
     history = train_model["history"]
     n_generations = train_model["n_generations"]
+
+    import pdb
+
+    pdb.set_trace()
 
     n_improvements = np.diff(history["best_generation"]).sum()
     min_improvements = min(n_generations // 4, 10)
