@@ -1,5 +1,7 @@
-#ifndef __BITBOARD_HPP__
-#define __BITBOARD_HPP__
+#ifndef OAZ_BITBOARD_BITDOARB_HPP_
+#define OAZ_BITBOARD_BITDOARB_HPP_
+
+#include <stdint.h>
 
 #include <bitset>
 #include <iostream>
@@ -7,7 +9,6 @@
 
 #include "oaz/array/array.hpp"
 #include "oaz/bitboard/helpers.hpp"
-#include "stdint.h"
 
 namespace oaz::bitboard {
 
@@ -104,7 +105,7 @@ class BitBoard {
   uint64_t GetBits() const { return m_board; }
 
  private:
-  BitBoard(uint64_t board) : m_board(board) {}
+  explicit BitBoard(uint64_t board) : m_board(board) {}
 
   uint64_t ColumnSegmentMask(size_t j) const {
     return (COLUMN_MASK << j) - COLUMN_MASK;
@@ -121,4 +122,4 @@ class BitBoard {
 };
 
 }  // namespace oaz::bitboard
-#endif
+#endif  // OAZ_BITBOARD_BITBOARD_HPP_

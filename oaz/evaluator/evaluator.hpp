@@ -1,5 +1,5 @@
-#ifndef __EVALUATOR_HPP__
-#define __EVALUATOR_HPP__
+#ifndef OAZ_EVALUATOR_EVALUATOR_HPP_
+#define OAZ_EVALUATOR_EVALUATOR_HPP_
 
 #include "boost/multi_array.hpp"
 #include "oaz/games/game.hpp"
@@ -15,4 +15,4 @@ class Evaluator {
   virtual ~Evaluator() {}
 };
 }  // namespace oaz::evaluator
-#endif
+#endif  // OAZ_EVALUATOR_EVALUATOR_HPP_

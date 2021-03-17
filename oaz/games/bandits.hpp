@@ -1,5 +1,7 @@
-#ifndef __BANDITS_HPP__
-#define __BANDITS_HPP__
+#ifndef OAZ_GAMES_BANDITS_HPP_
+#define OAZ_GAMES_BANDITS_HPP_
+
+#include <stdint.h>
 
 #include <bitset>
 #include <memory>
@@ -9,7 +11,6 @@
 #include "oaz/array/array.hpp"
 #include "oaz/games/game.hpp"
 #include "oaz/games/generic_game_map.hpp"
-#include "stdint.h"
 
 namespace oaz::games {
 class Bandits : public Game {
@@ -55,4 +56,4 @@ class Bandits : public Game {
   void Reset();
 };
 }  // namespace oaz::games
-#endif
+#endif  // OAZ_GAMES_BANDITS_HPP_

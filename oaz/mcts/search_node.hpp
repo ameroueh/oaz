@@ -1,11 +1,13 @@
-#ifndef __SEARCH_NODE_HPP__
-#define __SEARCH_NODE_HPP__
+#ifndef OAZ_MCTS_SEARCH_NODE_HPP_
+#define OAZ_MCTS_SEARCH_NODE_HPP_
+
+#include <stdint.h>
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "oaz/mutex/mutex.hpp"
-#include "stdint.h"
 
 namespace oaz::mcts {
 class SearchNode {
@@ -87,4 +89,4 @@ class SearchNode {
   oaz::mutex::SpinlockMutex m_mutex;
 };
 }  // namespace oaz::mcts
-#endif
+#endif  // OAZ_MCTS_SEARCH_NODE_HPP_

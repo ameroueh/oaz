@@ -1,7 +1,7 @@
-#ifndef __SIMPLY_CACHEABLE_HPP__
-#define __SIMPLY_CACHEABLE_HPP__
+#ifndef OAZ_CACHE_SIMPLY_CACHEABLE_HPP_
+#define OAZ_CACHE_SIMPLY_CACHEABLE_HPP_
 
-#include "stdint.h"
+#include <stdint.h>
 
 namespace oaz::cache {
 class SimplyCacheable {
@@ -10,4 +10,4 @@ class SimplyCacheable {
   virtual ~SimplyCacheable() {}
 };
 }  // namespace oaz::cache
-#endif
+#endif  // OAZ_CACHE_SIMPLY_CACHEABLE_HPP_

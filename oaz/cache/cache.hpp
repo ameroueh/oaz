@@ -1,5 +1,5 @@
-#ifndef __CACHE_HPP__
-#define __CACHE_HPP__
+#ifndef OAZ_CACHE_CACHE_HPP_
+#define OAZ_CACHE_CACHE_HPP_
 
 #include <memory>
 
@@ -23,4 +23,4 @@ class Cache {
   virtual ~Cache() {}
 };
 }  // namespace oaz::cache
-#endif
+#endif  // OAZ_CACHE_CACHE_HPP_

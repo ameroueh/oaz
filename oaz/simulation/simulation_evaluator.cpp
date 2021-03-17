@@ -1,12 +1,10 @@
 #include "oaz/simulation/simulation_evaluator.hpp"
 
-using namespace oaz::simulation;
-
-SimulationEvaluator::SimulationEvaluator(
+oaz::simulation::SimulationEvaluator::SimulationEvaluator(
     std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool)
     : m_thread_pool(thread_pool) {}
 
-void SimulationEvaluator::RequestEvaluation(
+void oaz::simulation::SimulationEvaluator::RequestEvaluation(
     oaz::games::Game* game, float* value,
     boost::multi_array_ref<float, 1> policy, oaz::thread_pool::Task* task) {
   std::unique_ptr<oaz::games::Game> game_copy = game->Clone();
@@ -14,7 +12,7 @@ void SimulationEvaluator::RequestEvaluation(
   m_thread_pool->enqueue(task);
 }
 
-float SimulationEvaluator::Simulate(oaz::games::Game& game) {
+float oaz::simulation::SimulationEvaluator::Simulate(oaz::games::Game& game) {
   std::vector<size_t> available_moves;
   size_t current_player = game.GetCurrentPlayer();
   while (!game.IsFinished()) {

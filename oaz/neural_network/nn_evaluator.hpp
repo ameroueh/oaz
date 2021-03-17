@@ -1,14 +1,17 @@
-#ifndef __NN_EVALUATOR_H__
-#define __NN_EVALUATOR_H__
+#ifndef OAZ_NEURAL_NETWORK_NN_EVALUATOR_HPP_
+#define OAZ_NEURAL_NETWORK_NN_EVALUATOR_HPP_
 
 #ifndef TEST_FRIENDS
   #define TEST_FRIENDS
 #endif
 
+#include <stdint.h>
+
 #include <algorithm>
 #include <chrono>
 #include <future>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <string>
@@ -21,7 +24,6 @@
 #include "oaz/neural_network/model.hpp"
 #include "oaz/queue/queue.hpp"
 #include "oaz/thread_pool/thread_pool.hpp"
-#include "stdint.h"
 #include "tensorflow/core/framework/tensor.h"
 
 namespace oaz::nn {
@@ -139,4 +141,4 @@ class NNEvaluator : public oaz::evaluator::Evaluator {
 };
 }  // namespace oaz::nn
 
-#endif  // __NN_EVALUATOR_H__
+#endif  // OAZ_NEURAL_NETWORK_NN_EVALUATOR_HPP_

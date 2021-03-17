@@ -2,37 +2,38 @@
 
 #include <algorithm>
 #include <bitset>
+#include <memory>
 #include <string>
 #include <vector>
 
-using namespace oaz::games;
+oaz::games::ConnectFour::ConnectFour() : m_status(0) {}
 
-ConnectFour::ConnectFour() : m_status(0) {}
+void oaz::games::ConnectFour::Reset() { *this = ConnectFour(); }
 
-void ConnectFour::Reset() { *this = ConnectFour(); }
-
-void ConnectFour::PlayFromString(std::string moves) {
+void oaz::games::ConnectFour::PlayFromString(std::string moves) {
   for (char& c : moves) PlayMove(c - '0');
 }
 
-size_t ConnectFour::GetCurrentPlayer() const {
+size_t oaz::games::ConnectFour::GetCurrentPlayer() const {
   return m_player0_tokens.Sum() == m_player1_tokens.Sum() ? 0 : 1;
 }
 
-size_t ConnectFour::GetNumberOfTokensInColumn(size_t column) const {
+size_t oaz::games::ConnectFour::GetNumberOfTokensInColumn(size_t column) const {
   return (m_player0_tokens | m_player1_tokens).ColumnSum(column);
 }
 
-const ConnectFour::Board& ConnectFour::GetPlayerBoard(size_t player) const {
+const oaz::games::ConnectFour::Board& oaz::games::ConnectFour::GetPlayerBoard(
+    size_t player) const {
   return (player == 0) ? m_player0_tokens : m_player1_tokens;
 }
 
-ConnectFour::Board& ConnectFour::GetPlayerBoard(size_t player) {
+oaz::games::ConnectFour::Board& oaz::games::ConnectFour::GetPlayerBoard(
+    size_t player) {
   return const_cast<Board&>(
       static_cast<const ConnectFour&>(*this).GetPlayerBoard(player));
 }
 
-void ConnectFour::PlayMove(size_t move) {
+void oaz::games::ConnectFour::PlayMove(size_t move) {
   size_t player = GetCurrentPlayer();
   size_t n_tokens_in_column =
       (m_player0_tokens | m_player1_tokens).ColumnSum(move);
@@ -42,17 +43,19 @@ void ConnectFour::PlayMove(size_t move) {
   MaybeEndGame(victory, player);
 }
 
-void ConnectFour::MaybeEndGame(bool victory, size_t player) {
+void oaz::games::ConnectFour::MaybeEndGame(bool victory, size_t player) {
   if (victory) {
     SetWinner(player);
     DeclareFinished();
-  } else if ((m_player0_tokens | m_player1_tokens).Sum() == 42)
+  } else if ((m_player0_tokens | m_player1_tokens).Sum() == 42) {
     DeclareFinished();
+  }
 }
 
-void ConnectFour::DeclareFinished() { m_status.set(2); }
+void oaz::games::ConnectFour::DeclareFinished() { m_status.set(2); }
 
-void ConnectFour::GetAvailableMoves(std::vector<size_t>& moves) const {
+void oaz::games::ConnectFour::GetAvailableMoves(
+    std::vector<size_t>& moves) const {
   moves.clear();
 
   if (IsFinished()) return;
@@ -62,19 +65,19 @@ void ConnectFour::GetAvailableMoves(std::vector<size_t>& moves) const {
     if (board.ColumnSum(i) < 6) moves.push_back(i);
 }
 
-bool ConnectFour::IsFinished() const { return m_status.test(2); }
+bool oaz::games::ConnectFour::IsFinished() const { return m_status.test(2); }
 
-void ConnectFour::SetWinner(size_t player) { m_status.set(player); }
+void oaz::games::ConnectFour::SetWinner(size_t player) { m_status.set(player); }
 
-bool ConnectFour::CheckVictory(const Board& board, size_t row,
-                               size_t column) const {
+bool oaz::games::ConnectFour::CheckVictory(const Board& board, size_t row,
+                                           size_t column) const {
   return CheckVerticalVictory(board, row, column) ||
          CheckHorizontalVictory(board, row, column) ||
          CheckDiagonalVictory1(board, row, column) ||
          CheckDiagonalVictory2(board, row, column);
 }
 
-bool ConnectFour::CheckVictory(const Board& board) const {
+bool oaz::games::ConnectFour::CheckVictory(const Board& board) const {
   bool victory = false;
   for (size_t i = 0; i != 6; ++i)
     for (size_t j = 0; j != 7; ++j)
@@ -85,7 +88,7 @@ bool ConnectFour::CheckVictory(const Board& board) const {
   return victory;
 }
 
-void ConnectFour::CheckVictory() {
+void oaz::games::ConnectFour::CheckVictory() {
   const Board& player0_tokens = GetPlayerBoard(0);
   bool victory0 = CheckVictory(player0_tokens);
   MaybeEndGame(victory0, 0);
@@ -94,22 +97,25 @@ void ConnectFour::CheckVictory() {
   MaybeEndGame(victory1, 1);
 }
 
-bool ConnectFour::CheckVerticalVictory(const ConnectFour::Board& board,
-                                       size_t row, size_t column) const {
+bool oaz::games::ConnectFour::CheckVerticalVictory(
+    const oaz::games::ConnectFour::Board& board, size_t row,
+    size_t column) const {
   Board mask = COLUMN;
   mask.PositiveColumnShift(column);
   return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 
-bool ConnectFour::CheckHorizontalVictory(const ConnectFour::Board& board,
-                                         size_t row, size_t column) const {
+bool oaz::games::ConnectFour::CheckHorizontalVictory(
+    const oaz::games::ConnectFour::Board& board, size_t row,
+    size_t column) const {
   Board mask = ROW;
   mask.PositiveRowShift(row);
   return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 
-bool ConnectFour::CheckDiagonalVictory1(const ConnectFour::Board& board,
-                                        size_t row, size_t column) const {
+bool oaz::games::ConnectFour::CheckDiagonalVictory1(
+    const oaz::games::ConnectFour::Board& board, size_t row,
+    size_t column) const {
   Board mask = FIRST_DIAGONAL;
   if (row > column)
     mask.NegativeColumnShift(row - column);
@@ -118,8 +124,9 @@ bool ConnectFour::CheckDiagonalVictory1(const ConnectFour::Board& board,
   return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 
-bool ConnectFour::CheckDiagonalVictory2(const ConnectFour::Board& board,
-                                        size_t row, size_t column) const {
+bool oaz::games::ConnectFour::CheckDiagonalVictory2(
+    const oaz::games::ConnectFour::Board& board, size_t row,
+    size_t column) const {
   Board mask = SECOND_DIAGONAL;
   size_t column_match = 5 - row;
   if (column > column_match)
@@ -129,32 +136,34 @@ bool ConnectFour::CheckDiagonalVictory2(const ConnectFour::Board& board,
   return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 
-bool ConnectFour::Player0Won() const { return m_status.test(0); }
+bool oaz::games::ConnectFour::Player0Won() const { return m_status.test(0); }
 
-bool ConnectFour::Player1Won() const { return m_status.test(1); }
+bool oaz::games::ConnectFour::Player1Won() const { return m_status.test(1); }
 
-float ConnectFour::GetScore() const {
-  if (IsFinished())
+float oaz::games::ConnectFour::GetScore() const {
+  if (IsFinished()) {
     if (Player0Won())
       return 1;
     else if (Player1Won())
       return -1;
     else
       return 0;
-  else
+  } else {
     return 0;
+  }
 }
 
-std::unique_ptr<Game> ConnectFour::Clone() const {
+std::unique_ptr<oaz::games::Game> oaz::games::ConnectFour::Clone() const {
   return std::make_unique<ConnectFour>(*this);
 }
 
-bool ConnectFour::operator==(const ConnectFour& rhs) const {
+bool oaz::games::ConnectFour::operator==(const ConnectFour& rhs) const {
   return m_player0_tokens == rhs.m_player0_tokens &&
          m_player1_tokens == rhs.m_player1_tokens && m_status == rhs.m_status;
 }
 
-void ConnectFour::WriteStateToTensorMemory(float* destination) const {
+void oaz::games::ConnectFour::WriteStateToTensorMemory(
+    float* destination) const {
   boost::multi_array_ref<float, 3> tensor(destination, boost::extents[6][7][2]);
   const Board& player0_tokens = GetPlayerBoard(0);
   for (size_t i = 0; i != 6; ++i)
@@ -166,7 +175,8 @@ void ConnectFour::WriteStateToTensorMemory(float* destination) const {
       tensor[i][j][1] = player1_tokens.Get(i, j) ? 1. : 0.;
 }
 
-void ConnectFour::WriteCanonicalStateToTensorMemory(float* destination) const {
+void oaz::games::ConnectFour::WriteCanonicalStateToTensorMemory(
+    float* destination) const {
   boost::multi_array_ref<float, 3> tensor(destination, boost::extents[6][7][2]);
   const Board& current_player_tokens = GetPlayerBoard(GetCurrentPlayer());
   for (size_t i = 0; i != 6; ++i)
@@ -178,7 +188,7 @@ void ConnectFour::WriteCanonicalStateToTensorMemory(float* destination) const {
       tensor[i][j][1] = other_player_tokens.Get(i, j) ? 1. : 0.;
 }
 
-void ConnectFour::InitialiseFromState(float* input_board) {
+void oaz::games::ConnectFour::InitialiseFromState(float* input_board) {
   Reset();
   size_t player_0 = 0;
   size_t player_1 = 1;
@@ -199,7 +209,7 @@ void ConnectFour::InitialiseFromState(float* input_board) {
   CheckVictory();
 }
 
-void ConnectFour::InitialiseFromCanonicalState(float* input_board) {
+void oaz::games::ConnectFour::InitialiseFromCanonicalState(float* input_board) {
   Reset();
   boost::multi_array_ref<float, 3> data(input_board, boost::extents[6][7][2]);
 
@@ -229,7 +239,7 @@ void ConnectFour::InitialiseFromCanonicalState(float* input_board) {
   CheckVictory();
 }
 
-uint64_t ConnectFour::GetState() const {
+uint64_t oaz::games::ConnectFour::GetState() const {
   return m_player0_tokens.GetBits() | (m_player1_tokens.ColumnSum(0) << 42) |
          (m_player1_tokens.ColumnSum(1) << 45) |
          (m_player1_tokens.ColumnSum(2) << 48) |
