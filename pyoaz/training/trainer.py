@@ -14,7 +14,6 @@ from keras_contrib.callbacks import CyclicLR
 from logzero import setup_logger
 from tensorflow.compat.v1.keras.models import load_model
 
-# from pyoaz.games.tic_tac_toe import boards_to_bin
 from pyoaz.memory import MemoryBuffer
 from pyoaz.models import create_connect_four_model, create_tic_tac_toe_model
 from pyoaz.self_play import SelfPlay
@@ -428,9 +427,6 @@ class Trainer:
 
     def evaluation_step(self, dataset):
 
-        # self_play_mse, self_play_accuracy = self.evaluate_self_play_dataset(
-        #     self.benchmark_path, dataset["Boards"], dataset["Values"]
-        # )
         self.history["self_play_mse"].append(0)
         self.history["self_play_accuracy"].append(0)
 
@@ -623,59 +619,6 @@ class Trainer:
         import matplotlib.pyplot as plt
 
         joblib.dump(self.history, self.save_path / "history.joblib")
-
-        # entropy_dir = self.save_path / "entropy"
-        # entropy_dir.mkdir(exist_ok=True)
-
-        # plt.figure()
-        # plt.hist(self.history["mcts_entropy"][-1], label="entropies")
-        # plt.legend()
-        # plot_path = (
-        #     entropy_dir / "mcts_entropy_gen_"
-        #     f"{len(self.history['mcts_entropy'])}.png"
-        # )
-        # plt.savefig(plot_path)
-        # plt.close()
-
-        # plt.figure()
-        # plt.hist(self.history["model_entropy"][-1], label="entropies")
-        # plt.legend()
-        # plot_path = (
-        #     entropy_dir / "model_entropy_gen_"
-        #     f"{len(self.history['model_entropy'])}.png"
-        # )
-        # plt.savefig(plot_path)
-        # plt.close()
-
-        # plt.figure()
-        # plt.hist(self.history["model_weighted_entropy"][-1], label="entropies")
-        # plt.legend()
-        # plot_path = (
-        #     entropy_dir / "model_weighted_entropy_gen_"
-        #     f"{len(self.history['model_weighted_entropy'])}.png"
-        # )
-        # plt.savefig(plot_path)
-        # plt.close()
-
-        # plt.figure()
-
-        # plt.plot(
-        #     running_mean(self.history["mcts_average_entropy"]),
-        #     label="mcts_average_entropy",
-        # )
-        # plt.plot(
-        #     running_mean(self.history["model_average_entropy"]),
-        #     label="model_average_entropy",
-        # )
-        # plt.plot(
-        #     running_mean(self.history["model_average_weighted_entropy"]),
-        #     label="model_average_weighted_entropy",
-        # )
-
-        # plt.legend()
-        # plot_path = entropy_dir / "average_entropies.png"
-        # plt.savefig(plot_path)
-        # plt.close()
 
         plt.figure()
         plt.plot(self.history["mse"], alpha=0.5, label="MSE")

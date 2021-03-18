@@ -304,19 +304,6 @@ class SelfPlay:
         boards = []
         policies = []
 
-        # Sometimes act randomly for the first few moves
-        # if np.random.uniform() < 0.1:
-        #     self.logger.debug("random")
-        #     move = int(np.random.choice(game.available_moves))
-        #     game.play_move(move)
-        #     if np.random.uniform() < 0.1:
-        #         self.logger.debug("random 2")
-        #         move = int(np.random.choice(game.available_moves))
-        #         game.play_move(move)
-        #         if np.random.uniform() < 0.1:
-        #             self.logger.debug("random 3")
-        #             move = int(np.random.choice(game.available_moves))
-        #             game.play_move(move)
         while not game.finished:
 
             if self.verbosity > 1:
@@ -342,10 +329,6 @@ class SelfPlay:
                 n_visits = child.n_visits
                 policy[move] = n_visits
 
-                # if n_visits > best_visit_count:
-                # best_visit_count = n_visits
-                # best_child = child
-
             # There's an off-by-one error in the Search's n_sim_per_move
             policy = policy / (self.n_simulations_per_move - 1)
             policies.append(policy)
@@ -353,7 +336,6 @@ class SelfPlay:
                 self.logger.debug(f"policy: \n{policy}")
 
             move = int(np.random.choice(np.arange(self.policy_size), p=policy))
-            # move = best_child.move
 
             boards.append(game.canonical_board)
 
