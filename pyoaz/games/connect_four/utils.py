@@ -87,12 +87,6 @@ def get_benchmark_metrics(
     values: np.ndarray, value_predictions: np.ndarray
 ) -> Tuple[float, float]:
 
-    # values_norm = (values + 1) / 2
-    # value_predictions_norm = (value_predictions + 1) / 2
-    # cross_entropy = values_norm * np.log(value_predictions_norm + 1e-12) + (
-    #     1 - values_norm
-    # ) * np.log(1 - value_predictions_norm + 1e-12)
-    # cross_entropy = -np.mean(cross_entropy)
     mse = np.mean((values - value_predictions) ** 2)
 
     bool_value_prediction = np.where(value_predictions > 0.0, 1, -1)
