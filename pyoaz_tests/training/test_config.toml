@@ -1,0 +1,39 @@
+game = "connect_four"
+
+[model]
+activation = "tanh"
+n_resnet_blocks = 2
+optimizer = "adam"
+policy_factor = 1.0
+
+[save]
+checkpoint_every = 5
+save_path = ""
+
+[benchmark]
+benchmark_path = ""
+mcts_bot_iterations = []
+n_best_self_games = 10
+n_tournament_games = 10
+tournament_frequency = 5
+
+[self_play]
+alpha = 1.0
+epsilon = 0.25
+evaluator_batch_size = 32
+n_threads = 2
+n_tree_workers = 2
+n_workers = 2
+
+[[stages]]
+buffer_length = 600000
+discount_factor = 0.99
+learning_rate = 0.001
+momentum = 0.9
+n_games_per_worker = 5
+n_generations = 1
+n_purge = 0
+n_replayed_positions = 'None'
+n_simulations_per_move = 5
+training_samples = 40000
+update_epochs = 1

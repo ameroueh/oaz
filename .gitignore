@@ -30,3 +30,32 @@
 *.exe
 *.out
 *.app
+
+# Build diretory
+build/
+
+#VSCode
+.vscode
+
+# Python
+*.egg-info/
+dist/
+__pycache__/
+
+#compiled libraries
+extern/
+
+
+#Models, logging and configs
+models/
+bin/
+experiments/runs
+experiments/*.toml
+experiments/*.txt
+
+# File used to customise bash on startup, 
+# see https://gist.github.com/scmx/242caa249b0ea343e2588adea14479e6
+.docker-prompt
+
+# iPython notebook checkpoits 
+.ipynb_checkpoints/
