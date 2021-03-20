@@ -1,4 +1,4 @@
-# OAZ: An open implementation of Alpha Zero
+# OAZ: An implementation of Alpha Zero
 
 ## What is OAZ?
 
@@ -9,10 +9,20 @@ self-play rounds or updating neural network weights.
 ## Quickstart
 
 * [Get Docker](https://docs.docker.com/get-docker/)
-* Pull the OAZ cpu-only image:
-  ```$ docker pull ghcr.io/ameroueh/oaz-cpu:latest```
-* Run the image with 
+* Pull the OAZ cpu-only Docker image:
 
+        $ docker pull ghcr.io/ameroueh/oaz-cpu:latest
+
+* Run the image, mapping the port to get access to Jupyter from the host:
+
+        $ docker run -it -p 8888:8888 oaz-cpu bash
+
+* From the container, start Jupyter:
+
+        $ jupyter notebook --ip 0.0.0.0 --no-browser
+
+* Open `http://localhost:8888` from your favourite browser on the host,
+and open the notebook `examples/quickstart.ipynb`
 
 ## Installation
 
@@ -25,48 +35,42 @@ Clone the repository with
 Now initialize the submodules:
 
 ```bash 
-$ cd oaz
-$ git submodule init
-$ git submodule update
+$ cd oaz && git submodule update --init
 ```
 
-### Build the Docker image
+### Docker image
 
 The easiest way of running OAZ is by building the Docker image.
 This image installs all the required dependencies, and can be used 
 to compile and run the OAZ C++ code, and create install the Python package.
 Building the image may take a while (several hours) as tensorflow shared libraries
-are built as part of the process. Note that the image creates a user `oaz` with default
-UID 1000 (this can be overridden) for normal usage not requiring privileged access,
-and creates a directory `/home/oaz/io` meant to contain a host directory (typically the oaz repository).
-This is the working directory of the container. Run
+are built as part of the process.
 
 ```bash
  $ cd oaz
  $ docker build . -t oaz
 ```
 
-to build the image. The rest of this README assumes that the user
-has access to a bash shell on the container, with the OAZ repository
-mounted to `/home/oaz/io`. This can be achieved with:
+to build the image.
 
-### Python package
+#### GPU Support
 
-Although OAZ can be used as a C++ library, a Python
-package with Python bindings to the C++ code as well as code 
-facilitating running self-play and training is 
-provided. To build and install it, run:
+By default, no GPU support is enabled. To enable GPU support for Nvidia cards, provide appropriate
+parameters to the following build arguments: `BASE_IMAGE`, `TF_NEED_CUDA`, `TF_CUDA_COMPUTE_CAPABILITIES`.
+For example, to build the image with support for RTX 30xx GPUs, run
 
 ```bash
-$ python setup.py bdist_wheel && cd dist && pip install .
+ $ cd oaz
+ $ docker build --build-arg BASE_IMAGE=nvidia/cuda:11.1-cudnn8-devel-ubuntu18.04 --build-arg TF_NEED_CUDA=1 --build-arg TF_CUDA_COMPUTE_CAPABILITIES=8.6 . -t oaz
 ```
 
-### Implement your own games
+This image is tested to work on an Ubuntu 20.10 host with `nvidia-docker2` installed. Use the option `--gpus=all` (or select specific
+GPU devices) to run the image with GPU support.
 
-```bash
-$ cd oaz
-$ docker run --rm --gpus all -it --mount source=$(pwd),destination=/home/oaz/io,type=bind oaz'
-```
+#### Note
+
+The image creates a user `oaz` with default UID 1000 (this can be overridden) for normal usage not requiring privileged access. You may want to change this default value should you wish to mount a host directory (for example, the OAZ git repository to carry out development work) to the container.
+
 
 ## Tests
 
@@ -78,18 +82,14 @@ To compile and run the C++ test suite, run
 $ cmake . -B build && cd build && make -j$(nproc) && cd test && ctest
 ```
 
-to build and run all the tests.
+from `/home/oaz/oaz` in the Docker container.
 
 ### Python test suite
 
-Python test suite 
-+++++++++++++++++
+To run the Python tests, run
 
-Run
-
-.. code-block:: bash
 ``` 
 $ cd pyoaz_tests && pytest .
 ```
 
-to run the Python tests.
+from `/home/oaz/oaz` in the Docker container.
