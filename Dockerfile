@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=nvidia/cuda:11.1-cudnn8-devel-ubuntu18.04
+ARG BASE_IMAGE=ubuntu:18.04
 FROM $BASE_IMAGE
 
 SHELL [ "/bin/bash", "-c" ]
@@ -74,7 +74,7 @@ ARG TF_NEED_OPENCL_SYCL=0
 ARG TF_NEED_ROCM-0
 ARG TF_DOWNLOAD_CLANG=0
 ARG TF_NEED_MPI-0 
-ARG TF_NEED_CUDA=1
+ARG TF_NEED_CUDA=0
 ARG TF_CUDA_COMPUTE_CAPABILITIES=8.6
 ARG GCC_HOST_COMPILER_PATH="/usr/bin/gcc"
 ARG CC_OPT_FLAGS="-march=native -mtune=native"
@@ -138,14 +138,6 @@ RUN mkdir /tmp/cmake && \
 	rm -rf /tmp/cmake
 USER oaz
 
-# Install boost
-
-RUN conda install py-boost boost-cpp
-
-# Install swig
-
-RUN conda install swig
-
 # Install clang-format-10
 USER root
 RUN wget --no-check-certificate -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
@@ -153,8 +145,16 @@ RUN add-apt-repository 'deb http://apt.llvm.org/bionic/   llvm-toolchain-bionic-
 RUN apt install clang-format-10 -qy
 RUN ln -s /usr/bin/clang-format-10 /usr/bin/clang-format
 
-# Install OAZ python requirements
+# Copy OAZ files
 
 USER oaz
-COPY requirements.txt .
+COPY --chown=oaz . /home/oaz/oaz
+
+# Install OAZ conda and Python requirements
+
+WORKDIR /home/oaz/oaz
+RUN conda env update --file environment.yml
 RUN pip install -r requirements.txt
+
+# Install PyOAZ
+RUN python setup.py bdist_wheel && pip install dist/*whl
