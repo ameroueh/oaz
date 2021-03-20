@@ -1,7 +1,7 @@
 #ifndef OAZ_THREAD_POOL_THREAD_POOL_HPP_
 #define OAZ_THREAD_POOL_THREAD_POOL_HPP_
 
-// Include original license
+// See COPYING for original license
 
 #include <condition_variable>
 #include <functional>
