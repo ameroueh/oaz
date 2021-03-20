@@ -22,7 +22,7 @@ self-play rounds or updating neural network weights.
         $ jupyter notebook --ip 0.0.0.0 --no-browser
 
 * Open `http://localhost:8888` from your favourite browser on the host,
-and open the notebook `examples/quickstart.ipynb`
+and open the notebook `notebooks/quickstart.ipynb`
 
 ## Installation
 
