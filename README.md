@@ -9,13 +9,9 @@ self-play rounds or updating neural network weights.
 ## Quickstart
 
 * [Get Docker](https://docs.docker.com/get-docker/)
-* Pull the OAZ cpu-only Docker image:
+* Run the OAZ cpu-only image, mapping the port to get access to Jupyter from the host:
 
-        $ docker pull ghcr.io/ameroueh/oaz-cpu:latest
-
-* Run the image, mapping the port to get access to Jupyter from the host:
-
-        $ docker run -it -p 8888:8888 oaz-cpu bash
+        $ docker run -it -p 8888:8888 ghcr.io/ameroueh/oaz-cpu bash
 
 * From the container, start Jupyter:
 
