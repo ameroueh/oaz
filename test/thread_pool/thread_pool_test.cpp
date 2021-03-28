@@ -24,7 +24,7 @@ class TestTask : public Task {
 
   void operator()() {
     {
-      std::unique_lock<std::mutex>(*m_pmutex);
+      std::unique_lock<std::mutex> lock(*m_pmutex);
       m_pvector->push_back(m_index);
     }
     m_pcondition->notify_one();
