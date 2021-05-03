@@ -230,6 +230,9 @@ target_link_libraries(thread_pool_test oaz_base oaz_test)
 add_executable(mutex_test test/mutex/mutex_test.cpp)
 target_link_libraries(mutex_test oaz_base oaz_test)
 
+add_executable(queue_test test/queue/queue_test.cpp)
+target_link_libraries(queue_test oaz_base oaz_test)
+
 add_executable(tensorflow_test test/tensorflow/tensorflow_test.cpp)
 target_link_libraries(tensorflow_test tensorflow_with_cc_library oaz_test)
 
@@ -268,6 +271,7 @@ add_dependencies(
   mcts_connect_four_test
   thread_pool_test
   mutex_test
+  queue_test
   tensorflow_test
   nn_evaluator_test
   simple_cache_test
@@ -285,6 +289,7 @@ add_test(NAME mcts_search_test COMMAND mcts_search_test)
 add_test(NAME mcts_connect_four_test COMMAND mcts_connect_four_test)
 add_test(NAME thread_pool_test COMMAND thread_pool_test)
 add_test(NAME mutex_test COMMAND mutex_test)
+add_test(NAME queue_test COMMAND queue_test)
 add_test(NAME tensorflow_test COMMAND tensorflow_test)
 add_test(NAME simple_cache_test COMMAND simple_cache_test)
 add_test(
