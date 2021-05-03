@@ -18,6 +18,7 @@ class SearchNode {
         m_n_visits(0),
         m_acc_value(0.),
         m_prior(0.),
+	m_move(0),
         m_is_blocked_for_evaluation(false) {}
   SearchNode(size_t move, size_t player, SearchNode* parent, float prior)
       : m_move(move),
@@ -43,10 +44,29 @@ class SearchNode {
     }
   }
 
+  SearchNode(SearchNode&& rhs) noexcept :
+	m_move(rhs.m_move),
+	m_player(rhs.m_player),
+	m_parent(nullptr),
+	m_n_visits(rhs.m_n_visits),
+	m_acc_value(rhs.m_acc_value),
+	m_prior(rhs.m_prior),
+	m_is_blocked_for_evaluation(false) {
+	  m_children.resize(rhs.GetNChildren());
+	  for(size_t i=0; i!=rhs.GetNChildren(); ++i) {
+	    m_children[i] = std::move(rhs.m_children[i]);
+	    rhs.m_children[i] = std::move(rhs.m_children[i]);
+	  }
+  }
+
+  SearchNode& operator=(const SearchNode&) = delete;
+  SearchNode& operator=(SearchNode&&) = delete;
+  ~SearchNode() = default;
+
   size_t GetMove() const { return m_move; }
   size_t GetPlayer() const { return m_player; }
-  bool IsRoot() const { return !m_parent; }
-  bool IsLeaf() const { return m_children.size() == 0; }
+  bool IsRoot() const { return m_parent == nullptr; }
+  bool IsLeaf() const { return m_children.empty(); }
   void AddChild(size_t move, size_t player, float prior) {
     std::unique_ptr<SearchNode> child(
         new SearchNode(move, player, this, prior));
