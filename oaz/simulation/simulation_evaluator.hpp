@@ -13,17 +13,17 @@ namespace oaz::simulation {
 
 class SimulationEvaluator : public oaz::evaluator::Evaluator {
  public:
-  SimulationEvaluator(std::shared_ptr<oaz::thread_pool::ThreadPool>);
-  void RequestEvaluation(oaz::games::Game*, float*,
-                         boost::multi_array_ref<float, 1>,
-                         oaz::thread_pool::Task*);
+  explicit SimulationEvaluator(std::shared_ptr<oaz::thread_pool::ThreadPool>);
+  void RequestEvaluation(oaz::games::Game* game, float* value,
+                         boost::multi_array_ref<float, 1> policy,
+                         oaz::thread_pool::Task* task) override;
 
  private:
-  float Simulate(oaz::games::Game&);
+  float Simulate(oaz::games::Game*);
   std::mt19937 m_generator;
 
   std::shared_ptr<oaz::thread_pool::ThreadPool> m_thread_pool;
 };
 }  // namespace oaz::simulation
 
-#endif OAZ_SIMULATION_SIMULATION_EVALUATOR_HPP_
+#endif // OAZ_SIMULATION_SIMULATION_EVALUATOR_HPP_
