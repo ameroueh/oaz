@@ -8,7 +8,7 @@
 
 namespace p = boost::python;
 
-BOOST_PYTHON_MODULE(selection) { // NOLINT
+BOOST_PYTHON_MODULE(selection) {  // NOLINT
   PyEval_InitThreads();
 
   p::class_<oaz::mcts::Selector, boost::noncopyable>("Selector", p::no_init);

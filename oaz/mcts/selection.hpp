@@ -44,13 +44,14 @@ class UCTSelector : public Selector {
 
  private:
   static float GetChildScore(oaz::mcts::SearchNode* parent,
-                      oaz::mcts::SearchNode* child) {
+                             oaz::mcts::SearchNode* child) {
     float q = (child->GetNVisits() == 0)
                   ? 0
                   : child->GetAccumulatedValue() / child->GetNVisits();
     float exploration_score =
         C_EXPLORATION *
-        static_cast<float>(std::sqrt(std::log(parent->GetNVisits()))) / static_cast<float>((child->GetNVisits() + 1));
+        static_cast<float>(std::sqrt(std::log(parent->GetNVisits()))) /
+        static_cast<float>((child->GetNVisits() + 1));
     return q + exploration_score;
   }
 };
@@ -75,11 +76,11 @@ class AZSelector : public Selector {
 
  private:
   static float GetChildScore(oaz::mcts::SearchNode* parent,
-                      oaz::mcts::SearchNode* child) {
-  float q = (child->GetNVisits() == 0)
+                             oaz::mcts::SearchNode* child) {
+    float q = (child->GetNVisits() == 0)
                   ? 0
                   : child->GetAccumulatedValue() / child->GetNVisits();
-  float policy_score = C_EXPLORATION * child->GetPrior() *
+    float policy_score = C_EXPLORATION * child->GetPrior() *
                          static_cast<float>(std::sqrt(parent->GetNVisits())) /
                          static_cast<float>(child->GetNVisits() + 1);
     return q + policy_score;

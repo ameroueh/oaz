@@ -17,7 +17,9 @@ class TicTacToe : public Game {
  public:
   struct Class : public Game::Class {
     size_t GetMaxNumberOfMoves() const override { return N_SQUARES; }
-    const std::vector<int>& GetBoardShape() const override { return m_board_shape; }
+    const std::vector<int>& GetBoardShape() const override {
+      return m_board_shape;
+    }
     GameMap* CreateGameMap() const override {
       return new GenericGameMap<TicTacToe, uint64_t>();
     }
@@ -59,7 +61,7 @@ class TicTacToe : public Game {
   static constexpr Board FIRST_DIAGONAL{{0, 0}, {1, 1}, {2, 2}};
   static constexpr Board SECOND_DIAGONAL{{2, 0}, {1, 1}, {0, 2}};
 
-  template<class G>
+  template <class G>
   static auto& GetPlayerBoardImpl(G&, size_t);
   const Board& GetPlayerBoard(size_t) const;
   Board& GetPlayerBoard(size_t);

@@ -60,7 +60,7 @@ tensorflow::Session* CreateSession() {
 
 void LoadGraph(tensorflow::Session* session, const std::string& path) {
   tensorflow::GraphDef graph_def;
-  ReadBinaryProto(tensorflow::Env::Default(), path, &graph_def); // NOLINT
+  ReadBinaryProto(tensorflow::Env::Default(), path, &graph_def);  // NOLINT
   TF_CHECK_OK(session->Create(graph_def));
 }
 

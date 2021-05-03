@@ -31,7 +31,12 @@ namespace oaz::nn {
 class EvaluationBatchStatistics {
  public:
   EvaluationBatchStatistics()
-      : evaluation_forced(false), n_elements(0), size(0), time_created(0), time_evaluation_start(0), time_evaluation_end(0) {}
+      : evaluation_forced(false),
+        n_elements(0),
+        size(0),
+        time_created(0),
+        time_evaluation_start(0),
+        time_evaluation_end(0) {}
 
   size_t time_created;
   size_t time_evaluation_start;

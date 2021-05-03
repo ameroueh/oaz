@@ -8,8 +8,8 @@
   #error "MODULE_NAME not defined!"
 #endif
 
-#define XSTRINGIFY(x) STRINGIFY(x) // NOLINT
-#define STRINGIFY(x) #x // NOLINT
+#define XSTRINGIFY(x) STRINGIFY(x)  // NOLINT
+#define STRINGIFY(x) #x             // NOLINT
 
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
@@ -27,13 +27,15 @@ using GameImpl = oaz::games::GAME_CLASS_NAME;
 
 static GameImpl CreateGameFromNDArray(const np::ndarray& array) {
   GameImpl game;
-  game.InitialiseFromState(reinterpret_cast<float*>(array.get_data())); // NOLINT
+  game.InitialiseFromState(
+      reinterpret_cast<float*>(array.get_data()));  // NOLINT
   return game;
 }
 
 static GameImpl CreateGameFromNDArrayCanonical(const np::ndarray& array) {
   GameImpl game;
-  game.InitialiseFromCanonicalState(reinterpret_cast<float*>(array.get_data())); // NOLINT
+  game.InitialiseFromCanonicalState(
+      reinterpret_cast<float*>(array.get_data()));  // NOLINT
   return game;
 }
 
@@ -41,14 +43,17 @@ p::list GetAvailableMoves(const GameImpl& game) {
   p::list l;
   std::vector<size_t> available_moves;
   game.GetAvailableMoves(&available_moves);
-  for (auto move : available_moves) {l.append(move);}
+  for (auto move : available_moves) {
+    l.append(move);
+  }
   return l;
 }
 
 np::ndarray GetBoard(const GameImpl& game) {
   np::ndarray board = np::zeros(p::tuple(game.ClassMethods().GetBoardShape()),
                                 np::dtype::get_builtin<float>());
-  game.WriteStateToTensorMemory(reinterpret_cast<float*>(board.get_data())); // NOLINT
+  game.WriteStateToTensorMemory(
+      reinterpret_cast<float*>(board.get_data()));  // NOLINT
   return board;
 }
 
@@ -56,11 +61,11 @@ np::ndarray GetCanonicalBoard(const GameImpl& game) {
   np::ndarray board = np::zeros(p::tuple(game.ClassMethods().GetBoardShape()),
                                 np::dtype::get_builtin<float>());
   game.WriteCanonicalStateToTensorMemory(
-      reinterpret_cast<float*>(board.get_data())); // NOLINT
+      reinterpret_cast<float*>(board.get_data()));  // NOLINT
   return board;
 }
 
-BOOST_PYTHON_MODULE(MODULE_NAME) { // NOLINT
+BOOST_PYTHON_MODULE(MODULE_NAME) {  // NOLINT
   PyEval_InitThreads();
   np::initialize();
 

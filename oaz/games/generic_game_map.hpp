@@ -16,7 +16,9 @@ class GenericGameMap : public Game::GameMap {
     const DerivedGame& derived_game = static_cast<const DerivedGame&>(game);
 
     auto iterator = m_map.find(derived_game.GetState());
-    if (iterator == m_map.end()) {return false;}
+    if (iterator == m_map.end()) {
+      return false;
+    }
     *index = iterator->second;
     return true;
   }

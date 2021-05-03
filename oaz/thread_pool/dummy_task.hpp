@@ -16,7 +16,9 @@ class DummyTask : public oaz::thread_pool::Task {
       std::unique_lock<std::mutex> lock(m_mutex);
       ++m_executions;
     }
-    if (m_executions == m_target) {m_condition.notify_one();}
+    if (m_executions == m_target) {
+      m_condition.notify_one();
+    }
   }
   void wait() {
     std::unique_lock<std::mutex> lock(m_mutex);

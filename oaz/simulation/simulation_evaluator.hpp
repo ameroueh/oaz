@@ -26,4 +26,4 @@ class SimulationEvaluator : public oaz::evaluator::Evaluator {
 };
 }  // namespace oaz::simulation
 
-#endif // OAZ_SIMULATION_SIMULATION_EVALUATOR_HPP_
+#endif  // OAZ_SIMULATION_SIMULATION_EVALUATOR_HPP_

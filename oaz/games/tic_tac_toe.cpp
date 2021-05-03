@@ -32,7 +32,9 @@ void oaz::games::TicTacToe::MaybeEndGame(bool victory, size_t player) {
     SetWinner(player);
     DeclareFinished();
   } else {
-    if ((m_player0_tokens | m_player1_tokens).Sum() == N_SQUARES) {DeclareFinished();}
+    if ((m_player0_tokens | m_player1_tokens).Sum() == N_SQUARES) {
+      DeclareFinished();
+    }
   }
 }
 
@@ -56,14 +58,16 @@ oaz::games::TicTacToe::Board& oaz::games::TicTacToe::GetPlayerBoard(
 }
 
 inline bool oaz::games::TicTacToe::CheckVictory(const Board& board, size_t row,
-                                         size_t column) {
-  if ((board.RowSum(row) == SIDE_LENGTH) || (board.ColumnSum(column) == SIDE_LENGTH)) {
+                                                size_t column) {
+  if ((board.RowSum(row) == SIDE_LENGTH) ||
+      (board.ColumnSum(column) == SIDE_LENGTH)) {
     return true;
   }
   if ((row == column) && ((board & FIRST_DIAGONAL).Sum() == SIDE_LENGTH)) {
     return true;
   }
-  if ((row == SIDE_LENGTH - 1 - column) && ((board & SECOND_DIAGONAL).Sum() == SIDE_LENGTH)) {
+  if ((row == SIDE_LENGTH - 1 - column) &&
+      ((board & SECOND_DIAGONAL).Sum() == SIDE_LENGTH)) {
     return true;
   }
   return false;
@@ -75,7 +79,9 @@ inline bool oaz::games::TicTacToe::CheckVictory(const Board& board) {
     for (size_t j = 0; j != SIDE_LENGTH; ++j) {
       if (board.Get(i, j) == 1) {
         victory = CheckVictory(board, i, j);
-        if (victory) {return victory;}
+        if (victory) {
+          return victory;
+        }
       }
     }
   }
@@ -99,13 +105,17 @@ void oaz::games::TicTacToe::GetAvailableMoves(
     std::vector<size_t>* moves) const {
   moves->clear();
 
-  if (IsFinished()) {return;}
+  if (IsFinished()) {
+    return;
+  }
 
   Board board = m_player0_tokens | m_player1_tokens;
   for (size_t move = 0; move != N_SQUARES; ++move) {
     size_t row = move % SIDE_LENGTH;
     size_t column = move / SIDE_LENGTH;
-    if (board.Get(row, column) == 0) {moves->push_back(move);}
+    if (board.Get(row, column) == 0) {
+      moves->push_back(move);
+    }
   }
 }
 
@@ -138,7 +148,8 @@ std::unique_ptr<oaz::games::Game> oaz::games::TicTacToe::Clone() const {
 }
 
 void oaz::games::TicTacToe::WriteStateToTensorMemory(float* destination) const {
-  boost::multi_array_ref<float, SIDE_LENGTH> tensor(destination, boost::extents[SIDE_LENGTH][SIDE_LENGTH][N_PLAYERS]);
+  boost::multi_array_ref<float, SIDE_LENGTH> tensor(
+      destination, boost::extents[SIDE_LENGTH][SIDE_LENGTH][N_PLAYERS]);
   const Board& player0_tokens = GetPlayerBoard(0);
   for (size_t i = 0; i != SIDE_LENGTH; ++i) {
     for (size_t j = 0; j != SIDE_LENGTH; ++j) {
@@ -155,7 +166,8 @@ void oaz::games::TicTacToe::WriteStateToTensorMemory(float* destination) const {
 
 void oaz::games::TicTacToe::WriteCanonicalStateToTensorMemory(
     float* destination) const {
-  boost::multi_array_ref<float, 3> tensor(destination, boost::extents[SIDE_LENGTH][SIDE_LENGTH][N_PLAYERS]);
+  boost::multi_array_ref<float, 3> tensor(
+      destination, boost::extents[SIDE_LENGTH][SIDE_LENGTH][N_PLAYERS]);
   const Board& current_player_tokens = GetPlayerBoard(GetCurrentPlayer());
   for (size_t i = 0; i != SIDE_LENGTH; ++i) {
     for (size_t j = 0; j != SIDE_LENGTH; ++j) {
@@ -178,16 +190,17 @@ void oaz::games::TicTacToe::InitialiseFromState(float* input_board) {
   Board& player0_tokens = GetPlayerBoard(player_0);
   Board& player1_tokens = GetPlayerBoard(player_1);
 
-  boost::multi_array_ref<float, 3> data(input_board, boost::extents[SIDE_LENGTH][SIDE_LENGTH][N_PLAYERS]);
+  boost::multi_array_ref<float, 3> data(
+      input_board, boost::extents[SIDE_LENGTH][SIDE_LENGTH][N_PLAYERS]);
 
   for (size_t i = 0; i != SIDE_LENGTH; ++i) {
     for (size_t j = 0; j != SIDE_LENGTH; ++j) {
       if (data[i][j][0] == 1.0F) {
         player0_tokens.Set(i, j);
       } else {
-	if (data[i][j][1] == 1.0F) {
+        if (data[i][j][1] == 1.0F) {
           player1_tokens.Set(i, j);
-	}
+        }
       }
     }
   }
@@ -196,7 +209,8 @@ void oaz::games::TicTacToe::InitialiseFromState(float* input_board) {
 
 void oaz::games::TicTacToe::InitialiseFromCanonicalState(float* input_board) {
   Reset();
-  boost::multi_array_ref<float, 3> data(input_board, boost::extents[SIDE_LENGTH][SIDE_LENGTH][N_PLAYERS]);
+  boost::multi_array_ref<float, 3> data(
+      input_board, boost::extents[SIDE_LENGTH][SIDE_LENGTH][N_PLAYERS]);
 
   float current_player_count = 0.0;
   float other_player_count = 0.0;
@@ -218,9 +232,9 @@ void oaz::games::TicTacToe::InitialiseFromCanonicalState(float* input_board) {
       if (data[i][j][0] == 1.0F) {
         current_player_tokens.Set(i, j);
       } else {
-	if (data[i][j][1] == 1.0F) {
+        if (data[i][j][1] == 1.0F) {
           other_player_tokens.Set(i, j);
-	}
+        }
       }
     }
   }

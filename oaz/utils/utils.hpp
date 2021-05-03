@@ -13,7 +13,9 @@ void loadBoardFromJson(const nlohmann::json& data,
   auto dimensions = Game::Board::Dimensions();
   for (int i = 0; i != dimensions[0]; ++i) {
     for (int j = 0; j != dimensions[1]; ++j) {
-      for (int k = 0; k != dimensions[2]; ++k) {board[i][j][k] = data[i][j][k];}
+      for (int k = 0; k != dimensions[2]; ++k) {
+        board[i][j][k] = data[i][j][k];
+      }
     }
   }
 }
@@ -47,7 +49,9 @@ void loadMultiArrayFromJson(const nlohmann::json& data, Array& array) {
 
 template <class Array>
 void loadArrayFromJson(const nlohmann::json& data, Array& array) {
-  for (size_t i = 0; i != array.size(); ++i) {array[i] = data[i];}
+  for (size_t i = 0; i != array.size(); ++i) {
+    array[i] = data[i];
+  }
 }
 
 bool CheckSearchTree(oaz::mcts::SearchNode* node) {

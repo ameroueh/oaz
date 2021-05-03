@@ -21,7 +21,7 @@ class Cache {
                              1>,
       size_t) = 0;
 
-  virtual ~Cache() = default; 
+  virtual ~Cache() = default;
   Cache() = default;
   Cache(const Cache&) = default;
   Cache& operator=(const Cache&) = default;

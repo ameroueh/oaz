@@ -11,14 +11,14 @@ namespace p = boost::python;
 namespace oaz::mcts {
 class SearchWrapper {
  public:
-  SearchWrapper(const oaz::games::Game& game,
-                const oaz::mcts::Selector& selector,
-                const std::shared_ptr<oaz::evaluator::Evaluator>& evaluator,
-                const std::shared_ptr<oaz::thread_pool::ThreadPool>& thread_pool,
-                size_t batch_size, size_t n_iterations, float noise_epsilon,
-                float noise_alpha
+  SearchWrapper(
+      const oaz::games::Game& game, const oaz::mcts::Selector& selector,
+      const std::shared_ptr<oaz::evaluator::Evaluator>& evaluator,
+      const std::shared_ptr<oaz::thread_pool::ThreadPool>& thread_pool,
+      size_t batch_size, size_t n_iterations, float noise_epsilon,
+      float noise_alpha
 
-                )
+      )
       : m_search(nullptr) {
     PyThreadState* save_state = PyEval_SaveThread();
     m_search = std::make_shared<oaz::mcts::Search>(
@@ -35,7 +35,7 @@ class SearchWrapper {
 };
 }  // namespace oaz::mcts
 
-BOOST_PYTHON_MODULE(search) { // NOLINT
+BOOST_PYTHON_MODULE(search) {  // NOLINT
   PyEval_InitThreads();
 
   p::class_<oaz::mcts::SearchNode, std::shared_ptr<oaz::mcts::SearchNode>,

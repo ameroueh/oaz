@@ -11,7 +11,9 @@ oaz::games::ConnectFour::ConnectFour() : m_status(0) {}
 void oaz::games::ConnectFour::Reset() { *this = ConnectFour(); }
 
 void oaz::games::ConnectFour::PlayFromString(std::string moves) {
-  for (char& c : moves) {PlayMove(c - '0');}
+  for (char& c : moves) {
+    PlayMove(c - '0');
+  }
 }
 
 size_t oaz::games::ConnectFour::GetCurrentPlayer() const {
@@ -62,20 +64,26 @@ void oaz::games::ConnectFour::GetAvailableMoves(
     std::vector<size_t>* moves) const {
   moves->clear();
 
-  if (IsFinished()) {return;}
+  if (IsFinished()) {
+    return;
+  }
 
   Board board = m_player0_tokens | m_player1_tokens;
   for (size_t i = 0; i != N_COLUMNS; ++i) {
-    if (board.ColumnSum(i) < N_ROWS) {moves->push_back(i);}
+    if (board.ColumnSum(i) < N_ROWS) {
+      moves->push_back(i);
+    }
   }
 }
 
-bool oaz::games::ConnectFour::IsFinished() const { return m_status.test(N_PLAYERS); }
+bool oaz::games::ConnectFour::IsFinished() const {
+  return m_status.test(N_PLAYERS);
+}
 
 void oaz::games::ConnectFour::SetWinner(size_t player) { m_status.set(player); }
 
-inline bool oaz::games::ConnectFour::CheckVictory(const Board& board, size_t row,
-                                           size_t column) {
+inline bool oaz::games::ConnectFour::CheckVictory(const Board& board,
+                                                  size_t row, size_t column) {
   return CheckVerticalVictory(board, row, column) ||
          CheckHorizontalVictory(board, row, column) ||
          CheckDiagonalVictory1(board, row, column) ||
@@ -88,7 +96,9 @@ inline bool oaz::games::ConnectFour::CheckVictory(const Board& board) {
     for (size_t j = 0; j != N_COLUMNS; ++j) {
       if (board.Get(i, j) == 1) {
         victory = CheckVictory(board, i, j);
-        if (victory) {return victory;}
+        if (victory) {
+          return victory;
+        }
       }
     }
   }
@@ -105,24 +115,21 @@ inline void oaz::games::ConnectFour::CheckVictory() {
 }
 
 inline bool oaz::games::ConnectFour::CheckVerticalVictory(
-    const oaz::games::ConnectFour::Board& board, size_t row,
-    size_t column) {
+    const oaz::games::ConnectFour::Board& board, size_t row, size_t column) {
   Board mask = COLUMN;
   mask.PositiveColumnShift(column);
   return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 
 inline bool oaz::games::ConnectFour::CheckHorizontalVictory(
-    const oaz::games::ConnectFour::Board& board, size_t row,
-    size_t column) {
+    const oaz::games::ConnectFour::Board& board, size_t row, size_t column) {
   Board mask = ROW;
   mask.PositiveRowShift(row);
   return board.LexicographicComponentLength(mask, row, column) >= 4;
 }
 
 inline bool oaz::games::ConnectFour::CheckDiagonalVictory1(
-    const oaz::games::ConnectFour::Board& board, size_t row,
-    size_t column) {
+    const oaz::games::ConnectFour::Board& board, size_t row, size_t column) {
   Board mask = FIRST_DIAGONAL;
   if (row > column) {
     mask.NegativeColumnShift(row - column);
@@ -135,8 +142,7 @@ inline bool oaz::games::ConnectFour::CheckDiagonalVictory1(
 }
 
 inline bool oaz::games::ConnectFour::CheckDiagonalVictory2(
-    const oaz::games::ConnectFour::Board& board, size_t row,
-    size_t column) {
+    const oaz::games::ConnectFour::Board& board, size_t row, size_t column) {
   Board mask = SECOND_DIAGONAL;
   size_t column_match = N_ROWS - 1 - row;
   if (column > column_match) {
@@ -176,7 +182,8 @@ bool oaz::games::ConnectFour::operator==(const ConnectFour& rhs) const {
 
 void oaz::games::ConnectFour::WriteStateToTensorMemory(
     float* destination) const {
-  boost::multi_array_ref<float, 3> tensor(destination, boost::extents[N_ROWS][N_COLUMNS][N_PLAYERS]);
+  boost::multi_array_ref<float, 3> tensor(
+      destination, boost::extents[N_ROWS][N_COLUMNS][N_PLAYERS]);
   const Board& player0_tokens = GetPlayerBoard(0);
   for (size_t i = 0; i != N_ROWS; ++i) {
     for (size_t j = 0; j != N_COLUMNS; ++j) {
@@ -193,7 +200,8 @@ void oaz::games::ConnectFour::WriteStateToTensorMemory(
 
 void oaz::games::ConnectFour::WriteCanonicalStateToTensorMemory(
     float* destination) const {
-  boost::multi_array_ref<float, 3> tensor(destination, boost::extents[N_ROWS][N_COLUMNS][N_PLAYERS]);
+  boost::multi_array_ref<float, 3> tensor(
+      destination, boost::extents[N_ROWS][N_COLUMNS][N_PLAYERS]);
   const Board& current_player_tokens = GetPlayerBoard(GetCurrentPlayer());
   for (size_t i = 0; i != N_ROWS; ++i) {
     for (size_t j = 0; j != N_COLUMNS; ++j) {
@@ -216,14 +224,15 @@ void oaz::games::ConnectFour::InitialiseFromState(float* input_board) {
   Board& player0_tokens = GetPlayerBoard(player_0);
   Board& player1_tokens = GetPlayerBoard(player_1);
 
-  boost::multi_array_ref<float, 3> data(input_board, boost::extents[N_ROWS][N_COLUMNS][N_PLAYERS]);
+  boost::multi_array_ref<float, 3> data(
+      input_board, boost::extents[N_ROWS][N_COLUMNS][N_PLAYERS]);
 
   for (int i = 0; i != N_ROWS; ++i) {
     for (int j = 0; j != N_COLUMNS; ++j) {
       if (data[i][j][0] == 1.0F) {
         player0_tokens.Set(i, j);
       } else {
-	if (data[i][j][1] == 1.0F) {
+        if (data[i][j][1] == 1.0F) {
           player1_tokens.Set(i, j);
         }
       }
@@ -234,7 +243,8 @@ void oaz::games::ConnectFour::InitialiseFromState(float* input_board) {
 
 void oaz::games::ConnectFour::InitialiseFromCanonicalState(float* input_board) {
   Reset();
-  boost::multi_array_ref<float, 3> data(input_board, boost::extents[N_ROWS][N_COLUMNS][N_PLAYERS]);
+  boost::multi_array_ref<float, 3> data(
+      input_board, boost::extents[N_ROWS][N_COLUMNS][N_PLAYERS]);
 
   float current_player_count = 0.0;
   float other_player_count = 0.0;
@@ -258,7 +268,7 @@ void oaz::games::ConnectFour::InitialiseFromCanonicalState(float* input_board) {
       } else {
         if (data[i][j][1] == 1.0F) {
           other_player_tokens.Set(i, j);
-	}
+        }
       }
     }
   }
@@ -267,8 +277,8 @@ void oaz::games::ConnectFour::InitialiseFromCanonicalState(float* input_board) {
 
 uint64_t oaz::games::ConnectFour::GetState() const {
   uint64_t state = m_player0_tokens.GetBits();
-  for (size_t i=0; i != N_COLUMNS; ++i) {
-    state |= (m_player1_tokens.ColumnSum(i) << (N_SQUARES + 3*i));
+  for (size_t i = 0; i != N_COLUMNS; ++i) {
+    state |= (m_player1_tokens.ColumnSum(i) << (N_SQUARES + 3 * i));
   }
   return state;
 }

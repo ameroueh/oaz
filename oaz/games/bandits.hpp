@@ -17,7 +17,9 @@ class Bandits : public Game {
  public:
   struct Class : public Game::Class {
     size_t GetMaxNumberOfMoves() const override { return N_ROWS; }
-    const std::vector<int>& GetBoardShape() const override { return m_board_shape; }
+    const std::vector<int>& GetBoardShape() const override {
+      return m_board_shape;
+    }
     static const Class& Methods() {
       static const Class meta;
       return meta;

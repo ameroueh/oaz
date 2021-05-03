@@ -44,7 +44,9 @@ inline ThreadPool::ThreadPool(size_t n_threads) : stop(false) {
           std::unique_lock<std::mutex> lock(this->queue_mutex);
           this->condition.wait(
               lock, [this] { return this->stop || !this->tasks.empty(); });
-          if (this->stop && this->tasks.empty()) {return;}
+          if (this->stop && this->tasks.empty()) {
+            return;
+          }
           task = this->tasks.front();
           this->tasks.pop();
         }
@@ -58,7 +60,9 @@ inline void ThreadPool::enqueue(oaz::thread_pool::Task* task) {
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
 
-    if (stop) {throw std::runtime_error("enqueue on stopped ThreadPool");}
+    if (stop) {
+      throw std::runtime_error("enqueue on stopped ThreadPool");
+    }
 
     tasks.emplace(task);
   }
@@ -71,7 +75,9 @@ inline ThreadPool::~ThreadPool() {
     stop = true;
   }
   condition.notify_all();
-  for (std::thread& worker : workers) {worker.join();}
+  for (std::thread& worker : workers) {
+    worker.join();
+  }
 }
 }  // namespace oaz::thread_pool
 #endif  // OAZ_THREAD_POOL_THREAD_POOL_HPP_

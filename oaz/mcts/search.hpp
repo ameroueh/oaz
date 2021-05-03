@@ -34,7 +34,7 @@ class Search {
 
   /* void seedRNG(size_t); */
   std::shared_ptr<SearchNode> GetTreeRoot();
-  
+
   ~Search();
   Search(const Search&) = delete;
   Search(Search&&) = delete;

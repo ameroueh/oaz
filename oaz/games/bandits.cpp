@@ -1,4 +1,5 @@
-#include "oaz/games/bandits.hpp" 
+#include "oaz/games/bandits.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -22,7 +23,9 @@ void oaz::games::Bandits::GetAvailableMoves(
   available_moves->clear();
 
   for (size_t i = 0; i != N_ROWS; ++i) {
-    if (!m_board.test(i)) {available_moves->push_back(i);}
+    if (!m_board.test(i)) {
+      available_moves->push_back(i);
+    }
   }
 }
 
@@ -46,7 +49,9 @@ bool oaz::games::Bandits::operator==(const Bandits& rhs) const {
 
 void oaz::games::Bandits::WriteStateToTensorMemory(float* destination) const {
   boost::multi_array_ref<float, 1> tensor(destination, boost::extents[N_ROWS]);
-  for (size_t i = 0; i != N_ROWS; ++i) {tensor[i] = m_board.test(i) ? 1. : 0.;}
+  for (size_t i = 0; i != N_ROWS; ++i) {
+    tensor[i] = m_board.test(i) ? 1. : 0.;
+  }
 }
 
 void oaz::games::Bandits::WriteCanonicalStateToTensorMemory(
@@ -59,7 +64,9 @@ void oaz::games::Bandits::InitialiseFromState(float* input_board) {
   boost::multi_array_ref<float, 1> data(input_board, boost::extents[N_ROWS]);
 
   for (size_t i = 0; i != N_ROWS; ++i) {
-    if (data[i] == 1.0F) {m_board.set(i);}
+    if (data[i] == 1.0F) {
+      m_board.set(i);
+    }
   }
 }
 
@@ -68,7 +75,9 @@ void oaz::games::Bandits::InitialiseFromCanonicalState(float* input_board) {
   boost::multi_array_ref<float, 1> data(input_board, boost::extents[N_ROWS]);
 
   for (size_t i = 0; i != N_ROWS; ++i) {
-    if (data[i] == 1.0F) {m_board.set(i);}
+    if (data[i] == 1.0F) {
+      m_board.set(i);
+    }
   }
 }
 

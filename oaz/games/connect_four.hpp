@@ -18,7 +18,9 @@ class ConnectFour : public Game {
  public:
   struct Class : public Game::Class {
     size_t GetMaxNumberOfMoves() const override { return N_COLUMNS; }
-    const std::vector<int>& GetBoardShape() const override { return m_board_shape; }
+    const std::vector<int>& GetBoardShape() const override {
+      return m_board_shape;
+    }
     GameMap* CreateGameMap() const override {
       return new GenericGameMap<ConnectFour, uint64_t>();
     }
