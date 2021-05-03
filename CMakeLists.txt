@@ -43,8 +43,8 @@ find_package(
 find_package(SWIG REQUIRED COMPONENTS python)
 # execute_process( COMMAND python -m pybind11 --includes COMMAND sed -e
 # "s#-I##g" COMMAND sed -e "s# #;#g" OUTPUT_VARIABLE pybind11_INCLUDE_DIRS )
-# set(pybind11_INCLUDE_DIRS "")
-# message("pybind11_INCLUDE_DIRS ${pybind11_INCLUDE_DIRS}")
+# set(pybind11_INCLUDE_DIRS "") message("pybind11_INCLUDE_DIRS
+# ${pybind11_INCLUDE_DIRS}")
 message("PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS}")
 
 set(TensorFlow_BUILD_DIR $ENV{TENSORFLOW_LIB})
@@ -79,7 +79,8 @@ target_link_libraries(oaz_test INTERFACE gtest_main gmock_main
                                          nlohmann_json::nlohmann_json)
 
 add_library(oaz_python_module INTERFACE)
-target_include_directories(oaz_python_module SYSTEM INTERFACE ${PYTHON_INCLUDE_DIRS})
+target_include_directories(oaz_python_module SYSTEM
+                           INTERFACE ${PYTHON_INCLUDE_DIRS})
 target_link_libraries(oaz_python_module INTERFACE oaz_base ${PYTHON_LIBRARIES}
                                                   ${Boost_LIBRARIES})
 
