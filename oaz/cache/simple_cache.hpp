@@ -29,27 +29,27 @@ class SimpleCache : public Cache {
             boost::extents[size][game.ClassMethods().GetMaxNumberOfMoves()]),
         m_map(game.ClassMethods().CreateGameMap()) {}
 
-  bool Evaluate(const oaz::games::Game& game, float& value,
-                boost::multi_array_ref<float, 1> policy) {
-    size_t object_id;
-    bool success;
+  bool Evaluate(const oaz::games::Game& game, float* value,
+                boost::multi_array_ref<float, 1> policy) override {
+    size_t object_id = 0;
+    bool success = false;
     {
       std::shared_lock<std::shared_mutex> l(m_shared_mutex);
       success = m_map->Get(game, object_id);
     }
-    if (!success) return false;
+    if (!success) {return false;}
     IncrementNumberOfHits();
-    value = m_values[object_id];
+    *value = m_values[object_id];
     policy = m_policies[object_id];
     return true;
   }
   void Insert(const oaz::games::Game& game, float value,
-              boost::multi_array_ref<float, 1> policy) {
-    size_t object_id;
+              boost::multi_array_ref<float, 1> policy) override {
+    size_t object_id = 0;
     {
       std::unique_lock<std::shared_mutex> l(m_shared_mutex);
-      if (GetNumberOfObjects() >= GetSize()) return;
-      if (m_map->Get(game, object_id)) return;
+      if (GetNumberOfObjects() >= GetSize()) {return;}
+      if (m_map->Get(game, object_id)) {return;}
       object_id = GetObjectID();
       m_map->Insert(game, object_id);
       m_values[object_id] = value;
@@ -62,13 +62,13 @@ class SimpleCache : public Cache {
                    boost::multi_array_ref<
                        std::unique_ptr<boost::multi_array_ref<float, 1>>, 1>
                        policies,
-                   size_t n_elements) {
+                   size_t n_elements) override {
     std::unique_lock<std::shared_mutex> l(m_shared_mutex);
-    size_t object_id;
+    size_t object_id = 0;
     for (size_t i = 0; i != n_elements; ++i) {
       const oaz::games::Game& game = *(games[i]);
-      if (GetNumberOfObjects() >= GetSize()) return;
-      if (m_map->Get(game, object_id)) continue;
+      if (GetNumberOfObjects() >= GetSize()) {return;}
+      if (m_map->Get(game, object_id)) {continue;}
       object_id = GetObjectID();
       m_map->Insert(game, object_id);
       m_values[object_id] = *(values[i]);
