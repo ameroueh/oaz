@@ -35,7 +35,7 @@ class SimpleCache : public Cache {
     bool success = false;
     {
       std::shared_lock<std::shared_mutex> l(m_shared_mutex);
-      success = m_map->Get(game, object_id);
+      success = m_map->Get(game, &object_id);
     }
     if (!success) {return false;}
     IncrementNumberOfHits();
@@ -49,7 +49,7 @@ class SimpleCache : public Cache {
     {
       std::unique_lock<std::shared_mutex> l(m_shared_mutex);
       if (GetNumberOfObjects() >= GetSize()) {return;}
-      if (m_map->Get(game, object_id)) {return;}
+      if (m_map->Get(game, &object_id)) {return;}
       object_id = GetObjectID();
       m_map->Insert(game, object_id);
       m_values[object_id] = value;
@@ -68,7 +68,7 @@ class SimpleCache : public Cache {
     for (size_t i = 0; i != n_elements; ++i) {
       const oaz::games::Game& game = *(games[i]);
       if (GetNumberOfObjects() >= GetSize()) {return;}
-      if (m_map->Get(game, object_id)) {continue;}
+      if (m_map->Get(game, &object_id)) {continue;}
       object_id = GetObjectID();
       m_map->Insert(game, object_id);
       m_values[object_id] = *(values[i]);
