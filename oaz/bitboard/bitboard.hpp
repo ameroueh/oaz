@@ -20,10 +20,8 @@ class BitBoard {
   constexpr BitBoard(
       const std::initializer_list<std::pair<size_t, size_t>>& token_positions)
       : m_board(0ULL) {
-    for (auto position : token_positions) Set(position.first, position.second);
+    for (auto position : token_positions) {Set(position.first, position.second);}
   }
-  /* constexpr BitBoard(const BitBoard& board) : m_board(board.m_board) {} */
-
   constexpr size_t Get(size_t i, size_t j) const {
     return (m_board >> (i * NCOLS + j)) & 1ULL;
   } constexpr void Set(size_t i, size_t j) { m_board |= (1ULL << (i * NCOLS + j));
@@ -97,8 +95,9 @@ class BitBoard {
   }
 
   void WriteToArray(oaz::array::Array<NROWS, NCOLS>& array) const {
-    for (size_t i = 0; i != NROWS; ++i)
-      for (size_t j = 0; j != NCOLS; ++j) array[i][j] = Get(i, j) ? 1. : 0.;
+    for (size_t i = 0; i != NROWS; ++i) {
+      for (size_t j = 0; j != NCOLS; ++j) {array[i][j] = Get(i, j) ? 1. : 0.;}
+    }
   }
 
   uint64_t GetBits() const { return m_board; }
