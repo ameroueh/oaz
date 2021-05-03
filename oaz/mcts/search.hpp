@@ -34,15 +34,20 @@ class Search {
 
   /* void seedRNG(size_t); */
   std::shared_ptr<SearchNode> GetTreeRoot();
+
   ~Search();
+  Search(const Search&) = delete;
+  Search(Search&&) = delete;
+  Search& operator=(const Search&) = delete;
+  Search& operator=(Search&&) = delete;
 
  private:
+  static constexpr float EPS_THRESHOLD = 0.001;
   class SelectionTask : public oaz::thread_pool::Task {
    public:
     SelectionTask(Search*, size_t);
     SelectionTask();
-    void operator()();
-    ~SelectionTask();
+    void operator()() override;
 
    private:
     Search* m_search;
@@ -53,8 +58,7 @@ class Search {
    public:
     ExpansionAndBackpropagationTask(Search*, size_t);
     ExpansionAndBackpropagationTask();
-    void operator()();
-    virtual ~ExpansionAndBackpropagationTask();
+    void operator()() override;
 
    private:
     Search* m_search;
@@ -89,7 +93,7 @@ class Search {
   void SelectNode(size_t);
   void ExpandNode(SearchNode* node, oaz::games::Game*,
                   boost::multi_array_ref<float, 1>);
-  void BackpropagateNode(SearchNode*, float);
+  static void BackpropagateNode(SearchNode*, float);
   void ExpandAndBackpropagateNode(size_t);
   void MaybeSelect(size_t);
   void Pause(size_t);

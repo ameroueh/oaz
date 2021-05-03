@@ -15,25 +15,26 @@ namespace oaz::bitboard {
 template <size_t NROWS, size_t NCOLS>
 class BitBoard {
  public:
-  constexpr BitBoard() : m_board(0ull) {}
+  static constexpr uint64_t N_BITS = 64;
+  constexpr BitBoard() : m_board(0ULL) {}
   constexpr BitBoard(
       const std::initializer_list<std::pair<size_t, size_t>>& token_positions)
-      : m_board(0ull) {
-    for (auto position : token_positions) Set(position.first, position.second);
+      : m_board(0ULL) {
+    for (auto position : token_positions) {
+      Set(position.first, position.second);
+    }
   }
-  constexpr BitBoard(const BitBoard& board) : m_board(board.m_board) {}
-
   constexpr size_t Get(size_t i, size_t j) const {
-    return (m_board >> (i * NCOLS + j)) & 1ull;
+    return (m_board >> (i * NCOLS + j)) & 1ULL;
   }
   constexpr void Set(size_t i, size_t j) {
-    m_board |= (1ull << (i * NCOLS + j));
+    m_board |= (1ULL << (i * NCOLS + j));
     m_board &= BOARD_MASK;
   }
   constexpr void Unset(size_t i, size_t j) {
-    m_board &= (~1ull << (i * NCOLS + j));
+    m_board &= (~1ULL << (i * NCOLS + j));
   }
-  constexpr size_t Sum() const { return std::bitset<64>(m_board).count(); }
+  constexpr size_t Sum() const { return std::bitset<N_BITS>(m_board).count(); }
   constexpr size_t RowSum(size_t i) const {
     return popcount_ll((m_board >> (i * NCOLS)) & ROW_MASK);
   }
@@ -80,26 +81,29 @@ class BitBoard {
     uint64_t masked_board = m_board & mask_board.m_board;
     uint64_t filled_masked_board = m_board | ~mask_board.m_board;
     uint64_t lhs_masked_board = masked_board >> bit_position;
-    uint64_t rhs_masked_board = masked_board << (64 - bit_position);
+    uint64_t rhs_masked_board = masked_board << (N_BITS - bit_position);
     uint64_t lhs_filled_masked_board = filled_masked_board >> bit_position;
     uint64_t rhs_filled_masked_board = filled_masked_board
-                                       << (64 - bit_position);
-    uint64_t lhs_lead_mask = (1ll << tocount_ll(lhs_filled_masked_board)) - 1;
+                                       << (N_BITS - bit_position);
+    uint64_t lhs_lead_mask = (1LL << tocount_ll(lhs_filled_masked_board)) - 1;
 
     uint64_t locount_rhs_filled_masked_board =
         locount_ll(rhs_filled_masked_board);
     uint64_t rhs_lead_mask =
         locount_rhs_filled_masked_board == 0
-            ? 0ull
-            : ~((1ull << (64 - locount_rhs_filled_masked_board)) - 1);
+            ? 0ULL
+            : ~((1ULL << (N_BITS - locount_rhs_filled_masked_board)) - 1);
 
     return popcount_ll(lhs_masked_board & lhs_lead_mask) +
            popcount_ll(rhs_masked_board & rhs_lead_mask);
   }
 
   void WriteToArray(oaz::array::Array<NROWS, NCOLS>& array) const {
-    for (size_t i = 0; i != NROWS; ++i)
-      for (size_t j = 0; j != NCOLS; ++j) array[i][j] = Get(i, j) ? 1. : 0.;
+    for (size_t i = 0; i != NROWS; ++i) {
+      for (size_t j = 0; j != NCOLS; ++j) {
+        array[i][j] = Get(i, j) ? 1. : 0.;
+      }
+    }
   }
 
   uint64_t GetBits() const { return m_board; }
@@ -112,11 +116,11 @@ class BitBoard {
   }
 
   static constexpr uint64_t ROW_MASK =
-      (NCOLS == 64) ? ~0ull : ((1ull << NCOLS) - 1);
+      (NCOLS == N_BITS) ? ~0ULL : ((1ULL << NCOLS) - 1);
   static constexpr uint64_t COLUMN_MASK =
-      (NROWS == 64) ? ~0ull : ColumnMask<NROWS, NCOLS>::value;
+      (NROWS == N_BITS) ? ~0ULL : ColumnMask<NROWS, NCOLS>::value;
   static constexpr uint64_t BOARD_MASK =
-      (NCOLS * NROWS == 64) ? ~0ull : ((1ull << NCOLS * NROWS) - 1);
+      (NCOLS * NROWS == N_BITS) ? ~0ULL : ((1ULL << NCOLS * NROWS) - 1);
 
   uint64_t m_board;
 };

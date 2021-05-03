@@ -31,7 +31,12 @@ namespace oaz::nn {
 class EvaluationBatchStatistics {
  public:
   EvaluationBatchStatistics()
-      : evaluation_forced(false), n_elements(0), size(0) {}
+      : evaluation_forced(false),
+        n_elements(0),
+        size(0),
+        time_created(0),
+        time_evaluation_start(0),
+        time_evaluation_end(0) {}
 
   size_t time_created;
   size_t time_evaluation_start;
@@ -53,7 +58,7 @@ class EvaluationBatch {
 
   size_t AcquireIndex();
   void InitialiseElement(size_t, oaz::games::Game*, float*,
-                         boost::multi_array_ref<float, 1>,
+                         const boost::multi_array_ref<float, 1>&,
                          oaz::thread_pool::Task*);
 
   tensorflow::Tensor& GetBatchTensor();
@@ -62,7 +67,7 @@ class EvaluationBatch {
   oaz::thread_pool::Task* GetTask(size_t);
   void Lock();
   void Unlock();
-  bool IsFull();
+  bool IsFull() const;
 
   boost::multi_array_ref<oaz::games::Game*, 1> GetGames();
   boost::multi_array_ref<float*, 1> GetValues();
@@ -95,20 +100,25 @@ class NNEvaluator : public oaz::evaluator::Evaluator {
               std::shared_ptr<oaz::cache::Cache>,
               std::shared_ptr<oaz::thread_pool::ThreadPool>,
               const std::vector<int>&, size_t);
-  void RequestEvaluation(oaz::games::Game*, float*,
-                         boost::multi_array_ref<float, 1>,
-                         oaz::thread_pool::Task*);
+  void RequestEvaluation(oaz::games::Game* game, float* value,
+                         boost::multi_array_ref<float, 1> policy,
+                         oaz::thread_pool::Task* task) override;
 
   std::vector<EvaluationBatchStatistics> GetStatistics();
 
   ~NNEvaluator();
+  NNEvaluator(const NNEvaluator&) = delete;
+  NNEvaluator(NNEvaluator&&) = delete;
+  NNEvaluator& operator=(const NNEvaluator&) = delete;
+  NNEvaluator& operator=(NNEvaluator&&) = delete;
 
  private:
+  static constexpr size_t WAIT_BEFORE_FORCED_EVAL_MS = 10;
   bool EvaluateFromCache(oaz::games::Game*, float*,
-                         boost::multi_array_ref<float, 1>,
+                         const boost::multi_array_ref<float, 1>&,
                          oaz::thread_pool::Task*);
   void EvaluateFromNN(oaz::games::Game*, float*,
-                      boost::multi_array_ref<float, 1>,
+                      const boost::multi_array_ref<float, 1>&,
                       oaz::thread_pool::Task*);
 
   size_t GetBatchSize() const;

@@ -10,7 +10,7 @@
 
 namespace p = boost::python;
 
-BOOST_PYTHON_MODULE(game) {
+BOOST_PYTHON_MODULE(game) {  // NOLINT
   PyEval_InitThreads();
 
   p::class_<std::vector<int> >("IntVec").def(

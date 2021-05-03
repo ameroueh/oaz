@@ -8,7 +8,7 @@
 
 namespace p = boost::python;
 
-BOOST_PYTHON_MODULE(simulation_evaluator) {
+BOOST_PYTHON_MODULE(simulation_evaluator) {  // NOLINT
   PyEval_InitThreads();
 
   p::class_<oaz::simulation::SimulationEvaluator,

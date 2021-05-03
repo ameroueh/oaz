@@ -9,7 +9,7 @@
 namespace oaz::cache {
 class Cache {
  public:
-  virtual bool Evaluate(const oaz::games::Game&, float&,
+  virtual bool Evaluate(const oaz::games::Game&, float*,
                         boost::multi_array_ref<float, 1>) = 0;
   virtual void Insert(const oaz::games::Game&, float,
                       boost::multi_array_ref<float, 1>) = 0;
@@ -20,7 +20,13 @@ class Cache {
       boost::multi_array_ref<std::unique_ptr<boost::multi_array_ref<float, 1>>,
                              1>,
       size_t) = 0;
-  virtual ~Cache() {}
+
+  virtual ~Cache() = default;
+  Cache() = default;
+  Cache(const Cache&) = default;
+  Cache& operator=(const Cache&) = default;
+  Cache(Cache&&) = default;
+  Cache& operator=(Cache&&) = default;
 };
 }  // namespace oaz::cache
 #endif  // OAZ_CACHE_CACHE_HPP_

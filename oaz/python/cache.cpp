@@ -8,7 +8,7 @@
 
 namespace p = boost::python;
 
-BOOST_PYTHON_MODULE(cache) {
+BOOST_PYTHON_MODULE(cache) {  // NOLINT
   PyEval_InitThreads();
 
   p::class_<oaz::cache::Cache, boost::noncopyable>("Cache", p::no_init);

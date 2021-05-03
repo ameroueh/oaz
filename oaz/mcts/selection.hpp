@@ -17,11 +17,16 @@ class Selector {
   virtual std::unique_ptr<Selector> Clone() const = 0;
 
   virtual ~Selector() {}
+  Selector() = default;
+  Selector(const Selector&) = default;
+  Selector(Selector&&) = default;
+  Selector& operator=(const Selector&) = default;
+  Selector& operator=(Selector&&) = default;
 };
 
 class UCTSelector : public Selector {
  public:
-  size_t operator()(oaz::mcts::SearchNode* node) const {
+  size_t operator()(oaz::mcts::SearchNode* node) const override {
     size_t best_child_index = 0;
     float best_score = 0;
     for (size_t i = 0; i != node->GetNChildren(); ++i) {
@@ -33,26 +38,27 @@ class UCTSelector : public Selector {
     }
     return best_child_index;
   }
-  std::unique_ptr<Selector> Clone() const {
+  std::unique_ptr<Selector> Clone() const override {
     return std::make_unique<UCTSelector>(*this);
   }
 
  private:
-  float GetChildScore(oaz::mcts::SearchNode* parent,
-                      oaz::mcts::SearchNode* child) const {
+  static float GetChildScore(oaz::mcts::SearchNode* parent,
+                             oaz::mcts::SearchNode* child) {
     float q = (child->GetNVisits() == 0)
                   ? 0
                   : child->GetAccumulatedValue() / child->GetNVisits();
     float exploration_score =
         C_EXPLORATION *
-        std::sqrt(std::log(parent->GetNVisits()) / (child->GetNVisits() + 1));
+        static_cast<float>(std::sqrt(std::log(parent->GetNVisits()))) /
+        static_cast<float>((child->GetNVisits() + 1));
     return q + exploration_score;
   }
 };
 
 class AZSelector : public Selector {
  public:
-  size_t operator()(oaz::mcts::SearchNode* node) const {
+  size_t operator()(oaz::mcts::SearchNode* node) const override {
     size_t best_child_index = 0;
     float best_score = 0;
     for (size_t i = 0; i != node->GetNChildren(); ++i) {
@@ -64,19 +70,19 @@ class AZSelector : public Selector {
     }
     return best_child_index;
   }
-  std::unique_ptr<Selector> Clone() const {
+  std::unique_ptr<Selector> Clone() const override {
     return std::make_unique<AZSelector>(*this);
   }
 
  private:
-  float GetChildScore(oaz::mcts::SearchNode* parent,
-                      oaz::mcts::SearchNode* child) const {
+  static float GetChildScore(oaz::mcts::SearchNode* parent,
+                             oaz::mcts::SearchNode* child) {
     float q = (child->GetNVisits() == 0)
                   ? 0
                   : child->GetAccumulatedValue() / child->GetNVisits();
     float policy_score = C_EXPLORATION * child->GetPrior() *
-                         std::sqrt(parent->GetNVisits()) /
-                         (child->GetNVisits() + 1);
+                         static_cast<float>(std::sqrt(parent->GetNVisits())) /
+                         static_cast<float>(child->GetNVisits() + 1);
     return q + policy_score;
   }
 };

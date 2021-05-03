@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "boost/multi_array.hpp"
-#include "oaz/mcts/backpropagation.hpp"
 #include "oaz/mcts/search_node.hpp"
 #include "oaz/mcts/selection.hpp"
 
@@ -29,8 +28,6 @@ void oaz::mcts::Search::SelectionTask::operator()() {
   m_search->HandleFinishedTask();
 }
 
-oaz::mcts::Search::SelectionTask::~SelectionTask() {}
-
 oaz::mcts::Search::ExpansionAndBackpropagationTask::
     ExpansionAndBackpropagationTask(oaz::mcts::Search* search, size_t index)
     : m_index(index), m_search(search) {
@@ -45,9 +42,6 @@ void oaz::mcts::Search::ExpansionAndBackpropagationTask::operator()() {
   m_search->ExpandAndBackpropagateNode(m_index);
   m_search->HandleFinishedTask();
 }
-
-oaz::mcts::Search::ExpansionAndBackpropagationTask::
-    ~ExpansionAndBackpropagationTask() {}
 
 void oaz::mcts::Search::SelectNode(size_t index) {
   oaz::mcts::SearchNode* node = GetNode(index);
@@ -100,7 +94,7 @@ size_t oaz::mcts::Search::GetPolicySize() const { return m_policy_size; }
 
 void oaz::mcts::Search::AddDirichletNoise(
     boost::multi_array_ref<float, 1> policy) {
-  if (m_noise_epsilon > 0.001) {
+  if (m_noise_epsilon > EPS_THRESHOLD) {
     boost::multi_array<float, 1> noise(boost::extents[GetPolicySize()]);
     float total_noise = 0.;
     for (size_t i = 0; i != GetPolicySize(); ++i) {
@@ -118,10 +112,12 @@ void oaz::mcts::Search::AddDirichletNoise(
 void oaz::mcts::Search::ExpandNode(oaz::mcts::SearchNode* node,
                                    oaz::games::Game* game,
                                    boost::multi_array_ref<float, 1> policy) {
-  if (node->IsRoot()) AddDirichletNoise(policy);
+  if (node->IsRoot()) {
+    AddDirichletNoise(policy);
+  }
 
   std::vector<size_t> available_moves;
-  game->GetAvailableMoves(available_moves);
+  game->GetAvailableMoves(&available_moves);
   size_t player = game->GetCurrentPlayer();
 
   for (auto move : available_moves) {
@@ -162,7 +158,7 @@ oaz::games::Game* oaz::mcts::Search::GetGame(size_t index) {
 
 void oaz::mcts::Search::ExpandAndBackpropagateNode(size_t index) {
   float value = GetValue(index);
-  value = (value + 1.) / 2.;
+  value = (value + 1.0F) / 2.0F;  // NOLINT
 
   boost::multi_array_ref<float, 1> policy = GetPolicy(index);
   oaz::mcts::SearchNode* node = GetNode(index);
@@ -227,10 +223,10 @@ oaz::mcts::Search::Search(
       m_values(boost::extents[batch_size]),
       m_policies(boost::extents[batch_size]
                                [game.ClassMethods().GetMaxNumberOfMoves()]),
-      m_evaluator(evaluator),
+      m_evaluator(std::move(evaluator)),
       m_noise_epsilon(0.),
       m_noise_alpha(1.),
-      m_thread_pool(thread_pool),
+      m_thread_pool(std::move(thread_pool)),
       m_selection_tasks(boost::extents[batch_size]),
       m_expansion_and_backpropagation_tasks(boost::extents[batch_size]) {
   Initialise();
@@ -259,10 +255,10 @@ oaz::mcts::Search::Search(
       m_values(boost::extents[batch_size]),
       m_policies(boost::extents[batch_size]
                                [game.ClassMethods().GetMaxNumberOfMoves()]),
-      m_evaluator(evaluator),
+      m_evaluator(std::move(evaluator)),
       m_noise_epsilon(noise_epsilon),
       m_noise_alpha(noise_alpha),
-      m_thread_pool(thread_pool),
+      m_thread_pool(std::move(thread_pool)),
       m_selection_tasks(boost::extents[batch_size]),
       m_expansion_and_backpropagation_tasks(boost::extents[batch_size]) {
   Initialise();
@@ -272,7 +268,7 @@ oaz::mcts::Search::Search(
 void oaz::mcts::Search::BackpropagateNode(oaz::mcts::SearchNode* node,
                                           float value) {
   while (!node->IsRoot()) {
-    value = 1. - value;
+    value = 1.0F - value;
     node->Lock();
     node->AddValue(value);
     node->Unlock();
@@ -286,7 +282,9 @@ void oaz::mcts::Search::HandleCreatedTask() { m_n_active_tasks++; }
 
 void oaz::mcts::Search::HandleFinishedTask() {
   m_n_active_tasks--;
-  if (Done()) m_condition.notify_one();
+  if (Done()) {
+    m_condition.notify_one();
+  }
 }
 
 size_t oaz::mcts::Search::GetNActiveTasks() const { return m_n_active_tasks; }
@@ -296,7 +294,9 @@ oaz::mcts::SearchNode* oaz::mcts::Search::GetNode(size_t index) {
 }
 
 void oaz::mcts::Search::PerformSearch() {
-  for (size_t i = 0; i != GetBatchSize(); ++i) MaybeSelect(i);
+  for (size_t i = 0; i != GetBatchSize(); ++i) {
+    MaybeSelect(i);
+  }
 
   std::unique_lock<std::mutex> lock(m_mutex);
   m_condition.wait(lock, [this] { return Done(); });

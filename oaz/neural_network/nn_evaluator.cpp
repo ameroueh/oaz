@@ -28,7 +28,8 @@ oaz::nn::EvaluationBatch::EvaluationBatch(
       m_policies(boost::extents[size]),
       m_tasks(boost::extents[size]),
       m_statistics(std::make_unique<oaz::nn::EvaluationBatchStatistics>()) {
-  std::vector<long long int> tensor_dimensions = {(long long int)size};
+  std::vector<tensorflow::int64> tensor_dimensions = {
+      static_cast<tensorflow::int64>(size)};
   tensor_dimensions.insert(tensor_dimensions.end(), element_dimensions.begin(),
                            element_dimensions.end());
   m_batch = tensorflow::Tensor(tensorflow::DT_FLOAT,
@@ -44,7 +45,8 @@ oaz::nn::EvaluationBatchStatistics& oaz::nn::EvaluationBatch::GetStatistics() {
 
 void oaz::nn::EvaluationBatch::InitialiseElement(
     size_t index, oaz::games::Game* game, float* value,
-    boost::multi_array_ref<float, 1> policy, oaz::thread_pool::Task* task) {
+    const boost::multi_array_ref<float, 1>& policy,
+    oaz::thread_pool::Task* task) {
   float* destination = m_batch.flat<float>().data() + index * GetElementSize();
   game->WriteCanonicalStateToTensorMemory(destination);
   m_games[index] = game;
@@ -67,18 +69,21 @@ size_t oaz::nn::EvaluationBatch::AcquireIndex() {
 
 boost::multi_array_ref<oaz::games::Game*, 1>
 oaz::nn::EvaluationBatch::GetGames() {
-  return m_games;
+  return boost::multi_array_ref<oaz::games::Game*, 1>(
+      m_games.origin(), boost::extents[GetSize()]);
 }
 
 boost::multi_array_ref<float*, 1> oaz::nn::EvaluationBatch::GetValues() {
-  return m_values;
+  return boost::multi_array_ref<float*, 1>(m_values.origin(),
+                                           boost::extents[GetSize()]);
 }
 
 boost::multi_array_ref<std::unique_ptr<boost::multi_array_ref<float, 1>>, 1>
 oaz::nn::EvaluationBatch::GetPolicies() {
-  return m_policies;
+  return boost::multi_array_ref<
+      std::unique_ptr<boost::multi_array_ref<float, 1>>, 1>(
+      m_policies.origin(), boost::extents[GetSize()]);
 }
-
 size_t oaz::nn::EvaluationBatch::GetSize() const { return m_size; }
 
 size_t oaz::nn::EvaluationBatch::GetElementSize() const {
@@ -102,7 +107,9 @@ void oaz::nn::EvaluationBatch::Lock() { m_lock.Lock(); }
 
 void oaz::nn::EvaluationBatch::Unlock() { m_lock.Unlock(); }
 
-bool oaz::nn::EvaluationBatch::IsFull() { return m_current_index >= GetSize(); }
+bool oaz::nn::EvaluationBatch::IsFull() const {
+  return m_current_index >= GetSize();
+}
 
 size_t oaz::nn::EvaluationBatch::GetNumberOfElements() const {
   return m_current_index;
@@ -117,11 +124,11 @@ oaz::nn::NNEvaluator::NNEvaluator(
     std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool,
     const std::vector<int>& element_dimensions, size_t batch_size)
     : m_batch_size(batch_size),
-      m_model(model),
-      m_cache(cache),
+      m_model(std::move(model)),
+      m_cache(std::move(cache)),
       m_n_evaluation_requests(0),
       m_n_evaluations(0),
-      m_thread_pool(thread_pool),
+      m_thread_pool(std::move(thread_pool)),
       m_element_dimensions(element_dimensions) {
   StartMonitor();
 }
@@ -132,8 +139,8 @@ oaz::nn::NNEvaluator::~NNEvaluator() {
 }
 
 void oaz::nn::NNEvaluator::Monitor(std::future<void> future_exit_signal) {
-  while (future_exit_signal.wait_for(std::chrono::milliseconds(10)) ==
-         std::future_status::timeout) {
+  while (future_exit_signal.wait_for(std::chrono::milliseconds(
+             WAIT_BEFORE_FORCED_EVAL_MS)) == std::future_status::timeout) {
     ForceEvaluation();
   }
 }
@@ -160,22 +167,27 @@ size_t oaz::nn::NNEvaluator::GetBatchSize() const { return m_batch_size; }
 void oaz::nn::NNEvaluator::RequestEvaluation(
     oaz::games::Game* game, float* value,
     boost::multi_array_ref<float, 1> policy, oaz::thread_pool::Task* task) {
-  if (m_cache)
-    if (EvaluateFromCache(game, value, policy, task)) return;
+  if (m_cache && EvaluateFromCache(game, value, policy, task)) {
+    return;
+  }
   EvaluateFromNN(game, value, policy, task);
 }
 
 bool oaz::nn::NNEvaluator::EvaluateFromCache(
     oaz::games::Game* game, float* value,
-    boost::multi_array_ref<float, 1> policy, oaz::thread_pool::Task* task) {
-  bool success = m_cache->Evaluate(*game, *value, policy);
-  if (success) m_thread_pool->enqueue(task);
+    const boost::multi_array_ref<float, 1>& policy,
+    oaz::thread_pool::Task* task) {
+  bool success = m_cache->Evaluate(*game, value, policy);
+  if (success) {
+    m_thread_pool->enqueue(task);
+  }
   return success;
 }
 
 void oaz::nn::NNEvaluator::EvaluateFromNN(
     oaz::games::Game* game, float* value,
-    boost::multi_array_ref<float, 1> policy, oaz::thread_pool::Task* task) {
+    const boost::multi_array_ref<float, 1>& policy,
+    oaz::thread_pool::Task* task) {
   m_batches.Lock();
   if (!m_batches.empty()) {
     auto current_batch = m_batches.back();
@@ -184,7 +196,9 @@ void oaz::nn::NNEvaluator::EvaluateFromNN(
     size_t index = current_batch->AcquireIndex();
 
     bool evaluate_batch = current_batch->IsFull();
-    if (evaluate_batch) m_batches.pop_back();
+    if (evaluate_batch) {
+      m_batches.pop_back();
+    }
 
     current_batch->Unlock();
     m_batches.Unlock();
@@ -230,12 +244,14 @@ void oaz::nn::NNEvaluator::EvaluateBatch(oaz::nn::EvaluationBatch* batch) {
                 policy.num_elements() * sizeof(float));
   }
 
-  if (m_cache)
+  if (m_cache) {
     m_cache->BatchInsert(batch->GetGames(), batch->GetValues(),
                          batch->GetPolicies(), batch->GetNumberOfElements());
+  }
 
-  for (size_t i = 0; i != batch->GetNumberOfElements(); ++i)
+  for (size_t i = 0; i != batch->GetNumberOfElements(); ++i) {
     m_thread_pool->enqueue(batch->GetTask(i));
+  }
 
   batch->GetStatistics().time_evaluation_end = oaz::utils::time_now_ns();
 

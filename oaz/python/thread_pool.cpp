@@ -8,7 +8,7 @@
 
 namespace p = boost::python;
 
-BOOST_PYTHON_MODULE(thread_pool) {
+BOOST_PYTHON_MODULE(thread_pool) {  // NOLINT
   PyEval_InitThreads();
 
   p::class_<oaz::thread_pool::ThreadPool,

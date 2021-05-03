@@ -9,7 +9,7 @@
 
 namespace p = boost::python;
 
-BOOST_PYTHON_MODULE(simple_cache) {
+BOOST_PYTHON_MODULE(simple_cache) {  // NOLINT
   PyEval_InitThreads();
 
   p::class_<oaz::cache::SimpleCache, std::shared_ptr<oaz::cache::SimpleCache>,

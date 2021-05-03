@@ -19,11 +19,14 @@ void oaz::games::Bandits::PlayFromString(std::string moves) {
 void oaz::games::Bandits::PlayMove(size_t move) { m_board.set(move); }
 
 void oaz::games::Bandits::GetAvailableMoves(
-    std::vector<size_t>& available_moves) const {
-  available_moves.clear();
+    std::vector<size_t>* available_moves) const {
+  available_moves->clear();
 
-  for (size_t i = 0; i != 10; ++i)
-    if (!m_board.test(i)) available_moves.push_back(i);
+  for (size_t i = 0; i != N_ROWS; ++i) {
+    if (!m_board.test(i)) {
+      available_moves->push_back(i);
+    }
+  }
 }
 
 bool oaz::games::Bandits::IsFinished() const { return GetCurrentPlayer() == 1; }
@@ -45,8 +48,10 @@ bool oaz::games::Bandits::operator==(const Bandits& rhs) const {
 }
 
 void oaz::games::Bandits::WriteStateToTensorMemory(float* destination) const {
-  boost::multi_array_ref<float, 1> tensor(destination, boost::extents[10]);
-  for (size_t i = 0; i != 10; ++i) tensor[i] = m_board.test(i) ? 1. : 0.;
+  boost::multi_array_ref<float, 1> tensor(destination, boost::extents[N_ROWS]);
+  for (size_t i = 0; i != N_ROWS; ++i) {
+    tensor[i] = m_board.test(i) ? 1. : 0.;
+  }
 }
 
 void oaz::games::Bandits::WriteCanonicalStateToTensorMemory(
@@ -56,19 +61,23 @@ void oaz::games::Bandits::WriteCanonicalStateToTensorMemory(
 
 void oaz::games::Bandits::InitialiseFromState(float* input_board) {
   Reset();
-  boost::multi_array_ref<float, 1> data(input_board, boost::extents[10]);
+  boost::multi_array_ref<float, 1> data(input_board, boost::extents[N_ROWS]);
 
-  for (size_t i = 0; i != 10; ++i) {
-    if (data[i] == 1.0f) m_board.set(i);
+  for (size_t i = 0; i != N_ROWS; ++i) {
+    if (data[i] == 1.0F) {
+      m_board.set(i);
+    }
   }
 }
 
 void oaz::games::Bandits::InitialiseFromCanonicalState(float* input_board) {
   Reset();
-  boost::multi_array_ref<float, 1> data(input_board, boost::extents[10]);
+  boost::multi_array_ref<float, 1> data(input_board, boost::extents[N_ROWS]);
 
-  for (size_t i = 0; i != 10; ++i) {
-    if (data[i] == 1.0f) m_board.set(i);
+  for (size_t i = 0; i != N_ROWS; ++i) {
+    if (data[i] == 1.0F) {
+      m_board.set(i);
+    }
   }
 }
 

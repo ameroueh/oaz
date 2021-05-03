@@ -17,9 +17,11 @@ namespace oaz::games {
 class ConnectFour : public Game {
  public:
   struct Class : public Game::Class {
-    size_t GetMaxNumberOfMoves() const { return 7; }
-    const std::vector<int>& GetBoardShape() const { return m_board_shape; }
-    GameMap* CreateGameMap() const {
+    size_t GetMaxNumberOfMoves() const override { return N_COLUMNS; }
+    const std::vector<int>& GetBoardShape() const override {
+      return m_board_shape;
+    }
+    GameMap* CreateGameMap() const override {
       return new GenericGameMap<ConnectFour, uint64_t>();
     }
     static const Class& Methods() {
@@ -28,30 +30,36 @@ class ConnectFour : public Game {
     }
 
    private:
-    const std::vector<int> m_board_shape{6, 7, 2};
+    const std::vector<int> m_board_shape{N_ROWS, N_COLUMNS, N_PLAYERS};
   };
-  const Class& ClassMethods() const { return Class::Methods(); }
+  const Class& ClassMethods() const override { return Class::Methods(); }
 
   ConnectFour();
 
-  void PlayFromString(std::string);
-  void PlayMove(size_t);
-  size_t GetCurrentPlayer() const;
-  bool IsFinished() const;
-  void GetAvailableMoves(std::vector<size_t>&) const;
-  float GetScore() const;
-  void WriteStateToTensorMemory(float*) const;
-  void WriteCanonicalStateToTensorMemory(float*) const;
-  void InitialiseFromState(float*);
-  void InitialiseFromCanonicalState(float*);
-  std::unique_ptr<Game> Clone() const;
+  void PlayFromString(std::string moves) override;
+  void PlayMove(size_t move) override;
+  size_t GetCurrentPlayer() const override;
+  bool IsFinished() const override;
+  void GetAvailableMoves(std::vector<size_t>* available_moves) const override;
+  float GetScore() const override;
+  void WriteStateToTensorMemory(float* destination) const override;
+  void WriteCanonicalStateToTensorMemory(float* destination) const override;
+  void InitialiseFromState(float* input_board) override;
+  void InitialiseFromCanonicalState(float* input_board) override;
+  std::unique_ptr<Game> Clone() const override;
 
   bool operator==(const ConnectFour&) const;
 
   uint64_t GetState() const;
 
  private:
-  using Board = oaz::bitboard::BitBoard<6, 7>;
+  static constexpr size_t N_COLUMNS = 7;
+  static constexpr size_t N_ROWS = 6;
+  static constexpr size_t N_PLAYERS = 2;
+  static constexpr size_t N_STATUS_BITS = 8;
+  static constexpr size_t N_SQUARES = N_ROWS * N_COLUMNS;
+
+  using Board = oaz::bitboard::BitBoard<N_ROWS, N_COLUMNS>;
   static constexpr Board ROW{{0, 0}, {0, 1}, {0, 2}, {0, 3},
                              {0, 4}, {0, 5}, {0, 6}};
   static constexpr Board COLUMN{{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0}};
@@ -61,16 +69,18 @@ class ConnectFour : public Game {
                                          {2, 3}, {1, 4}, {0, 5}};
 
   size_t GetNumberOfTokensInColumn(size_t) const;
+  template <class G>
+  static auto& GetPlayerBoardImpl(G&, size_t);
   Board& GetPlayerBoard(size_t);
   const Board& GetPlayerBoard(size_t) const;
 
-  bool CheckVictory(const Board&, size_t, size_t) const;
-  bool CheckVictory(const Board&) const;
+  static inline bool CheckVictory(const Board&, size_t, size_t);
+  static inline bool CheckVictory(const Board&);
 
-  bool CheckVerticalVictory(const Board&, size_t, size_t) const;
-  bool CheckHorizontalVictory(const Board&, size_t, size_t) const;
-  bool CheckDiagonalVictory1(const Board&, size_t, size_t) const;
-  bool CheckDiagonalVictory2(const Board&, size_t, size_t) const;
+  static inline bool CheckVerticalVictory(const Board&, size_t, size_t);
+  static inline bool CheckHorizontalVictory(const Board&, size_t, size_t);
+  static inline bool CheckDiagonalVictory1(const Board&, size_t, size_t);
+  static inline bool CheckDiagonalVictory2(const Board&, size_t, size_t);
   bool Player0Won() const;
   bool Player1Won() const;
 
@@ -82,7 +92,7 @@ class ConnectFour : public Game {
 
   Board m_player0_tokens;
   Board m_player1_tokens;
-  std::bitset<8> m_status;
+  std::bitset<N_STATUS_BITS> m_status;
 };
 }  // namespace oaz::games
 #endif  // OAZ_GAMES_CONNECT_FOUR_HPP_
