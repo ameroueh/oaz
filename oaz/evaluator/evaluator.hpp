@@ -12,7 +12,13 @@ class Evaluator {
   virtual void RequestEvaluation(oaz::games::Game*, float*,
                                  boost::multi_array_ref<float, 1>,
                                  oaz::thread_pool::Task*) = 0;
+
   virtual ~Evaluator() {}
+  Evaluator() = default;
+  Evaluator(const Evaluator&) = default;
+  Evaluator(Evaluator&&) = default;
+  Evaluator& operator=(const Evaluator&) = default;
+  Evaluator& operator=(Evaluator&&) = default;
 };
 }  // namespace oaz::evaluator
 #endif  // OAZ_EVALUATOR_EVALUATOR_HPP_
