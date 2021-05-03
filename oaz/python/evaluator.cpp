@@ -8,7 +8,7 @@
 
 namespace p = boost::python;
 
-BOOST_PYTHON_MODULE(evaluator) {
+BOOST_PYTHON_MODULE(evaluator) { // NOLINT
   PyEval_InitThreads();
 
   p::class_<oaz::evaluator::Evaluator, boost::noncopyable>("Evaluator",

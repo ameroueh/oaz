@@ -1,6 +1,6 @@
 #include "oaz/neural_network/nn_evaluator.hpp"
 
-#include <pybind11/pybind11.h>
+#include "pybind11/pybind11.h"
 /* #include "runtime.swg" */
 /* #include "swigrun.swg" */
 /* #include "python/pyhead.swg" */
@@ -26,10 +26,10 @@ namespace py = pybind11;
 
 namespace oaz::nn {
 
-np::ndarray GetStatistics(oaz::nn::NNEvaluator& evaluator) {
+np::ndarray GetStatistics(oaz::nn::NNEvaluator* evaluator) {
   std::vector<oaz::nn::EvaluationBatchStatistics> stats =
-      evaluator.GetStatistics();
-  np::ndarray array = np::zeros(p::make_tuple(stats.size(), 6),
+      evaluator->GetStatistics();
+  np::ndarray array = np::zeros(p::make_tuple(stats.size(), 6), // NOLINT
                                 np::dtype::get_builtin<size_t>());
   for (size_t i = 0; i != stats.size(); ++i) {
     array[i][0] = stats[i].time_created;
@@ -37,7 +37,7 @@ np::ndarray GetStatistics(oaz::nn::NNEvaluator& evaluator) {
     array[i][2] = stats[i].time_evaluation_end;
     array[i][3] = stats[i].n_elements;
     array[i][4] = stats[i].size;
-    array[i][5] = stats[i].evaluation_forced ? 1 : 0;
+    array[i][5] = stats[i].evaluation_forced ? 1 : 0; // NOLINT
   }
   return array;
 }
@@ -50,27 +50,30 @@ np::ndarray GetStatistics(oaz::nn::NNEvaluator& evaluator) {
 /*   model.SetSession(session->session); */
 /* } */
 
-void SetSessionV2(oaz::nn::Model& model, PyObject* obj) {
+void SetSessionV2(oaz::nn::Model* model, PyObject* obj) {
   py::handle handle(obj);
   TF_Session* session = handle.cast<TF_Session*>();
-  model.SetSession(session->session);
+  model->SetSession(session->session);
 }
 
 std::shared_ptr<oaz::nn::NNEvaluator> ConstructNNEvaluator(
-    std::shared_ptr<oaz::nn::Model> model, p::object cache,
-    std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool,
+    const std::shared_ptr<oaz::nn::Model>& model,
+    const p::object& cache,
+    const std::shared_ptr<oaz::thread_pool::ThreadPool>& thread_pool,
     const p::object& dimensions, size_t batch_size) {
-  p::stl_input_iterator<int> begin(dimensions), end;
+  p::stl_input_iterator<int> begin(dimensions);
+  p::stl_input_iterator<int> end;
   std::vector<int> dimensions_vec(begin, end);
 
   std::shared_ptr<oaz::cache::Cache> cache_cxx(nullptr);
-  if (!cache.is_none())
+  if (!cache.is_none()) {
     cache_cxx = p::extract<std::shared_ptr<oaz::cache::Cache>>(cache);
+  }
   return std::shared_ptr<oaz::nn::NNEvaluator>(new oaz::nn::NNEvaluator(
       model, cache_cxx, thread_pool, dimensions_vec, batch_size));
 }
 
-BOOST_PYTHON_MODULE(nn_evaluator) {
+BOOST_PYTHON_MODULE(nn_evaluator) { // NOLINT
   PyEval_InitThreads();
 
   /* auto pywrap_tf_session =
