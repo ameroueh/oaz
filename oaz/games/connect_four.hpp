@@ -34,16 +34,16 @@ class ConnectFour : public Game {
 
   ConnectFour();
 
-  void PlayFromString(std::string) override;
-  void PlayMove(size_t) override;
+  void PlayFromString(std::string moves) override;
+  void PlayMove(size_t move) override;
   size_t GetCurrentPlayer() const override;
   bool IsFinished() const override;
-  void GetAvailableMoves(std::vector<size_t>*) const override;
+  void GetAvailableMoves(std::vector<size_t>* available_moves) const override;
   float GetScore() const override;
-  void WriteStateToTensorMemory(float*) const override;
-  void WriteCanonicalStateToTensorMemory(float*) const override;
-  void InitialiseFromState(float*) override;
-  void InitialiseFromCanonicalState(float*) override;
+  void WriteStateToTensorMemory(float* destination) const override;
+  void WriteCanonicalStateToTensorMemory(float* destination) const override;
+  void InitialiseFromState(float* input_board) override;
+  void InitialiseFromCanonicalState(float* input_board) override;
   std::unique_ptr<Game> Clone() const override;
 
   bool operator==(const ConnectFour&) const;
@@ -51,7 +51,6 @@ class ConnectFour : public Game {
   uint64_t GetState() const;
 
  private:
-
   static constexpr size_t N_COLUMNS = 7;
   static constexpr size_t N_ROWS = 6;
   static constexpr size_t N_PLAYERS = 2;
