@@ -32,7 +32,7 @@ TEST(Evaluate, NotInDB) {
   SimpleCache cache(game, 100);
   float value = 0;
   boost::multi_array<float, 1> policy(boost::extents[9]);
-  ASSERT_FALSE(cache.Evaluate(game, value, policy));
+  ASSERT_FALSE(cache.Evaluate(game, &value, policy));
 }
 
 TEST(Insert, Default) {
@@ -56,7 +56,7 @@ TEST(Evaluate, InDB) {
   float read_value = 1;
   boost::multi_array<float, 1> read_policy(boost::extents[9]);
   for (size_t i = 0; i != 9; ++i) read_policy[i] = 1.;
-  cache.Evaluate(game, read_value, read_policy);
+  cache.Evaluate(game, &read_value, read_policy);
 
   ASSERT_EQ(value, read_value);
   ASSERT_EQ(policy, read_policy);

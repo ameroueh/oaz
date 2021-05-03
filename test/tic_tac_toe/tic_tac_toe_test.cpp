@@ -14,7 +14,7 @@ TEST(InstantiationTest, Default) { TicTacToe game; }
 TEST(GetAvailableMoves, Default) {
   TicTacToe game;
   std::vector<size_t> available_moves;
-  game.GetAvailableMoves(available_moves);
+  game.GetAvailableMoves(&available_moves);
   ASSERT_THAT(available_moves, ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8));
 }
 
@@ -87,7 +87,7 @@ TEST(PlayTest, TieTest) {
   ASSERT_FALSE(game.IsFinished());
   game.PlayFromString("036451287");
   std::vector<size_t> available_moves;
-  game.GetAvailableMoves(available_moves);
+  game.GetAvailableMoves(&available_moves);
   ASSERT_THAT(available_moves, ElementsAre());
   ASSERT_TRUE(game.IsFinished());
   ASSERT_EQ(0, game.GetScore());
@@ -276,7 +276,7 @@ TEST(GameMap, GetNotInDB) {
   std::unique_ptr<oaz::games::Game::GameMap> game_map(
       game.ClassMethods().CreateGameMap());
   size_t index;
-  ASSERT_FALSE(game_map->Get(game, index));
+  ASSERT_FALSE(game_map->Get(game, &index));
 }
 
 TEST(GameMap, GetInDB) {
@@ -286,7 +286,7 @@ TEST(GameMap, GetInDB) {
   game_map->Insert(game, 1ll);
 
   size_t index = 0;
-  ASSERT_TRUE(game_map->Get(game, index));
+  ASSERT_TRUE(game_map->Get(game, &index));
   ASSERT_EQ(index, 1);
 }
 
