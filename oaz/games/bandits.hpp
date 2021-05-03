@@ -16,43 +16,44 @@ namespace oaz::games {
 class Bandits : public Game {
  public:
   struct Class : public Game::Class {
-    size_t GetMaxNumberOfMoves() const { return 10; }
-    const std::vector<int>& GetBoardShape() const { return m_board_shape; }
+    size_t GetMaxNumberOfMoves() const override { return N_ROWS; }
+    const std::vector<int>& GetBoardShape() const override { return m_board_shape; }
     static const Class& Methods() {
       static const Class meta;
       return meta;
     }
-    GameMap* CreateGameMap() const {
+    GameMap* CreateGameMap() const override {
       return new GenericGameMap<Bandits, uint64_t>();
     }
 
    private:
-    const std::vector<int> m_board_shape{10};
+    const std::vector<int> m_board_shape{N_ROWS};
   };
-  const Class& ClassMethods() const { return Class::Methods(); }
+  const Class& ClassMethods() const override { return Class::Methods(); }
 
   Bandits();
 
-  void PlayFromString(std::string);
-  void PlayMove(size_t);
-  size_t GetCurrentPlayer() const;
-  bool IsFinished() const;
-  void GetAvailableMoves(std::vector<size_t>&) const;
-  float GetScore() const;
-  void WriteStateToTensorMemory(float*) const;
-  void WriteCanonicalStateToTensorMemory(float*) const;
-  void InitialiseFromCanonicalState(float*);
-  void InitialiseFromState(float*);
-  std::unique_ptr<Game> Clone() const;
+  void PlayFromString(std::string moves) override;
+  void PlayMove(size_t move) override;
+  size_t GetCurrentPlayer() const override;
+  bool IsFinished() const override;
+  void GetAvailableMoves(std::vector<size_t>* available_moves) const override;
+  float GetScore() const override;
+  void WriteStateToTensorMemory(float* destination) const override;
+  void WriteCanonicalStateToTensorMemory(float* destination) const override;
+  void InitialiseFromCanonicalState(float* input_board) override;
+  void InitialiseFromState(float* input_board) override;
+  std::unique_ptr<Game> Clone() const override;
 
   bool operator==(const Bandits&) const;
 
   uint64_t GetState() const;
 
  private:
+  static constexpr size_t N_ROWS = 10;
   static constexpr std::bitset<10> WINNING_BITS =
-      std::bitset<10>(0b101010101ll);
-  std::bitset<10> m_board;
+      std::bitset<N_ROWS>(0b101010101ULL);
+  std::bitset<N_ROWS> m_board;
   void Reset();
 };
 }  // namespace oaz::games
