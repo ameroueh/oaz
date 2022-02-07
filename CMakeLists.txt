@@ -201,6 +201,9 @@ target_link_libraries(bandits_test oaz_base oaz_test)
 add_executable(mcts_test test/mcts/mcts_test.cpp)
 target_link_libraries(mcts_test oaz_base oaz_test)
 
+add_executable(mcts_selection_test test/mcts/mcts_selection_test.cpp)
+target_link_libraries(mcts_selection_test oaz_base oaz_test)
+
 add_executable(
   mcts_search_test
   test/mcts/mcts_search_test.cpp oaz/mcts/search.cpp oaz/games/connect_four.cpp
@@ -267,6 +270,7 @@ add_dependencies(
   tic_tac_toe_test
   bandits_test
   mcts_test
+  mcts_selection_test
   simulation_evaluator_test
   mcts_search_test
   az_search_test
@@ -286,6 +290,7 @@ add_test(NAME connect_four_test COMMAND connect_four_test)
 add_test(NAME tic_tac_toe_test COMMAND tic_tac_toe_test)
 add_test(NAME bandits_test COMMAND bandits_test)
 add_test(NAME mcts_test COMMAND mcts_test)
+add_test(NAME mcts_selection_test COMMAND mcts_selection_test)
 add_test(NAME simulation_evaluator_test COMMAND simulation_evaluator_test)
 add_test(NAME mcts_search_test COMMAND mcts_search_test)
 add_test(NAME mcts_connect_four_test COMMAND mcts_connect_four_test)

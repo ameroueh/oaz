@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include <iterator>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -95,17 +96,14 @@ class SearchNode {
 
   const float& GetPrior() const { return m_prior; }
 
-  class CPriorIterator {
+  class CPriorIterator : public std::iterator<std::input_iterator_tag, const float, void, const float*, const float&>
+{
     public: 
-      using iterator_category = std::input_iterator_tag;
-      using value_type = const float;
-      using pointer = const float*;
-      using reference = const float&;
 
       CPriorIterator(SearchNode* search_node, size_t child_index): m_search_node(search_node), m_child_index(child_index) {}
 
       reference operator*() const { return m_search_node->GetChild(m_child_index)->GetPrior(); }
-      pointer operator->() { return &m_search_node->GetChild(m_child_index)->GetPrior(); }
+      pointer operator->() const { return &m_search_node->GetChild(m_child_index)->GetPrior(); }
       CPriorIterator& operator++() { m_child_index++; return *this; }
       CPriorIterator operator++(int) { CPriorIterator tmp = *this; ++(*this); return tmp; }
 

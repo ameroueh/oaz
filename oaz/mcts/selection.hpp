@@ -13,7 +13,7 @@ static constexpr float C_EXPLORATION = 1.4142;
 
 class Selector {
  public:
-  virtual size_t operator()(oaz::mcts::SearchNode*) const = 0;
+  virtual size_t operator()(oaz::mcts::SearchNode*) = 0;
   virtual std::unique_ptr<Selector> Clone() const = 0;
 
   virtual ~Selector() {}
@@ -26,7 +26,7 @@ class Selector {
 
 class UCTSelector : public Selector {
  public:
-  size_t operator()(oaz::mcts::SearchNode* node) const override {
+  size_t operator()(oaz::mcts::SearchNode* node) override {
     size_t best_child_index = 0;
     float best_score = 0;
     for (size_t i = 0; i != node->GetNChildren(); ++i) {
@@ -58,7 +58,7 @@ class UCTSelector : public Selector {
 
 class AZSelector : public Selector {
  public:
-  size_t operator()(oaz::mcts::SearchNode* node) const override {
+  size_t operator()(oaz::mcts::SearchNode* node) override {
     size_t best_child_index = 0;
     float best_score = 0;
     for (size_t i = 0; i != node->GetNChildren(); ++i) {
@@ -85,6 +85,21 @@ class AZSelector : public Selector {
                          static_cast<float>(child->GetNVisits() + 1);
     return q + policy_score;
   }
+};
+
+class PriorSelector : public Selector {
+  public:
+    PriorSelector(): m_generator(0) {}
+    PriorSelector(size_t seed): m_generator(seed) {}
+    size_t operator()(oaz::mcts::SearchNode* node) override {
+      std::discrete_distribution<size_t> policy_distribution(node->GetPriorCBegin(), node->GetPriorCEnd());
+      return policy_distribution(m_generator);
+    }
+    std::unique_ptr<Selector> Clone() const override {
+    return std::make_unique<PriorSelector>(*this);
+  }
+  private:
+    std::mt19937 m_generator;
 };
 }  // namespace oaz::mcts
 #endif  // OAZ_MCTS_SELECTION_HPP_
