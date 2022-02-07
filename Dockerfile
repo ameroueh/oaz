@@ -63,7 +63,7 @@ ENV PATH=/home/oaz/bin:$PATH
 
 # Get tensorflow
 
-RUN git clone https://github.com/tensorflow/tensorflow.git --depth 1 -b r2.4.1
+RUN git clone https://github.com/tensorflow/tensorflow.git --depth 1 -b v2.4.1
 
 # Configure
 
