@@ -93,7 +93,33 @@ class SearchNode {
 
   SearchNode* GetParent() { return m_parent; }
 
-  float GetPrior() const { return m_prior; }
+  const float& GetPrior() const { return m_prior; }
+
+  class CPriorIterator {
+    public: 
+      using iterator_category = std::input_iterator_tag;
+      using value_type = const float;
+      using pointer = const float*;
+      using reference = const float&;
+
+      CPriorIterator(SearchNode* search_node, size_t child_index): m_search_node(search_node), m_child_index(child_index) {}
+
+      reference operator*() const { return m_search_node->GetChild(m_child_index)->GetPrior(); }
+      pointer operator->() { return &m_search_node->GetChild(m_child_index)->GetPrior(); }
+      CPriorIterator& operator++() { m_child_index++; return *this; }
+      CPriorIterator operator++(int) { CPriorIterator tmp = *this; ++(*this); return tmp; }
+
+      friend bool operator== (const CPriorIterator& a, const CPriorIterator& b) { return a.m_search_node == b.m_search_node && a.m_child_index == b.m_child_index; };
+      friend bool operator!= (const CPriorIterator& a, const CPriorIterator& b) { return !(a == b); }
+
+    private:
+      SearchNode* m_search_node;
+      size_t m_child_index;
+
+  };
+
+  CPriorIterator GetPriorCBegin() { return CPriorIterator(this, 0); }
+  CPriorIterator GetPriorCEnd() { return CPriorIterator(this, GetNChildren()); }
 
  private:
   void SetParent(SearchNode* parent) { m_parent = parent; }

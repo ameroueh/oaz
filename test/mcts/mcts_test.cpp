@@ -108,3 +108,23 @@ TEST(GetPrior, Default) {
   root.AddChild(0, 0, 0.5);
   ASSERT_EQ(root.GetChild(0)->GetPrior(), 0.5);
 }
+
+TEST(PriorIterator, Basic) {
+  SearchNode root;
+  ASSERT_EQ(root.GetPriorCBegin(), root.GetPriorCEnd());
+}
+
+TEST(PriorIterator, OneChild) {
+  SearchNode root;
+  root.AddChild(0, 0, 0.5);
+  ASSERT_EQ(*(root.GetPriorCBegin()), 0.5);
+  ASSERT_NE(root.GetPriorCBegin(), root.GetPriorCEnd());
+}
+
+TEST(PriorIterator, TwoChildren) {
+  SearchNode root;
+  root.AddChild(0, 0, 0.5);
+  root.AddChild(0, 0, 0.6);
+  ASSERT_EQ(*(++root.GetPriorCBegin()), 0.6F);
+}
+
