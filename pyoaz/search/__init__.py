@@ -1,12 +1,28 @@
+from .search import PlayerSearchProperties as PlayerSearchPropertiesCore
 from .search import Search as SearchCore
+
+
+class PlayerSearchProperties:
+    def __init__(
+        self,
+        evaluator,
+        selector
+    ):
+        self._core = PlayerSearchPropertiesCore(
+            evaluator.core,
+            selector.core
+        )
+
+    @property
+    def core(self):
+        return self._core
 
 
 class Search:
     def __init__(
         self,
         game,
-        selector,
-        evaluator,
+        player_search_properties,
         thread_pool,
         n_iterations,
         n_concurrent_workers=1,
@@ -16,8 +32,7 @@ class Search:
 
         self._core = SearchCore(
             game.core,
-            selector.core,
-            evaluator.core,
+            [p.core for p in player_search_properties],
             thread_pool.core,
             n_concurrent_workers,
             n_iterations,

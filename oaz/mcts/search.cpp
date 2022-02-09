@@ -14,6 +14,19 @@
 #include "oaz/mcts/search_node.hpp"
 #include "oaz/mcts/selection.hpp"
 
+oaz::mcts::PlayerSearchProperties::PlayerSearchProperties(
+  std::shared_ptr<oaz::evaluator::Evaluator> evaluator,
+  std::shared_ptr<oaz::mcts::Selector> selector
+): m_evaluator(evaluator), m_selector(selector) {}
+
+std::shared_ptr<oaz::evaluator::Evaluator>& oaz::mcts::PlayerSearchProperties::GetEvaluator() {
+  return m_evaluator;
+}
+
+std::shared_ptr<oaz::mcts::Selector>& oaz::mcts::PlayerSearchProperties::GetSelector() {
+  return m_selector; 
+}
+
 oaz::mcts::Search::SelectionTask::SelectionTask(oaz::mcts::Search* search,
                                                 size_t index)
     : m_index(index), m_search(search) {
@@ -47,12 +60,15 @@ void oaz::mcts::Search::SelectNode(size_t index) {
   oaz::mcts::SearchNode* node = GetNode(index);
   oaz::games::Game* game = GetGame(index);
 
+  size_t current_player = game->GetCurrentPlayer();
+
   while (true) {
     node->Lock();
     if (!node->IsLeaf()) {
       node->IncrementNVisits();
       node->Unlock();
-      size_t child_index = (*m_selector)(node);
+      size_t child_index =
+	(*(m_player_search_properties[current_player].GetSelector()))(node);
       node = node->GetChild(child_index);
       game->PlayMove(node->GetMove());
       SetNode(index, node);
@@ -71,7 +87,7 @@ void oaz::mcts::Search::SelectNode(size_t index) {
       m_expansion_and_backpropagation_tasks[index] =
           ExpansionAndBackpropagationTask(this, index);
 
-      m_evaluator->RequestEvaluation(
+      m_player_search_properties[current_player].GetEvaluator()->RequestEvaluation(
           game, &GetValue(index), GetPolicy(index),
           &m_expansion_and_backpropagation_tasks[index]);
       break;
@@ -203,14 +219,13 @@ void oaz::mcts::Search::Initialise() {
 }
 
 oaz::mcts::Search::Search(
-    const oaz::games::Game& game, const Selector& selector,
-    std::shared_ptr<oaz::evaluator::Evaluator> evaluator,
+    const oaz::games::Game& game,
+    const std::vector<PlayerSearchProperties>& player_search_properties,
     std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool,
     size_t batch_size, size_t n_iterations)
     : m_root(std::make_shared<oaz::mcts::SearchNode>()),
       m_policy_size(game.ClassMethods().GetMaxNumberOfMoves()),
       m_game(std::move(game.Clone())),
-      m_selector(std::move(selector.Clone())),
       m_batch_size(batch_size),
       m_n_iterations(n_iterations),
       m_n_selections(0),
@@ -223,26 +238,25 @@ oaz::mcts::Search::Search(
       m_values(boost::extents[batch_size]),
       m_policies(boost::extents[batch_size]
                                [game.ClassMethods().GetMaxNumberOfMoves()]),
-      m_evaluator(std::move(evaluator)),
       m_noise_epsilon(0.),
       m_noise_alpha(1.),
       m_thread_pool(std::move(thread_pool)),
       m_selection_tasks(boost::extents[batch_size]),
-      m_expansion_and_backpropagation_tasks(boost::extents[batch_size]) {
+      m_expansion_and_backpropagation_tasks(boost::extents[batch_size]),
+      m_player_search_properties(player_search_properties) {
   Initialise();
   PerformSearch();
 }
 
 oaz::mcts::Search::Search(
-    const oaz::games::Game& game, const Selector& selector,
-    std::shared_ptr<oaz::evaluator::Evaluator> evaluator,
+    const oaz::games::Game& game,
+    const std::vector<PlayerSearchProperties>& player_search_properties,
     std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool,
     size_t batch_size, size_t n_iterations, float noise_epsilon,
     float noise_alpha)
     : m_root(std::make_shared<oaz::mcts::SearchNode>()),
       m_policy_size(game.ClassMethods().GetMaxNumberOfMoves()),
       m_game(std::move(game.Clone())),
-      m_selector(std::move(selector.Clone())),
       m_batch_size(batch_size),
       m_n_iterations(n_iterations),
       m_n_selections(0),
@@ -255,12 +269,12 @@ oaz::mcts::Search::Search(
       m_values(boost::extents[batch_size]),
       m_policies(boost::extents[batch_size]
                                [game.ClassMethods().GetMaxNumberOfMoves()]),
-      m_evaluator(std::move(evaluator)),
       m_noise_epsilon(noise_epsilon),
       m_noise_alpha(noise_alpha),
       m_thread_pool(std::move(thread_pool)),
       m_selection_tasks(boost::extents[batch_size]),
-      m_expansion_and_backpropagation_tasks(boost::extents[batch_size]) {
+      m_expansion_and_backpropagation_tasks(boost::extents[batch_size]),
+      m_player_search_properties(player_search_properties) {
   Initialise();
   PerformSearch();
 }

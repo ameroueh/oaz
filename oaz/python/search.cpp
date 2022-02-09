@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "oaz/mcts/search.hpp"
 
 #include <boost/python.hpp>
@@ -12,17 +14,22 @@ namespace oaz::mcts {
 class SearchWrapper {
  public:
   SearchWrapper(
-      const oaz::games::Game& game, const oaz::mcts::Selector& selector,
-      const std::shared_ptr<oaz::evaluator::Evaluator>& evaluator,
+      const oaz::games::Game& game,
+      p::list& l_player_search_properties,
       const std::shared_ptr<oaz::thread_pool::ThreadPool>& thread_pool,
       size_t batch_size, size_t n_iterations, float noise_epsilon,
       float noise_alpha
 
       )
       : m_search(nullptr) {
+    std::vector<oaz::mcts::PlayerSearchProperties> player_search_properties;
+    for(int i=0; i!=p::len(l_player_search_properties); ++i) {
+      player_search_properties.push_back(
+        p::extract<oaz::mcts::PlayerSearchProperties>(l_player_search_properties[i]));
+    }
     PyThreadState* save_state = PyEval_SaveThread();
     m_search = std::make_shared<oaz::mcts::Search>(
-        game, selector, evaluator, thread_pool, batch_size, n_iterations,
+        game, player_search_properties, thread_pool, batch_size, n_iterations,
         noise_epsilon, noise_alpha);
     PyEval_RestoreThread(save_state);
   }
@@ -52,10 +59,15 @@ BOOST_PYTHON_MODULE(search) {  // NOLINT
       .def("get_parent", &oaz::mcts::SearchNode::GetParent,
            p::return_value_policy<p::reference_existing_object>());
 
+  p::class_<oaz::mcts::PlayerSearchProperties> (
+	"PlayerSearchProperties",
+	p::init<const std::shared_ptr<oaz::evaluator::Evaluator>, const std::shared_ptr<oaz::mcts::Selector>&>()
+ );
+
   p::class_<oaz::mcts::SearchWrapper, std::shared_ptr<oaz::mcts::SearchWrapper>,
             boost::noncopyable>(
-      "Search", p::init<const oaz::games::Game&, const oaz::mcts::Selector&,
-                        std::shared_ptr<oaz::evaluator::Evaluator>,
+      "Search", p::init<const oaz::games::Game&,
+      			p::list&,
                         std::shared_ptr<oaz::thread_pool::ThreadPool>, size_t,
                         size_t, float, float>())
       .def("get_tree_root", &oaz::mcts::SearchWrapper::GetTreeRoot);
