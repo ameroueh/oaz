@@ -27,10 +27,14 @@ size_t GetBestMove(Search& search) {
 TEST(ForcedMoves, Scenario1) {
   auto pool = make_shared<oaz::thread_pool::ThreadPool>(4);
   auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
-  UCTSelector selector;
+  std::shared_ptr<Selector> selector = std::make_shared<UCTSelector>();
+  auto player_search_properties = {
+    PlayerSearchProperties(evaluator, selector),
+    PlayerSearchProperties(evaluator, selector)
+  };
   ConnectFour game;
   game.PlayFromString("5443233212");  // Expect best move to be 2
-  Search search(game, selector, evaluator, pool, 4, 10000);
+  Search search(game, player_search_properties, pool, 4, 10000);
 
   ASSERT_EQ(GetBestMove(search), 2);
 }
@@ -38,11 +42,15 @@ TEST(ForcedMoves, Scenario1) {
 TEST(ForcedMoves, Scenario2) {
   auto pool = make_shared<oaz::thread_pool::ThreadPool>(4);
   auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
-  UCTSelector selector;
+  std::shared_ptr<Selector> selector = std::make_shared<UCTSelector>();
+  auto player_search_properties = {
+    PlayerSearchProperties(evaluator, selector),
+    PlayerSearchProperties(evaluator, selector)
+  };
   ConnectFour game;
   game.PlayFromString("4330011115");  // Expect best move to be 2
 
-  Search search(game, selector, evaluator, pool, 4, 10000);
+  Search search(game, player_search_properties, pool, 4, 10000);
 
   ASSERT_EQ(GetBestMove(search), 2);
 }
@@ -50,10 +58,14 @@ TEST(ForcedMoves, Scenario2) {
 TEST(ForcedMoves, Scenario3) {
   auto pool = make_shared<oaz::thread_pool::ThreadPool>(4);
   auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
-  UCTSelector selector;
+  std::shared_ptr<Selector> selector = std::make_shared<UCTSelector>();
+  auto player_search_properties = {
+    PlayerSearchProperties(evaluator, selector),
+    PlayerSearchProperties(evaluator, selector)
+  };
   ConnectFour game;
   game.PlayFromString("433001111");  // Expect best move to be 2
-  Search search(game, selector, evaluator, pool, 4, 10000);
+  Search search(game, player_search_properties, pool, 4, 10000);
 
   ASSERT_EQ(GetBestMove(search), 2);
 }

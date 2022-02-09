@@ -3,7 +3,7 @@ from .bot import Bot
 import tensorflow.compat.v1.keras.backend as K
 
 from pyoaz.evaluator.nn_evaluator import Model, NNEvaluator
-from pyoaz.search import Search, select_best_move_by_visit_count
+from pyoaz.search import Search, PlayerSearchProperties, select_best_move_by_visit_count
 from pyoaz.selection import AZSelector
 from pyoaz.thread_pool import ThreadPool
 from pyoaz.utils import get_keras_model_node_names
@@ -68,8 +68,10 @@ class AZBot(Bot):
     def play(self, game):
         search = Search(
             game=game,
-            selector=self.selector,
-            evaluator=self.evaluator,
+            player_search_properties=[
+                PlayerSearchProperties(self.evaluator, self.selector),
+                PlayerSearchProperties(self.evaluator, self.selector)
+            ],
             thread_pool=self.thread_pool,
             n_iterations=self.n_simulations_per_move,
         )

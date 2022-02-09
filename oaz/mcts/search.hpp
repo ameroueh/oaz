@@ -20,15 +20,30 @@
 
 namespace oaz::mcts {
 
+class PlayerSearchProperties {
+
+  public:
+    PlayerSearchProperties(
+      std::shared_ptr<oaz::evaluator::Evaluator>,
+      std::shared_ptr<oaz::mcts::Selector>
+    );
+    std::shared_ptr<oaz::evaluator::Evaluator>& GetEvaluator();
+    std::shared_ptr<oaz::mcts::Selector>& GetSelector();
+
+  private:
+    std::shared_ptr<oaz::evaluator::Evaluator> m_evaluator;
+    std::shared_ptr<oaz::mcts::Selector> m_selector;
+};
+
 class Search {
   TEST_FRIENDS;
 
  public:
-  Search(const oaz::games::Game&, const oaz::mcts::Selector&,
-         std::shared_ptr<oaz::evaluator::Evaluator>,
+  Search(const oaz::games::Game&,
+         const std::vector<oaz::mcts::PlayerSearchProperties>&,
          std::shared_ptr<oaz::thread_pool::ThreadPool>, size_t, size_t);
-  Search(const oaz::games::Game&, const oaz::mcts::Selector&,
-         std::shared_ptr<oaz::evaluator::Evaluator>,
+  Search(const oaz::games::Game&,
+         const std::vector<oaz::mcts::PlayerSearchProperties>&,
          std::shared_ptr<oaz::thread_pool::ThreadPool>, size_t, size_t, float,
          float);
 
@@ -135,11 +150,10 @@ class Search {
       m_expansion_and_backpropagation_tasks;
 
   std::shared_ptr<oaz::thread_pool::ThreadPool> m_thread_pool;
-  std::shared_ptr<oaz::evaluator::Evaluator> m_evaluator;
   std::shared_ptr<SearchNode> m_root;
 
   std::unique_ptr<oaz::games::Game> m_game;
-  std::unique_ptr<Selector> m_selector;
+  std::vector<oaz::mcts::PlayerSearchProperties> m_player_search_properties;
 };
 
 }  // namespace oaz::mcts

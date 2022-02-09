@@ -30,8 +30,12 @@ TEST(Instantiation, Default) {
   std::shared_ptr<oaz::nn::NNEvaluator> evaluator(
       new oaz::nn::NNEvaluator(model, nullptr, pool, {6, 7, 2}, 64));
   ConnectFour game;
-  AZSelector selector;
-  oaz::mcts::Search(game, selector, evaluator, pool, 1, 1);
+  std::shared_ptr<Selector> selector = std::make_shared<AZSelector>();
+  auto player_search_properties = {
+    PlayerSearchProperties(evaluator, selector),
+    PlayerSearchProperties(evaluator, selector)
+  };
+  oaz::mcts::Search(game, player_search_properties, pool, 1, 1);
 }
 
 TEST(Search, CheckSearchTree) {
@@ -42,9 +46,13 @@ TEST(Search, CheckSearchTree) {
   std::shared_ptr<oaz::nn::NNEvaluator> evaluator(
       new oaz::nn::NNEvaluator(model, nullptr, pool, {6, 7, 2}, 1));
   ConnectFour game;
-  AZSelector selector;
-  oaz::mcts::Search(game, selector, evaluator, pool, 1, 100);
-  Search search(game, selector, evaluator, pool, 1, 100);
+  std::shared_ptr<Selector> selector = std::make_shared<AZSelector>();
+  auto player_search_properties = {
+    PlayerSearchProperties(evaluator, selector),
+    PlayerSearchProperties(evaluator, selector)
+  };
+  oaz::mcts::Search(game, player_search_properties, pool, 1, 100);
+  Search search(game, player_search_properties, pool, 1, 100);
 
   ASSERT_EQ(search.GetTreeRoot()->GetNVisits(), 100);
   ASSERT_TRUE(CheckSearchTree(search.GetTreeRoot().get()));
@@ -58,8 +66,12 @@ TEST(MultithreadedSearch, CheckSearchTree) {
   std::shared_ptr<oaz::nn::NNEvaluator> evaluator(
       new oaz::nn::NNEvaluator(model, nullptr, pool, {6, 7, 2}, 8));
   ConnectFour game;
-  AZSelector selector;
-  oaz::mcts::Search search(game, selector, evaluator, pool, 16, 1000);
+  std::shared_ptr<Selector> selector = std::make_shared<AZSelector>();
+  auto player_search_properties = {
+    PlayerSearchProperties(evaluator, selector),
+    PlayerSearchProperties(evaluator, selector)
+  };
+  oaz::mcts::Search search(game, player_search_properties, pool, 16, 1000);
   ASSERT_EQ(search.GetTreeRoot()->GetNVisits(), 1000);
   ASSERT_TRUE(CheckSearchTree(search.GetTreeRoot().get()));
 }
@@ -72,8 +84,12 @@ TEST(MultithreadedSearch, WithNoiseCheckSearchTree) {
   std::shared_ptr<oaz::nn::NNEvaluator> evaluator(
       new oaz::nn::NNEvaluator(model, nullptr, pool, {6, 7, 2}, 8));
   ConnectFour game;
-  AZSelector selector;
-  oaz::mcts::Search search(game, selector, evaluator, pool, 16, 1000, 0.25,
+  std::shared_ptr<Selector> selector = std::make_shared<AZSelector>();
+  auto player_search_properties = {
+    PlayerSearchProperties(evaluator, selector),
+    PlayerSearchProperties(evaluator, selector)
+  };
+  oaz::mcts::Search search(game, player_search_properties, pool, 16, 1000, 0.25,
                            0.3);
   ASSERT_EQ(search.GetTreeRoot()->GetNVisits(), 1000);
   ASSERT_TRUE(CheckSearchTree(search.GetTreeRoot().get()));
@@ -87,7 +103,11 @@ TEST(MultithreadedSearch, Performance) {
   std::shared_ptr<oaz::nn::NNEvaluator> evaluator(
       new oaz::nn::NNEvaluator(model, nullptr, pool, {6, 7, 2}, 50));
   ConnectFour game;
-  AZSelector selector;
-  oaz::mcts::Search search(game, selector, evaluator, pool, 200, 300000);
+  std::shared_ptr<Selector> selector = std::make_shared<AZSelector>();
+  auto player_search_properties = {
+    PlayerSearchProperties(evaluator, selector),
+    PlayerSearchProperties(evaluator, selector)
+  };
+  oaz::mcts::Search search(game, player_search_properties, pool, 200, 300000);
 }
 }  // namespace oaz::mcts

@@ -1,7 +1,7 @@
 import tensorflow.compat.v1 as tf
 
 from pyoaz.thread_pool import ThreadPool
-from pyoaz.search import Search
+from pyoaz.search import Search, PlayerSearchProperties
 from pyoaz.selection import AZSelector
 from pyoaz.evaluator.nn_evaluator import Model, NNEvaluator
 from pyoaz.games.connect_four import ConnectFour
@@ -60,11 +60,14 @@ def test_az_search():
             batch_size=1,
         )
         selector = AZSelector()
+        player_search_properties = [
+            PlayerSearchProperties(evaluator, selector),
+            PlayerSearchProperties(evaluator, selector)
+        ]
         game = ConnectFour()
         _ = Search(
             game=game,
-            selector=selector,
-            evaluator=evaluator,
+            player_search_properties=player_search_properties,
             thread_pool=thread_pool,
             n_concurrent_workers=2,
             n_iterations=100,
@@ -127,11 +130,14 @@ def test_az_search_with_cache():
             batch_size=1,
         )
         selector = AZSelector()
+        player_search_properties = [
+            PlayerSearchProperties(evaluator, selector),
+            PlayerSearchProperties(evaluator, selector)
+        ]
         game = ConnectFour()
         _ = Search(
             game=game,
-            selector=selector,
-            evaluator=evaluator,
+            player_search_properties=player_search_properties,
             thread_pool=thread_pool,
             n_concurrent_workers=1,
             n_iterations=100,

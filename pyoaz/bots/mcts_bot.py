@@ -1,5 +1,5 @@
 from pyoaz.thread_pool import ThreadPool
-from pyoaz.search import Search, select_best_move_by_visit_count
+from pyoaz.search import Search, PlayerSearchProperties, select_best_move_by_visit_count
 from pyoaz.selection import UCTSelector
 from pyoaz.evaluator.simulation_evaluator import SimulationEvaluator
 from .bot import Bot
@@ -41,8 +41,10 @@ class MCTSBot(Bot):
     def play(self, game):
         search = Search(
             game=game,
-            selector=self.selector,
-            evaluator=self.evaluator,
+            player_search_properties=[
+                PlayerSearchProperties(self.evaluator, self.selector),
+                PlayerSearchProperties(self.evaluator, self.selector)
+            ],
             thread_pool=self.thread_pool,
             n_concurrent_workers=self.n_concurrent_workers,
             n_iterations=self.n_iterations,

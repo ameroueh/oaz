@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from pyoaz.cache.simple_cache import SimpleCache
 from pyoaz.evaluator.nn_evaluator import Model, NNEvaluator
-from pyoaz.search import Search
+from pyoaz.search import Search, PlayerSearchProperties
 from pyoaz.selection import AZSelector
 from pyoaz.thread_pool import ThreadPool
 
@@ -311,8 +311,10 @@ class SelfPlay:
                 self.logger.debug(f"\n{game.board[...,0]-game.board[...,1]}")
             search = Search(
                 game=game,
-                selector=self.selector,
-                evaluator=self.evaluator,
+                player_search_properties=[
+                    PlayerSearchProperties(self.evaluator, self.selector),
+                    PlayerSearchProperties(self.evaluator, self.selector)
+                ], # For now assumes there are 2 players 
                 thread_pool=self.thread_pool,
                 n_concurrent_workers=self.n_tree_workers,
                 n_iterations=self.n_simulations_per_move,
