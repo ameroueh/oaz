@@ -1,14 +1,26 @@
 #include "oaz/simulation/simulation_evaluator.hpp"
 
+oaz::simulation::SimulationEvaluation::SimulationEvaluation(float value): m_value(value) {}
+
+float oaz::simulation::SimulationEvaluation::GetValue() const { return m_value; }
+
+float oaz::simulation::SimulationEvaluation::GetPolicy(size_t move) const { return 0.; }
+
+std::unique_ptr<oaz::evaluator::Evaluation> oaz::simulation::SimulationEvaluation::Clone() const {
+  return std::make_unique<SimulationEvaluation>(*this);
+}
+
 oaz::simulation::SimulationEvaluator::SimulationEvaluator(
     std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool)
     : m_thread_pool(std::move(thread_pool)) {}
 
 void oaz::simulation::SimulationEvaluator::RequestEvaluation(
-    oaz::games::Game* game, float* value,
-    boost::multi_array_ref<float, 1> policy, oaz::thread_pool::Task* task) {
+    oaz::games::Game* game,
+    std::unique_ptr<oaz::evaluator::Evaluation>* evaluation,
+    oaz::thread_pool::Task* task) {
+  std::vector<size_t> available_moves;
   std::unique_ptr<oaz::games::Game> game_copy = game->Clone();
-  *value = Simulate(game_copy.get());
+  *evaluation = std::move(std::make_unique<SimulationEvaluation>(Simulate(game_copy.get())));
   m_thread_pool->enqueue(task);
 }
 

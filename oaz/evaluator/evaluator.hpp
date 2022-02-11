@@ -7,11 +7,25 @@
 
 namespace oaz::evaluator {
 
+class Evaluation {
+  public:
+    virtual float GetValue() const = 0;
+    virtual float GetPolicy(size_t) const = 0;
+
+    virtual std::unique_ptr<Evaluation> Clone() const = 0;
+
+    virtual ~Evaluation() {}
+    Evaluation() = default;
+    Evaluation(const Evaluation&) = default;
+    Evaluation(Evaluation&&) = default;
+    Evaluation& operator=(const Evaluation&) = default;
+    Evaluation& operator=(Evaluation&&) = default;
+
+};
+
 class Evaluator {
  public:
-  virtual void RequestEvaluation(oaz::games::Game*, float*,
-                                 boost::multi_array_ref<float, 1>,
-                                 oaz::thread_pool::Task*) = 0;
+  virtual void RequestEvaluation(oaz::games::Game*, std::unique_ptr<Evaluation>*, oaz::thread_pool::Task*) = 0;
 
   virtual ~Evaluator() {}
   Evaluator() = default;

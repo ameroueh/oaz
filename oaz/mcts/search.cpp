@@ -84,41 +84,33 @@ void oaz::mcts::Search::SelectNode(size_t index) {
       }
       node->Unlock();
       m_n_evaluation_requests++;
+
       m_expansion_and_backpropagation_tasks[index] =
           ExpansionAndBackpropagationTask(this, index);
 
       m_player_search_properties[current_player].GetEvaluator()->RequestEvaluation(
-          game, &GetValue(index), GetPolicy(index),
-          &m_expansion_and_backpropagation_tasks[index]);
+          game, GetEvaluation(index), &m_expansion_and_backpropagation_tasks[index]);
       break;
     }
   }
-}
-
-float& oaz::mcts::Search::GetValue(size_t index) { return m_values[index]; }
-
-boost::multi_array_ref<float, 1> oaz::mcts::Search::GetPolicy(size_t index) {
-  return boost::multi_array_ref<float, 1>(m_policies[index].origin(),
-                                          boost::extents[GetPolicySize()]);
 }
 
 void oaz::mcts::Search::Pause(size_t index) {
   m_paused_nodes[index] = GetNode(index);
 }
 
-size_t oaz::mcts::Search::GetPolicySize() const { return m_policy_size; }
-
 void oaz::mcts::Search::AddDirichletNoise(
-    boost::multi_array_ref<float, 1> policy) {
+    boost::multi_array<float, 1>& policy) {
+  size_t policy_size = policy.num_elements();
   if (m_noise_epsilon > EPS_THRESHOLD) {
-    boost::multi_array<float, 1> noise(boost::extents[GetPolicySize()]);
+    boost::multi_array<float, 1> noise(boost::extents[policy_size]);
     float total_noise = 0.;
-    for (size_t i = 0; i != GetPolicySize(); ++i) {
+    for (size_t i = 0; i != policy_size; ++i) {
       std::gamma_distribution<float> distribution(m_noise_alpha, 1.);
       noise[i] = distribution(m_generator);
       total_noise += noise[i];
     }
-    for (size_t i = 0; i != GetPolicySize(); ++i) {
+    for (size_t i = 0; i != policy_size; ++i) {
       policy[i] = (1 - m_noise_epsilon) * policy[i] +
                   m_noise_epsilon * noise[i] / total_noise;
     }
@@ -127,17 +119,17 @@ void oaz::mcts::Search::AddDirichletNoise(
 
 void oaz::mcts::Search::ExpandNode(oaz::mcts::SearchNode* node,
                                    oaz::games::Game* game,
-                                   boost::multi_array_ref<float, 1> policy) {
-  if (node->IsRoot()) {
-    AddDirichletNoise(policy);
-  }
+                                   oaz::evaluator::Evaluation* evaluation) {
+  /* if (node->IsRoot()) { */
+  /*   AddDirichletNoise(policy); // PROBLEM ! */
+  /* } */
 
   std::vector<size_t> available_moves;
   game->GetAvailableMoves(&available_moves);
   size_t player = game->GetCurrentPlayer();
 
   for (auto move : available_moves) {
-    float prior = policy[move];
+    float prior = evaluation->GetPolicy(move);
     node->AddChild(move, player, prior);
   }
 }
@@ -172,17 +164,22 @@ oaz::games::Game* oaz::mcts::Search::GetGame(size_t index) {
   return m_games[index].get();
 }
 
+std::unique_ptr<oaz::evaluator::Evaluation>* oaz::mcts::Search::GetEvaluation(size_t index) {
+  return &m_evaluations[index];
+}
+
 void oaz::mcts::Search::ExpandAndBackpropagateNode(size_t index) {
-  float value = GetValue(index);
+
+  oaz::evaluator::Evaluation* evaluation = (*GetEvaluation(index)).get();
+  float value = evaluation->GetValue();
   value = (value + 1.0F) / 2.0F;  // NOLINT
 
-  boost::multi_array_ref<float, 1> policy = GetPolicy(index);
   oaz::mcts::SearchNode* node = GetNode(index);
   oaz::games::Game* game = GetGame(index);
 
   if (!game->IsFinished()) {
     node->Lock();
-    ExpandNode(node, game, policy);
+    ExpandNode(node, game, evaluation);
     node->UnblockForEvaluation();
     Unpause(node);
     node->Unlock();
@@ -224,7 +221,6 @@ oaz::mcts::Search::Search(
     std::shared_ptr<oaz::thread_pool::ThreadPool> thread_pool,
     size_t batch_size, size_t n_iterations)
     : m_root(std::make_shared<oaz::mcts::SearchNode>()),
-      m_policy_size(game.ClassMethods().GetMaxNumberOfMoves()),
       m_game(std::move(game.Clone())),
       m_batch_size(batch_size),
       m_n_iterations(n_iterations),
@@ -235,9 +231,7 @@ oaz::mcts::Search::Search(
       m_nodes(batch_size),
       m_paused_nodes(batch_size),
       m_games(batch_size),
-      m_values(boost::extents[batch_size]),
-      m_policies(boost::extents[batch_size]
-                               [game.ClassMethods().GetMaxNumberOfMoves()]),
+      m_evaluations(boost::extents[batch_size]),
       m_noise_epsilon(0.),
       m_noise_alpha(1.),
       m_thread_pool(std::move(thread_pool)),
@@ -255,7 +249,6 @@ oaz::mcts::Search::Search(
     size_t batch_size, size_t n_iterations, float noise_epsilon,
     float noise_alpha)
     : m_root(std::make_shared<oaz::mcts::SearchNode>()),
-      m_policy_size(game.ClassMethods().GetMaxNumberOfMoves()),
       m_game(std::move(game.Clone())),
       m_batch_size(batch_size),
       m_n_iterations(n_iterations),
@@ -266,9 +259,7 @@ oaz::mcts::Search::Search(
       m_nodes(batch_size),
       m_paused_nodes(batch_size),
       m_games(batch_size),
-      m_values(boost::extents[batch_size]),
-      m_policies(boost::extents[batch_size]
-                               [game.ClassMethods().GetMaxNumberOfMoves()]),
+      m_evaluations(boost::extents[batch_size]),
       m_noise_epsilon(noise_epsilon),
       m_noise_alpha(noise_alpha),
       m_thread_pool(std::move(thread_pool)),
