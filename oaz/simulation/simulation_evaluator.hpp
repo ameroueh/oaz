@@ -11,11 +11,24 @@
 
 namespace oaz::simulation {
 
+class SimulationEvaluation : public oaz::evaluator::Evaluation {
+  public:
+    SimulationEvaluation() = default;
+    SimulationEvaluation(float);
+    float GetValue() const;
+    float GetPolicy(size_t) const;
+
+    std::unique_ptr<Evaluation> Clone() const;
+
+  private:
+    float m_value;
+};
+
 class SimulationEvaluator : public oaz::evaluator::Evaluator {
  public:
   explicit SimulationEvaluator(std::shared_ptr<oaz::thread_pool::ThreadPool>);
-  void RequestEvaluation(oaz::games::Game* game, float* value,
-                         boost::multi_array_ref<float, 1> policy,
+  void RequestEvaluation(oaz::games::Game* game,
+		  	 std::unique_ptr<oaz::evaluator::Evaluation>* evaluation,
                          oaz::thread_pool::Task* task) override;
 
  private:

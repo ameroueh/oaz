@@ -12,15 +12,19 @@
 using namespace oaz::cache;
 using namespace testing;
 
-/* class DummySimplyCacheable : public SimplyCacheable { */
-/* 	public: */
-/* 		DummySimplyCacheable(size_t id): m_id(id) {} */
-/* 		uint64_t GetStateAsUint64() const { */
-/* 			return m_id; */
-/* 		} */
-/* 	private: */
-/* 		size_t m_id; */
-/* }; */
+
+class SimpleEvaluation : public oaz::evaluator::Evaluation {
+  public:
+    SimpleEvaluation(float value, float policy): m_value(value), m_policy(policy) {}
+    float GetValue() const { return m_value; }
+    float GetPolicy(size_t move) const { return m_policy; }
+    std::unique_ptr<oaz::evaluator::Evaluation> Clone() const {
+      return std::make_unique<SimpleEvaluation>(*this);
+    }
+  private:
+    float m_value;
+    float m_policy;
+};
 
 TEST(InstantiationTest, Default) {
   oaz::games::TicTacToe game;
@@ -30,36 +34,35 @@ TEST(InstantiationTest, Default) {
 TEST(Evaluate, NotInDB) {
   oaz::games::TicTacToe game;
   SimpleCache cache(game, 100);
-  float value = 0;
-  boost::multi_array<float, 1> policy(boost::extents[9]);
-  ASSERT_FALSE(cache.Evaluate(game, &value, policy));
+  std::unique_ptr<oaz::evaluator::Evaluation> evaluation = std::move(
+    std::make_unique<SimpleEvaluation>(0, 0)
+  );
+  ASSERT_FALSE(cache.Evaluate(game, &evaluation));
 }
 
 TEST(Insert, Default) {
   oaz::games::TicTacToe game;
   SimpleCache cache(game, 100);
-  float value = 0;
-  boost::multi_array<float, 1> policy(boost::extents[9]);
-  cache.Insert(game, value, policy);
-
+  std::unique_ptr<oaz::evaluator::Evaluation> evaluation = std::move(
+    std::make_unique<SimpleEvaluation>(0, 0)
+  );
+  cache.Insert(game, &evaluation);
   ASSERT_EQ(cache.GetNumberOfObjects(), 1);
 }
 
 TEST(Evaluate, InDB) {
   oaz::games::TicTacToe game;
   SimpleCache cache(game, 100);
-  float value = 0;
-  boost::multi_array<float, 1> policy(boost::extents[9]);
-  for (size_t i = 0; i != 9; ++i) policy[i] = 0.;
-  cache.Insert(game, value, policy);
+  std::unique_ptr<oaz::evaluator::Evaluation> evaluation = std::move(
+    std::make_unique<SimpleEvaluation>(0.5F, 0.6F)
+  );
+  cache.Insert(game, &evaluation);
+ 
+  std::unique_ptr<oaz::evaluator::Evaluation> evaluation2;
+  cache.Evaluate(game, &evaluation2);
 
-  float read_value = 1;
-  boost::multi_array<float, 1> read_policy(boost::extents[9]);
-  for (size_t i = 0; i != 9; ++i) read_policy[i] = 1.;
-  cache.Evaluate(game, &read_value, read_policy);
-
-  ASSERT_EQ(value, read_value);
-  ASSERT_EQ(policy, read_policy);
+  ASSERT_EQ(0.5F, evaluation2->GetValue());
+  ASSERT_EQ(0.6F, evaluation2->GetPolicy(0));
 }
 
 TEST(InstantiationTest, LargeInstance) {

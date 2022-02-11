@@ -30,12 +30,11 @@ TEST(EvaluationBatch, Instantiation) { EvaluationBatch({6, 7, 2}, 64); }
 
 TEST(EvaluationBatch, InitialiseElement) {
   oaz::thread_pool::DummyTask task;
-  float* value = nullptr;
-  boost::multi_array_ref<float, 1> policy(nullptr, boost::extents[0]);
+  std::unique_ptr<oaz::evaluator::Evaluation> evaluation(std::make_unique<oaz::nn::DefaultNNEvaluation>());
   oaz::games::ConnectFour game;
   EvaluationBatch batch({6, 7, 2}, 64);
 
-  batch.InitialiseElement(0, &game, value, policy, &task);
+  batch.InitialiseElement(0, &game, &evaluation, &task);
 
   auto dimensions = game.ClassMethods().GetBoardShape();
   for (int i = 0; i != dimensions[0]; ++i)
@@ -72,13 +71,10 @@ TEST(NNEvaluator, RequestEvaluation) {
   NNEvaluator evaluator(model, nullptr, pool, {6, 7, 2}, 64);
 
   oaz::thread_pool::DummyTask task;
-  float value;
-  boost::multi_array<float, 1> policy(boost::extents[7]);
-  boost::multi_array_ref<float, 1> policy_ref(policy.origin(),
-                                              boost::extents[7]);
+  std::unique_ptr<oaz::evaluator::Evaluation> evaluation(std::make_unique<oaz::nn::DefaultNNEvaluation>());
 
   oaz::games::ConnectFour game;
-  evaluator.RequestEvaluation(&game, &value, policy_ref, &task);
+  evaluator.RequestEvaluation(&game, &evaluation, &task);
 
   task.wait();
 }
@@ -93,19 +89,16 @@ TEST(NNEvaluator, EvaluationWithCache) {
   NNEvaluator evaluator(model, cache, pool, {6, 7, 2}, 64);
 
   oaz::thread_pool::DummyTask task;
-  float value;
-  boost::multi_array<float, 1> policy(boost::extents[7]);
-  boost::multi_array_ref<float, 1> policy_ref(policy.origin(),
-                                              boost::extents[7]);
+  std::unique_ptr<oaz::evaluator::Evaluation> evaluation(std::make_unique<oaz::nn::DefaultNNEvaluation>());
 
   oaz::games::ConnectFour game;
-  evaluator.RequestEvaluation(&game, &value, policy_ref, &task);
+  evaluator.RequestEvaluation(&game, &evaluation, &task);
 
   task.wait();
 
   for (size_t i = 0; i != 50; ++i) {
     oaz::thread_pool::DummyTask task(1);
-    evaluator.RequestEvaluation(&game, &value, policy_ref, &task);
+    evaluator.RequestEvaluation(&game, &evaluation, &task);
     task.wait();
   }
 
@@ -122,19 +115,15 @@ TEST(NNEvaluator, EvaluationWithCacheLargeNumberOfRequests) {
   NNEvaluator evaluator(model, cache, pool, {6, 7, 2}, 64);
 
   oaz::thread_pool::DummyTask task;
-  float value;
-  boost::multi_array<float, 1> policy(boost::extents[7]);
-  boost::multi_array_ref<float, 1> policy_ref(policy.origin(),
-                                              boost::extents[7]);
-
+  std::unique_ptr<oaz::evaluator::Evaluation> evaluation(std::make_unique<oaz::nn::DefaultNNEvaluation>());
   oaz::games::ConnectFour game;
-  evaluator.RequestEvaluation(&game, &value, policy_ref, &task);
+  evaluator.RequestEvaluation(&game, &evaluation, &task);
 
   task.wait();
 
   oaz::thread_pool::DummyTask task2(1000000);
   for (size_t i = 0; i != 1000000; ++i) {
-    evaluator.RequestEvaluation(&game, &value, policy_ref, &task2);
+    evaluator.RequestEvaluation(&game, &evaluation, &task2);
   }
   task2.wait();
 

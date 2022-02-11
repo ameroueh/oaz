@@ -20,12 +20,11 @@ TEST(RequestEvaluation, Default) {
   auto pool = make_shared<oaz::thread_pool::ThreadPool>(1);
   auto evaluator = make_shared<oaz::simulation::SimulationEvaluator>(pool);
   oaz::games::ConnectFour game;
-  boost::multi_array<float, 1> policy(boost::extents[7]);
-  float value;
+  std::unique_ptr<oaz::evaluator::Evaluation> evaluation(std::make_unique<oaz::simulation::SimulationEvaluation>());
 
   oaz::thread_pool::DummyTask task(1);
 
-  evaluator->RequestEvaluation(&game, &value, policy, &task);
+  evaluator->RequestEvaluation(&game, &evaluation, &task);
 
   task.wait();
 }
@@ -49,11 +48,11 @@ void EvaluateGames(
     size_t len = index % (moves.size() + 1);
 
     game.PlayFromString(moves.substr(0, len));
+  
+    std::unique_ptr<oaz::evaluator::Evaluation> evaluation(std::make_unique<oaz::simulation::SimulationEvaluation>());
 
-    boost::multi_array<float, 1> policy(boost::extents[7]);
-    float value;
 
-    evaluator->RequestEvaluation(&game, &value, policy, task);
+    evaluator->RequestEvaluation(&game, &evaluation, task);
 
     indices_q->Lock();
   }

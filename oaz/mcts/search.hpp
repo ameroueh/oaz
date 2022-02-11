@@ -86,13 +86,11 @@ class Search {
   size_t GetNCompletions() const;
   size_t GetNActiveTasks() const;
   size_t GetEvaluatorIndex(size_t) const;
-  size_t GetPolicySize() const;
   bool Done() const;
 
   oaz::games::Game* GetGame(size_t);
   void ResetGame(size_t);
-  float& GetValue(size_t);
-  boost::multi_array_ref<float, 1> GetPolicy(size_t);
+  std::unique_ptr<oaz::evaluator::Evaluation>* GetEvaluation(size_t);
   SearchNode* GetNode(size_t);
 
   void SetNode(size_t, SearchNode*);
@@ -106,25 +104,22 @@ class Search {
   void HandleCreatedTask();
 
   void SelectNode(size_t);
-  void ExpandNode(SearchNode* node, oaz::games::Game*,
-                  boost::multi_array_ref<float, 1>);
+  void ExpandNode(SearchNode* node, oaz::games::Game*, oaz::evaluator::Evaluation*);
   static void BackpropagateNode(SearchNode*, float);
   void ExpandAndBackpropagateNode(size_t);
   void MaybeSelect(size_t);
   void Pause(size_t);
   void Unpause(SearchNode*);
 
-  void AddDirichletNoise(boost::multi_array_ref<float, 1>);
+  void AddDirichletNoise(boost::multi_array<float, 1>&);
   void PerformSearch();
 
   size_t m_batch_size;
-  size_t m_policy_size;
 
   std::vector<SearchNode*> m_nodes;
   std::vector<std::unique_ptr<oaz::games::Game>> m_games;
 
-  boost::multi_array<float, 1> m_values;
-  boost::multi_array<float, 2> m_policies;
+  boost::multi_array<std::unique_ptr<oaz::evaluator::Evaluation>, 1> m_evaluations;
 
   std::mt19937 m_generator;  // Check if thread safe
 

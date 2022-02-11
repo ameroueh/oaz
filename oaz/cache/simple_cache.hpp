@@ -23,14 +23,11 @@ class SimpleCache : public Cache {
       : m_size(size),
         m_n_hits(0),
         m_object_counter(0),
-        m_policy_size(game.ClassMethods().GetMaxNumberOfMoves()),
-        m_values(boost::extents[size]),
-        m_policies(
-            boost::extents[size][game.ClassMethods().GetMaxNumberOfMoves()]),
+        m_evaluations(boost::extents[size]),
         m_map(game.ClassMethods().CreateGameMap()) {}
 
-  bool Evaluate(const oaz::games::Game& game, float* value,
-                boost::multi_array_ref<float, 1> policy) override {
+  bool Evaluate(const oaz::games::Game& game,
+                std::unique_ptr<oaz::evaluator::Evaluation>* evaluation) override {
     size_t object_id = 0;
     bool success = false;
     {
@@ -41,12 +38,10 @@ class SimpleCache : public Cache {
       return false;
     }
     IncrementNumberOfHits();
-    *value = m_values[object_id];
-    policy = m_policies[object_id];
+    *evaluation = std::move(m_evaluations[object_id]->Clone());
     return true;
   }
-  void Insert(const oaz::games::Game& game, float value,
-              boost::multi_array_ref<float, 1> policy) override {
+  void Insert(const oaz::games::Game& game, std::unique_ptr<oaz::evaluator::Evaluation>* evaluation) override {
     size_t object_id = 0;
     {
       std::unique_lock<std::shared_mutex> l(m_shared_mutex);
@@ -58,16 +53,12 @@ class SimpleCache : public Cache {
       }
       object_id = GetObjectID();
       m_map->Insert(game, object_id);
-      m_values[object_id] = value;
-      m_policies[object_id] = policy;
+      m_evaluations[object_id] = std::move((*evaluation)->Clone());
     }
   }
 
   void BatchInsert(boost::multi_array_ref<oaz::games::Game*, 1> games,
-                   boost::multi_array_ref<float*, 1> values,
-                   boost::multi_array_ref<
-                       std::unique_ptr<boost::multi_array_ref<float, 1>>, 1>
-                       policies,
+                   boost::multi_array_ref<std::unique_ptr<oaz::evaluator::Evaluation>*, 1> evaluations,
                    size_t n_elements) override {
     std::unique_lock<std::shared_mutex> l(m_shared_mutex);
     size_t object_id = 0;
@@ -81,8 +72,7 @@ class SimpleCache : public Cache {
       }
       object_id = GetObjectID();
       m_map->Insert(game, object_id);
-      m_values[object_id] = *(values[i]);
-      m_policies[object_id] = *(policies[i]);
+      m_evaluations[object_id] = std::move((*(evaluations[i]))->Clone());
     }
   }
 
@@ -98,8 +88,7 @@ class SimpleCache : public Cache {
   std::atomic<size_t> m_object_counter;
   std::shared_mutex m_shared_mutex;
 
-  boost::multi_array<float, 1> m_values;
-  boost::multi_array<float, 2> m_policies;
+  boost::multi_array<std::unique_ptr<oaz::evaluator::Evaluation>, 1> m_evaluations;
 
   size_t m_size;
   size_t m_policy_size;

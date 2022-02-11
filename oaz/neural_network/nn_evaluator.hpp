@@ -57,22 +57,20 @@ class EvaluationBatch {
   float* GetValue(size_t);
 
   size_t AcquireIndex();
-  void InitialiseElement(size_t, oaz::games::Game*, float*,
-                         const boost::multi_array_ref<float, 1>&,
+  void InitialiseElement(size_t, oaz::games::Game*,
+			 std::unique_ptr<oaz::evaluator::Evaluation>*, 
                          oaz::thread_pool::Task*);
 
   tensorflow::Tensor& GetBatchTensor();
-  boost::multi_array_ref<float, 1> GetPolicy(size_t);
   size_t GetNumberOfElements() const;
   oaz::thread_pool::Task* GetTask(size_t);
+  std::unique_ptr<oaz::evaluator::Evaluation>* GetEvaluation(size_t);
+  boost::multi_array_ref<std::unique_ptr<oaz::evaluator::Evaluation>*, 1> GetEvaluations();
   void Lock();
   void Unlock();
   bool IsFull() const;
 
   boost::multi_array_ref<oaz::games::Game*, 1> GetGames();
-  boost::multi_array_ref<float*, 1> GetValues();
-  boost::multi_array_ref<std::unique_ptr<boost::multi_array_ref<float, 1>>, 1>
-  GetPolicies();
 
   EvaluationBatchStatistics& GetStatistics();
 
@@ -81,15 +79,28 @@ class EvaluationBatch {
   tensorflow::Tensor m_batch;
   boost::multi_array<oaz::thread_pool::Task*, 1> m_tasks;
   boost::multi_array<oaz::games::Game*, 1> m_games;
-  boost::multi_array<float*, 1> m_values;
-  boost::multi_array<std::unique_ptr<boost::multi_array_ref<float, 1>>, 1>
-      m_policies;
+  boost::multi_array<std::unique_ptr<oaz::evaluator::Evaluation>*, 1> m_evaluations;
   size_t m_current_index;
   size_t m_size;
   size_t m_element_size;
   std::atomic<size_t> m_n_reads;
 
   std::unique_ptr<EvaluationBatchStatistics> m_statistics;
+};
+
+class DefaultNNEvaluation : public oaz::evaluator::Evaluation {
+
+  public:
+    DefaultNNEvaluation() = default;
+    DefaultNNEvaluation(std::shared_ptr<std::vector<tensorflow::Tensor>>, size_t);
+    float GetValue() const;
+    float GetPolicy(size_t) const;
+
+    std::unique_ptr<Evaluation> Clone() const;
+
+  private:
+    std::shared_ptr<std::vector<tensorflow::Tensor>> m_outputs;
+    size_t m_index;
 };
 
 class NNEvaluator : public oaz::evaluator::Evaluator {
@@ -100,8 +111,8 @@ class NNEvaluator : public oaz::evaluator::Evaluator {
               std::shared_ptr<oaz::cache::Cache>,
               std::shared_ptr<oaz::thread_pool::ThreadPool>,
               const std::vector<int>&, size_t);
-  void RequestEvaluation(oaz::games::Game* game, float* value,
-                         boost::multi_array_ref<float, 1> policy,
+  void RequestEvaluation(oaz::games::Game* game,
+                         std::unique_ptr<oaz::evaluator::Evaluation>* evaluation,
                          oaz::thread_pool::Task* task) override;
 
   std::vector<EvaluationBatchStatistics> GetStatistics();
@@ -114,11 +125,11 @@ class NNEvaluator : public oaz::evaluator::Evaluator {
 
  private:
   static constexpr size_t WAIT_BEFORE_FORCED_EVAL_MS = 10;
-  bool EvaluateFromCache(oaz::games::Game*, float*,
-                         const boost::multi_array_ref<float, 1>&,
+  bool EvaluateFromCache(oaz::games::Game*,
+		  	 std::unique_ptr<oaz::evaluator::Evaluation>*,
                          oaz::thread_pool::Task*);
-  void EvaluateFromNN(oaz::games::Game*, float*,
-                      const boost::multi_array_ref<float, 1>&,
+  void EvaluateFromNN(oaz::games::Game*,
+		      std::unique_ptr<oaz::evaluator::Evaluation>*,
                       oaz::thread_pool::Task*);
 
   size_t GetBatchSize() const;
