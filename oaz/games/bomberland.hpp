@@ -22,6 +22,22 @@ enum Player {
   GaiaSpawnPlacer
 }
 
+enum GaiaSpawnerMove {
+  Pass,
+  SpawnBomb,
+  SpawnPowerup;
+};
+
+class Bomb {
+  public:
+    Bomb(size_t owner, size_t blast_radius): m_owner(owner), m_blast_radius(blast_radius) {}
+    size_t GetOwner() const { return m_owner; }
+    size_t GetBlastRadius() const { return m_blast_radius; }
+  private:
+    size_t m_owner;
+    size_t m_blast_radius;
+};
+
 class Tile {
   public:
     bool IsWalkable() const {
@@ -47,6 +63,22 @@ class Tile {
     size_t GetTileType() const {
       return GetValue(TILE_TYPE_OFFSET, TILE_TYPE_SIZE);
     }
+
+    Bomb GetBomb() const {
+      return Bomb(GetValue(OWNER_OFFSET, OWNER_SIZE), GetValue(BLAST_RADIUS_OFFSET, BLAST_RADIUS_SIZE));
+    }
+
+    bool HasBomb() const {
+      return GetTileType() == 1;
+    }
+
+    bool HasBlast() const {
+      return GetTileType() == 4;
+    }
+
+    bool HasFire() const {
+      return GetTileType() == 5;
+    }
       
   private:
     
@@ -65,11 +97,16 @@ class Tile {
 
     # Walkable tile attributes
     static constexpr TILE_TYPE_OFFSET = 1;
-    static constexpr TILE_TYPE_SIZE = 3; // 0 = EMPTY, 1 = PLACED_BOMB, 2 = SPAWNED_BOMB, 3 = POWERUP, 4 = BLAST, 45= FIRE 
+    static constexpr TILE_TYPE_SIZE = 3; // 0 = EMPTY, 1 = PLACED_BOMB, 2 = SPAWNED_BOMB, 3 = POWERUP, 4 = BLAST, 5 = FIRE 
     static constexpr EXPIRY_OFFSET = 4;
     static constexpr EXPIRY_SIZE = 9;
     static constexpr UNIT_ID_OFFSET = 13;
     static constexpr UNIT_ID_SIZE = 9;
+    static constexpr OWNER_OFFSET = 22;
+    static constexpr OWNER_SIZE = 1;
+    static constexpr BLAST_RADIUS_OFFSET = 23;
+    static constexpr BLAST_RADIUS_SIZE = 4;
+
 
     # Non-walkable tile attributes
     static constexpr INVULNERABLE_OFFSET = 1;
@@ -97,30 +134,11 @@ class Board {
       return m_board[pos.first][pos.second];
     }
 
-    void RemoveSpawnedItems(size_t tick) {
-      EmptyExpiredTiles(tick, m_spawn_positions);
-    }
-
-    void RemoveBlast(size_t tick) {
-      EmptyExpiredTiles(tick, m_blast_positions);
-    }
-
   private:
-    bool EmptyExpiredTiles(size_t tick, std::queue<TilePosition>& queue) {
-      while(!queue.empty() && GetTile(queue.top()).GetExpiry() <= tick) {
-        GetTile(queue.top()) = NewEmptyTile();
-	queue.pop();
-      }
-    }
-
     static constexpr size_t N_COLUMNS = 15;
     static constexpr size_t N_ROWS = 15;
     
     boost::multi_array<Tile, 2> m_board;
-    std::queue<TilePosition> m_blast_positions;
-    std::queue<TilePosition> m_spawn_positions;
-    std::queue<TilePosition> m_agent0_bomb_positions;
-    std::queue<TilePosition> m_agent1_bomb_positions;
 };
 
 class BomberlandAgent {
@@ -186,11 +204,13 @@ class Bomberland : public Game {
 		GetGaiaSpawnerMoves(moves);
 		break;
 	      case Player.GaiaSpawnPlacer:
+		GetGaiaSpawnPlacerMoves(moves);
 		break;
       }
     }
 
     void PlayMove(size_t move) {
+      AddFire();
       switch(GetCurrentPlayer()) {
 	      case Player.Player0Agent0:
 		PlayEncodedAgentMove(0, 0, move);
@@ -217,9 +237,74 @@ class Bomberland : public Game {
 		PlayGaiaSpawnPlacerMove(move);
 		break;
       }
+      ResolvePlayerMoves();
+      UpdateCurrentPlayer();
+      if (m_current_player == 8) {
+        AdjudicateTurn();
+	UpdateCurrentPlayer();
+      }
     }
 
   private:
+    void AddFire() {}
+
+    void ResolvePlayerMoves() {} // If  
+
+    void AdjudicateTurn() {
+      for(size_t player=0; player!=2; ++player) {
+        for(size_t agent=0; agent!=3; ++agent) {
+	  PlayerAgent& agent = GetAgent(player, agent);
+	  if (!agent.IsDead()) {
+	    Tile& tile = m_board.GetTile(agent.GetPosition());
+	    if (tile.HasBlast() || tile.HasFire()) {
+	      agent.DecreaseHealth();
+	    }
+	  }
+        }
+      }
+    }
+
+    void UpdateCurrentPlayer() {
+      if (m_current_player == 6 && m_gaia_spawner_move != GaiaSpawnerMove.Pass) {
+        m_current_player = 7;
+      } else {
+        if (m_current_player == 6) {
+          m_current_player = 0;
+        } else {
+          ++m_current_player;
+        }
+        while(m_current_player < 6 && GetAgent(m_current_player).IsDead()) {
+	  ++m_current_player;
+        }
+      }
+    }
+
+    void PlayGaiaSpawnPlacerMove(size_t move) {
+      TilePosition position = DecodePosition(move);
+      Tile& tile = m_board.GetTile(position);
+      switch(m_gaia_spawner_move) {
+        case GaiaSpawnerMove.SpawnBomb:
+	  tile = NewTileWithSpawnedBomb();
+	  break;
+	case GaiaSpawnPlacerMove.SpawnPowerup:
+	  tile = NewTileWithSpawnedPowerup();
+	  break;
+      }
+    }
+
+    void PlayGaiaSpawnerMove(size_t move) {
+      switch (move) {
+        case 0:
+	  m_gaia_spawner_move = GaiaSpawnerMove.Pass;
+	  break;
+	case 1:
+	  m_gaia_spawner_move = GaiaSpawnerMove.SpawnBomb;
+	  break;
+	case 2:
+	  m_gaia_spawner_move = GaiaSpawnerMove.SpawnPowerup;
+	  break;
+      }
+    }
 
     size_t GetEncodedAgentMoves(size_t player, size_t agent, std::vector<size_t>* moves) const {
       moves->clear();
@@ -255,7 +340,56 @@ class Bomberland : public Game {
 	  PlaceBomb(player, agent);
 	  break;
 	default:
-	  DetonateBomb(agent, player, DecodePosition(move >> 4));
+	  DetonatePlayerBomb(player, DecodePosition(move >> 4));
+      }
+    }
+
+    void PlaceBomb(size_t player, size_t agent) {
+      PlayerAgent& agent = GetAgent(player, agent);
+      if (agent.GetNBombs() == 0) {
+        break;
+      }
+      size_t blast_radius = agent.GetBlastRadius();
+      TilePosition position = agent.GetPosition();
+      m_board.GetTile(position) = NewTileWithBomb(player, m_tick + 40, blast_radius);
+      m_player_bombs[player].push_back(position);
+    }
+
+    void DetonatePlayerBomb(size_t player, size_t position) {
+      Tile& tile = m_board.GetTile(position);
+      if (!tile.HasBomb()) {
+        break;
+      }
+      Bomb bomb = tile.GetBomb();
+      if (bomb.GetOwner() != player) {
+	break;
+      }
+      tile = NewEmptyTile();
+      AddBlast(position, blast_radius, m_tick + 5);
+    }
+ 
+    void DetonateBomb(TilePosition position) {
+      size_t blast_radius = bomb.GetBlastRadius();
+      Tile& = m_board.GetTile(position);   
+      tile.AddBlast();
+      AddBlastAlongLine(position, blast_radius, TilePosition(1, 0));
+      AddBlastAlongLine(position, blast_radius, TilePosition(-1, 0));
+      AddBlastAlongLine(position, blast_radius, TilePosition(0, 1));
+      AddBlastAlongLine(position, blast_radius, TilePosition(0, -1));
+    }
+
+    void AddBlastAlongLine(TilePosition position, size_t blast_radius, TilePosition vector) {
+      TilePosition cposition = position + vector;
+      for (size_t i=0; i!=blast_radius-1; ++i) {
+	if(!m_board.IsWithinBounds(cposition))
+	  break;
+        Tile& tile = m_board.GetTile(cposition);
+        if(!tile.IsWalkable()) {
+	  tile.DecreaseHealth();
+	  break;
+	}
+	tile.AddBlast();
+	cposition += vector;
       }
     }
 
@@ -293,8 +427,7 @@ class Bomberland : public Game {
 
     void GetGaiaSpawnPlacerMoves(vector<size_t>* moves) const {
       moves->clear();
-      auto free_tiles = ; // Get free tiles here
-      for(auto it = free_tiles->cbegin(); it != free_tiles->cend(); ++it) {
+      for(auto it = m_free_tiles->cbegin(); it != m_free_tiles->cend(); ++it) {
         moves->push_back(EncodePosition(*it));
       }
     }
@@ -305,6 +438,21 @@ class Bomberland : public Game {
 
     TilePosition DecodePosition(size_t encoded_position) const {
       return TilePosition(encoded_position >> 4, encoded_position & 0b1111);
+    }
+    
+    void RemoveSpawnedItems(size_t tick) {
+      EmptyExpiredTiles(tick, m_spawn_positions);
+    }
+
+    void RemoveBlast(size_t tick) {
+      EmptyExpiredTiles(tick, m_blast_positions);
+    }
+    
+    bool EmptyExpiredTiles(size_t tick, std::queue<TilePosition>& queue) {
+      while(!queue.empty() && GetTile(queue.top()).GetExpiry() <= tick) {
+        GetTile(queue.top()) = NewEmptyTile();
+	queue.pop();
+      }
     }
 
     bool TileIsFree(TilePosition) const;
@@ -317,9 +465,17 @@ class Bomberland : public Game {
 
     std::vector<BomberlandAgent> m_agents;
     std::vector<TilePosition> m_pre_positions;
+    std::unordered_set m_free_tiles;
 
     size_t m_current_player;
     Board m_board;
+
+    GaiaSpawnerMove m_gaia_spawner_move;
+    
+    std::queue<TilePosition> m_blast_positions;
+    std::queue<TilePosition> m_spawn_positions;
+    std::queue<TilePosition> m_agent0_bomb_positions;
+    std::queue<TilePosition> m_agent1_bomb_positions;
 };
 }  // namespace oaz::games::bomberland
 #endif
