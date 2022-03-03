@@ -61,7 +61,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto -march=native -mtune=native")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address -Wfatal-errors")
 set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=${TensorFlow_ABI}")
 set(CMAKE_EXE_LINKER_FLAGS
@@ -187,6 +187,9 @@ add_executable(connect_four_test test/connect_four/connect_four_test.cpp
                                  oaz/games/connect_four.cpp oaz/mcts/search.cpp)
 target_link_libraries(connect_four_test oaz_base oaz_test)
 
+add_executable(bomberland_test test/bomberland/bomberland_test.cpp)
+target_link_libraries(bomberland_test oaz_base oaz_test)
+
 add_executable(simple_cache_test test/cache/simple_cache_test.cpp
                                  oaz/games/tic_tac_toe.cpp)
 target_link_libraries(simple_cache_test oaz_base oaz_test)
@@ -267,6 +270,7 @@ add_custom_target(all_tests)
 add_dependencies(
   all_tests
   connect_four_test
+  bomberland_test
   tic_tac_toe_test
   bandits_test
   mcts_test
@@ -287,6 +291,7 @@ enable_testing()
 
 add_test(NAME bitboard_test COMMAND bitboard_test)
 add_test(NAME connect_four_test COMMAND connect_four_test)
+add_test(NAME bomberland_test COMMAND bomberland_test)
 add_test(NAME tic_tac_toe_test COMMAND tic_tac_toe_test)
 add_test(NAME bandits_test COMMAND bandits_test)
 add_test(NAME mcts_test COMMAND mcts_test)
