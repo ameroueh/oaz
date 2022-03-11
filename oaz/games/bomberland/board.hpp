@@ -30,6 +30,9 @@ class Board {
     Board(): m_board(boost::extents[GetNRows()][GetNColumns()]) {
       std::fill_n(m_board.data(), m_board.num_elements(), Tile::CreateEmptyTile());
     }
+    Board(const Tile&& tile): m_board(boost::extents[GetNRows()][GetNColumns()]) {
+      std::fill_n(m_board.data(), m_board.num_elements(), tile);
+    }
   private:
     boost::multi_array<Tile, 2> m_board;
     static constexpr size_t N_ROWS = 15;

@@ -9,6 +9,7 @@
 #include "oaz/games/bomberland/coordinates.hpp"
 #include "oaz/games/bomberland/tile.hpp"
 #include "oaz/games/bomberland/detonation_order.hpp"
+#include "oaz/games/bomberland/event_manager.hpp"
 
 namespace oaz::games::bomberland {
 
@@ -18,11 +19,13 @@ class BlastAdder {
       DetonationOrder order,
       Board& board,
       std::queue<DetonationOrder>& detonation_orders,
+      EventManager& event_manager,
       std::size_t tick
     ):
       m_order(order),
       m_board(board),
       m_detonation_orders(detonation_orders),
+      m_event_manager(event_manager),
       m_tick(tick)
       {
 	AddBlast();
@@ -51,9 +54,11 @@ class BlastAdder {
 	  )	  
 	);
         tile = Tile::CreateTileWithBlast(m_tick);
+	m_event_manager.AddEventFromTileAtPosition(position, m_board);
 	return true;
       } else {
         tile = Tile::CreateTileWithBlast(m_tick);
+	m_event_manager.AddEventFromTileAtPosition(position, m_board);
         return true;
       }
     }
@@ -73,6 +78,7 @@ class BlastAdder {
 
     DetonationOrder m_order;
     Board& m_board;
+    EventManager& m_event_manager;
     std::queue<DetonationOrder>& m_detonation_orders;
     std::size_t m_tick;
 };

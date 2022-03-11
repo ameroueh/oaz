@@ -6,13 +6,14 @@
 #include "oaz/games/bomberland/tile.hpp"
 #include "oaz/games/bomberland/blast_adder.hpp"
 #include "oaz/games/bomberland/detonation_order.hpp"
+#include "oaz/games/bomberland/event_manager.hpp"
 
 namespace oaz::games::bomberland {
 
 class BombDetonator {
   public:
-    BombDetonator(Coordinates position, Board& board, size_t tick):
-    m_position(position), m_board(board), m_tick(tick) {
+    BombDetonator(Coordinates position, Board& board, EventManager& event_manager, size_t tick):
+    m_position(position), m_board(board), m_event_manager(event_manager), m_tick(tick) {
       Detonate();
     }
   private:
@@ -33,12 +34,14 @@ class BombDetonator {
 	    order,
 	    m_board,
 	    detonation_orders,
+	    m_event_manager,
 	    m_tick
 	);
       }
     }
     Coordinates m_position;
     Board& m_board;
+    EventManager& m_event_manager;
     size_t m_tick;
 };
 } // namespace oaz::games::bomberland

@@ -21,7 +21,13 @@ class Coordinates {
   }
   bool operator==(const Coordinates& p) const { return first() == p.first() && second() == p.second(); }
 
+  uint64_t AsUint64() const {
+    return (((uint64_t) first()) << 32) | ((uint64_t) second());
+  }
 
+  static Coordinates FromUint64(uint64_t num) {
+    return Coordinates(num >> 32, num & 0xffff);
+  }
   private:
     signed int m_first : 5; 
     signed int m_second : 5; 

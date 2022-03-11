@@ -1,9 +1,11 @@
 #ifndef OAZ_GAMES_BOMBERLAND_GAIA_SPAWNER_MOVE_GENERATOR_HPP_
 #define OAZ_GAMES_BOMBERLAND_GAIA_SPAWNER_MOVE_GENERATOR_HPP_
 
+#include <vector>
+
 namespace oaz::games::bomberland {
 
-enum GaiaSpawnerMove {
+enum class GaiaSpawnerMove {
   Pass,
   SpawnBomb,
   SpawnPowerup
@@ -11,7 +13,7 @@ enum GaiaSpawnerMove {
 
 class GaiaSpawnerMoveGenerator {
   public:
-    void operator(vector<size_t>& moves)() {
+    void operator()(std::vector<size_t>& moves) {
 	moves = {
 	  static_cast<size_t>(GaiaSpawnerMove::Pass),
 	  static_cast<size_t>(GaiaSpawnerMove::SpawnBomb),
