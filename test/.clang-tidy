@@ -1,0 +1,3 @@
+---
+# Only define a single dummy check for test because of 3rd party code
+Checks:          'cppcoreguidelines-avoid-goto'

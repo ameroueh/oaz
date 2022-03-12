@@ -89,6 +89,12 @@ TARGETS = [
         "extension_file_name": "bandits.so",
         "module_directory": "games/bandits",
     },
+    {
+        "name": "bomberland",
+        "target": "bomberland",
+        "extension_file_name": "bomberland.so",
+        "module_directory": "games/bomberland",
+    },
 ]
 
 

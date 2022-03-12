@@ -13,11 +13,11 @@ class BombListCleaner {
   public:
     BombListCleaner() {}
       
-      void operator()(size_t owner, std::vector<Coordinates>& bombs, Board& board) {
+      void operator()(size_t owner, std::vector<Coordinates>& bombs, const Board& board) {
 	size_t end = bombs.size();
 	size_t i=0;
 	while (i < end) {
-	  Tile& tile = board.GetTile(bombs[i]);
+	  const Tile& tile = board.GetTile(bombs[i]);
           if (!tile.HasPlacedBomb() || tile.GetOwner() != owner) {
 	    bombs[i] = bombs[end-1];
 	    --end;

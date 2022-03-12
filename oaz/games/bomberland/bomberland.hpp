@@ -1,6 +1,8 @@
 #ifndef __BOMBERLAND_HPP__
 #define __BOMBERLAND_HPP__
 
+#include "boost/multi_array.hpp"
+
 #include "oaz/games/game.hpp"
 
 #include "oaz/games/bomberland/board.hpp"
@@ -9,22 +11,27 @@
 #include "oaz/games/bomberland/gaia_spawner_move_generator.hpp"
 #include "oaz/games/bomberland/gaia_placer_move_generator.hpp"
 #include "oaz/games/bomberland/fire_adder.hpp"
+#include "oaz/games/bomberland/default_agent_initializer.hpp"
 
 namespace oaz::games::bomberland {
 
-
 class Bomberland : public oaz::games::Game {
   public:
-
-    Bomberland() {}
+    
+    Bomberland():
+      m_tick(0),
+      m_agents(boost::extents[2][3]),
+      m_player_bombs(boost::extents[2])    
+      {
+         DefaultAgentInitializer()(m_agents);	
+      }
 
     float GetScore() const {
       return m_adjudicator.GetScore();
     }
 
     size_t GetCurrentPlayer() const {
-      return static_cast<size_t>(m_adjudicator.GetCurrentPlayer());
-    }
+      return static_cast<size_t>(m_adjudicator.GetCurrentPlayer()); }
 
     bool IsFinished() const {
       return m_adjudicator.GameIsFinished();
@@ -35,30 +42,27 @@ class Bomberland : public oaz::games::Game {
     }
     
     void GetAvailableMoves(std::vector<size_t>* moves) const {
+      using AgentMoveGeneratorVecBombIterator = AgentMoveGenerator<std::vector<Coordinates>::const_iterator>;
       switch (m_adjudicator.GetCurrentPlayer()) {
 	      case Player::Player0Agent0:
 		BombListCleaner()(0, m_player_bombs[0], m_board);
-		AgentMoveGenerator()(0, 0, *moves, m_player_bombs[0].cbegin(), m_player_bombs.cend());
+		AgentMoveGeneratorVecBombIterator()(0, *moves, m_player_bombs[0].cbegin(), m_player_bombs[0].cend());
 		break;
 	      case Player::Player0Agent1:
 		BombListCleaner()(0, m_player_bombs[0], m_board);
-		AgentMoveGenerator()(0, 1, *moves, m_player_bombs[0].cbegin(), m_player_bombs.cend());
+		AgentMoveGeneratorVecBombIterator()(0, *moves, m_player_bombs[0].cbegin(), m_player_bombs[0].cend());
 		break;
 	      case Player::Player0Agent2:
-		BombListCleaner()(0, m_player_bombs[0], m_board);
-		AgentMoveGenerator()(0, 2, *moves, m_player_bombs[0].cbegin(), m_player_bombs.cend());
-		break;
-	      case Player::Player1Agent0:
-		BombListCleaner()(1, m_player_bombs[1], m_board);
-		AgentMoveGenerator()(1, 0, *moves, m_player_bombs[1].cbegin(), m_player_bombs.cend());
+		BombListCleaner()(0, m_player_bombs[0], m_board); AgentMoveGeneratorVecBombIterator()(0, *moves, m_player_bombs[0].cbegin(), m_player_bombs[0].cend()); break; case Player::Player1Agent0: BombListCleaner()(1, m_player_bombs[1], m_board);
+		AgentMoveGeneratorVecBombIterator()(1, *moves, m_player_bombs[1].cbegin(), m_player_bombs[1].cend());
 		break;
 	      case Player::Player1Agent1:
 		BombListCleaner()(1, m_player_bombs[1], m_board);
-		AgentMoveGenerator()(1, 1, *moves, m_player_bombs[1].cbegin(), m_player_bombs.cend());
+		AgentMoveGeneratorVecBombIterator()(1, *moves, m_player_bombs[1].cbegin(), m_player_bombs[1].cend());
 		break;
 	      case Player::Player1Agent2:
 		BombListCleaner()(1, m_player_bombs[1], m_board);
-		AgentMoveGenerator()(1, 2, *moves, m_player_bombs[1].cbegin(), m_player_bombs.cend());
+		AgentMoveGeneratorVecBombIterator()(1, *moves, m_player_bombs[1].cbegin(), m_player_bombs[1].cend());
 		break;
 	      case Player::GaiaSpawner:
 		GaiaSpawnerMoveGenerator()(*moves);
@@ -72,31 +76,31 @@ class Bomberland : public oaz::games::Game {
     void PlayMove(size_t move) {
       switch (m_adjudicator.GetCurrentPlayer()) {
 	      case Player::Player0Agent0:
-		AgentMovePlayer(0, 0, move, m_tick, m_board, m_agents, m_position_resolver);
+		AgentMovePlayer()(0, 0, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
 		break;
 	      case Player::Player0Agent1:
-		AgentMovePlayer(0, 1, move, m_tick, m_board, m_agents, m_position_resolver);
+		AgentMovePlayer()(0, 1, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
 		break;
 	      case Player::Player0Agent2:
-		AgentMovePlayer(0, 2, move, m_tick, m_board, m_agents, m_position_resolver);
+		AgentMovePlayer()(0, 2, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
 		break;
 	      case Player::Player1Agent0:
-		AgentMovePlayer(1, 0, move, m_tick, m_board, m_agents, m_position_resolver);
+		AgentMovePlayer()(1, 0, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
 		break;
 	      case Player::Player1Agent1:
-		AgentMovePlayer(1, 1, move, m_tick, m_board, m_agents, m_position_resolver);
+		AgentMovePlayer()(1, 1, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
 		break;
 	      case Player::Player1Agent2:
-		AgentMovePlayer(1, 2, move, m_tick, m_board, m_agents, m_position_resolver);
+		AgentMovePlayer()(1, 2, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
 		break;
 	      case Player::GaiaSpawner:
 		m_gaia_move_player.PlaySpawnerMove(move);
 		break;
 	      case Player::GaiaPlacer:
-		m_gaia_move_player.PlayPlacerMove(move, m_board, m_tick);
+		m_gaia_move_player.PlayPlacerMove(move, m_board, m_event_manager, m_tick);
 		break;
       }
-      m_adjudicator.Update(m_agents, m_board, m_tick, m_gaia_move_player, m_fire_adder);
+      m_adjudicator.Update(m_agents, m_board, m_tick, m_gaia_move_player, m_event_manager, m_fire_adder);
     }
 
     /* START DUMMY IMPLEMENTATIONS */
@@ -127,6 +131,8 @@ class Bomberland : public oaz::games::Game {
     /* END DUMMY IMPLEMENTATIONS */
 
   private:
+    friend class JsonStateBuilder;
+
     size_t m_tick;
     boost::multi_array<Agent, 2> m_agents;
     PositionResolver m_position_resolver;
@@ -135,7 +141,7 @@ class Bomberland : public oaz::games::Game {
     GaiaMovePlayer m_gaia_move_player;
     EventManager m_event_manager;
     FireAdder m_fire_adder;
-    boost::multi_array<std::vector<Coordinates>, 1> m_player_bombs;
+    mutable boost::multi_array<std::vector<Coordinates>, 1> m_player_bombs;
 };
 }  // namespace oaz::games::bomberland
 

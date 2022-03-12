@@ -61,7 +61,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto -march=native -mtune=native")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address -Wfatal-errors")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address")
 set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=${TensorFlow_ABI}")
 set(CMAKE_EXE_LINKER_FLAGS
@@ -160,6 +160,9 @@ target_compile_definitions(
   bandits PRIVATE -DGAME_CLASS_NAME=Bandits -DGAME_HEADER=oaz/games/bandits.hpp
                   -DMODULE_NAME=bandits)
 
+python_add_module(bomberland oaz/python/bomberland.cpp oaz/games/bomberland/bomberland.hpp)
+target_link_libraries(bomberland oaz_python_module)
+
 add_custom_target(all_python)
 add_dependencies(
   all_python
@@ -174,7 +177,9 @@ add_dependencies(
   game
   connect_four
   bandits
-  tic_tac_toe)
+  tic_tac_toe
+  bomberland
+)
 
 # TESTS
 

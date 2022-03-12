@@ -7,7 +7,7 @@ namespace oaz::games::bomberland {
 
 class GaiaPlacerMoveGenerator {
   public:
-    void operator()(std::vector<size_t>& moves, Board& board) {
+    void operator()(std::vector<size_t>& moves, const Board& board) {
 	moves.clear();
 	for (size_t i=0; i!=N_ROWS; ++i) {
           for (size_t j=0; j!=N_COLUMNS; ++j) {
