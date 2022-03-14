@@ -161,7 +161,7 @@ target_compile_definitions(
                   -DMODULE_NAME=bandits)
 
 python_add_module(bomberland oaz/python/bomberland.cpp oaz/games/bomberland/bomberland.hpp)
-target_link_libraries(bomberland oaz_python_module)
+target_link_libraries(bomberland oaz_python_module nlohmann_json::nlohmann_json)
 
 add_custom_target(all_python)
 add_dependencies(

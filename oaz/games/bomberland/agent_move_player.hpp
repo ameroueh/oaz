@@ -6,6 +6,7 @@
 #include "oaz/games/bomberland/tile.hpp"
 #include "oaz/games/bomberland/agent_move_generator.hpp"
 #include "oaz/games/bomberland/event_manager.hpp"
+#include "oaz/games/bomberland/position_resolver.hpp"
 
 namespace oaz::games::bomberland {
 

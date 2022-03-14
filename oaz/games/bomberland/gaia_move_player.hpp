@@ -5,6 +5,7 @@
 #include "oaz/games/bomberland/coordinates.hpp"
 #include "oaz/games/bomberland/tile.hpp"
 #include "oaz/games/bomberland/event_manager.hpp"
+#include "oaz/games/bomberland/gaia_spawner_move_generator.hpp"
 
 #include <iostream>
 

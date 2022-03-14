@@ -8,10 +8,13 @@
 #include "oaz/games/bomberland/board.hpp"
 #include "oaz/games/bomberland/adjudicator.hpp"
 #include "oaz/games/bomberland/agent_move_generator.hpp"
+#include "oaz/games/bomberland/agent_move_player.hpp"
 #include "oaz/games/bomberland/gaia_spawner_move_generator.hpp"
 #include "oaz/games/bomberland/gaia_placer_move_generator.hpp"
 #include "oaz/games/bomberland/fire_adder.hpp"
 #include "oaz/games/bomberland/default_agent_initializer.hpp"
+#include "oaz/games/bomberland/position_resolver.hpp"
+#include "oaz/games/bomberland/bomb_list_cleaner.hpp"
 
 namespace oaz::games::bomberland {
 

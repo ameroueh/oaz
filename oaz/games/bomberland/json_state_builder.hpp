@@ -3,6 +3,7 @@
 
 #include "nlohmann/json.hpp"
 
+using json = nlohmann::json;
 
 namespace oaz::games::bomberland {
 
@@ -12,8 +13,8 @@ class JsonStateBuilder {
     nlohmann::json operator()(Bomberland& game) {
       json state;
 
-      json["world"]["width"] = 15;
-      json["world"]["height"] = 15;
+      state["world"]["width"] = 15;
+      state["world"]["height"] = 15;
 
       return state;
     }
