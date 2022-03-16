@@ -5,6 +5,19 @@
 #include <cstdint>
 
 namespace oaz::games::bomberland {
+
+enum class EntityType {
+  Ammunition,
+  Bomb,
+  Blast,
+  BlastPowerup,
+  Fire,
+  MetalBlock,
+  None,
+  OreBlock,
+  WoodenBlock
+};
+
 class Tile {
   public:
     Tile(): m_tile(0) {}
@@ -19,6 +32,30 @@ class Tile {
 
     bool IsInvulnerable() const {
       return GetValue(INVULNERABLE_OFFSET, INVULNERABLE_SIZE) == 1;
+    }
+   
+    EntityType GetEntityType() const {
+	if (!IsWalkable()) switch (GetTileType()) {
+	  case 0:
+	    return EntityType::WoodenBlock;
+	  case 1:
+	    return EntityType::OreBlock;
+	  case 2:
+	    return EntityType::MetalBlock;
+	} else switch (GetTileType()) {
+	  case 0:
+	    return EntityType::None;
+	  case 1:
+	    return EntityType::Bomb;
+	  case 2:
+	    return EntityType::Ammunition;
+	  case 3:
+	    return EntityType::BlastPowerup;
+	  case 4:
+	    return EntityType::Blast;
+	  case 5:
+	    return EntityType::Fire;
+	}
     }
 
     std::size_t GetHP() const {
@@ -118,6 +155,7 @@ class Tile {
 	}
 	static Tile CreateWoodenBlockTile() {
 	  Tile tile;
+	  tile.SetType(0);
 	  tile.SetNotWalkable();
 	  tile.SetHP(1);
 	  return tile;
@@ -132,7 +170,7 @@ class Tile {
 	static Tile CreateMetalBlockTile() {
 	  Tile tile;
 	  tile.SetNotWalkable();
-	  tile.SetType(1);
+	  tile.SetType(2);
 	  tile.SetInvulnerable();
 	  return tile;
 	}

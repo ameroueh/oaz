@@ -28,6 +28,30 @@ class Bomberland : public oaz::games::Game {
       {
          DefaultAgentInitializer()(m_agents);	
       }
+    
+    Bomberland(
+      size_t n_rows,
+      size_t n_columns,
+      size_t tick,
+      size_t n_agents,
+      size_t units_per_agent,
+      size_t ammo_duration_ticks,
+      size_t blast_duration_ticks,
+      size_t bomb_duration_ticks,
+      size_t bomb_armed_ticks,
+      size_t fire_spawn_interval_ticks,
+      size_t invulnerability_ticks
+      ):
+      m_tick(tick),
+      m_board(n_rows, n_columns),
+      m_agents(boost::extents[2][3]),
+      m_player_bombs(boost::extents[2]),
+      m_ammo_duration(ammo_duration),
+      m_blast_duration(blast_duration),
+      
+      {
+         DefaultAgentInitializer()(m_agents);	
+      }
 
     float GetScore() const {
       return m_adjudicator.GetScore();

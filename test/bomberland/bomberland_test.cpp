@@ -115,11 +115,11 @@ TEST(Tile, Claimants) {
 }
 
 TEST(Board, Instantiation) {
-    Board board();
+    Board board(15, 15);
 }
 
 TEST(Board, GetTile) {
-    Board board;
+    Board board(15, 15);
     Tile& tile = board.GetTile(Coordinates(0, 0));
     ASSERT_TRUE(tile.IsEmptyTile());
     tile = Tile::CreateOreBlockTile();
@@ -127,7 +127,7 @@ TEST(Board, GetTile) {
 }
 
 TEST(Board, ConstGetTile) {
-    Board board;
+    Board board(15, 15);
     const Tile& tile = board.GetTile(Coordinates(0, 0));
     ASSERT_TRUE(tile.IsEmptyTile());
 }
@@ -138,14 +138,14 @@ TEST (PositionResolver, Instantiation) {
 
 TEST (PositionResolver, ResolvePosition) {
     PositionResolver resolver;
-    Board board;
+    Board board(15, 15);
     resolver.ClaimPosition(0, 0, Coordinates(1, 1), board);
     ASSERT_EQ(resolver.ResolvePosition(0, 0, Coordinates(1, 1), board), Coordinates(1, 1));
 }
 
 TEST (PositionResolver, ResolvePositionWithCollision) {
     PositionResolver resolver;
-    Board board;
+    Board board(15, 15);
     resolver.ClaimPosition(0, 0, Coordinates(1, 1), board);
     resolver.ClaimPosition(1, 0, Coordinates(1, 1), board);
     ASSERT_EQ(resolver.ResolvePosition(0, 0, Coordinates(1, 0), board), Coordinates(1, 0));
@@ -154,7 +154,7 @@ TEST (PositionResolver, ResolvePositionWithCollision) {
 
 TEST (PositionResolver, ResetClaims) {
     PositionResolver resolver;
-    Board board;
+    Board board(15, 15);
     resolver.ClaimPosition(0, 0, Coordinates(1, 1), board);
     resolver.ClaimPosition(1, 0, Coordinates(1, 1), board);
     resolver.ResetClaims(board);
@@ -163,7 +163,7 @@ TEST (PositionResolver, ResetClaims) {
 }
 
 TEST (BlastAdder, Default) {
-    Board board;
+    Board board(15, 15);
     board.GetTile(Coordinates(1, 2)) = Tile::CreateWoodenBlockTile();
     std::queue<DetonationOrder> detonation_orders;
     EventManager event_manager;
@@ -177,7 +177,7 @@ TEST (BlastAdder, Default) {
 }
 
 TEST (BlastAdder, BlastRadius2) {
-    Board board;
+    Board board(15, 15);
     std::queue<DetonationOrder> detonation_orders;
     EventManager event_manager;
     BlastAdder(DetonationOrder(Coordinates(2, 2), 2), board, detonation_orders, event_manager, 100);
@@ -194,7 +194,7 @@ TEST (BlastAdder, BlastRadius2) {
 }
 
 TEST (BombDetonator, Default) {
-    Board board;
+    Board board(15, 15);
     board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 1);
     EventManager event_manager;
     BombDetonator(Coordinates(1, 1), board, event_manager, 100);
@@ -206,7 +206,7 @@ TEST (BombDetonator, Default) {
 }
 
 TEST (BombDetonator, Cascade1) {
-    Board board;
+    Board board(15, 15);
     board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 1);
     board.GetTile(Coordinates(0, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 1);
     EventManager event_manager;
@@ -363,7 +363,7 @@ TEST (AgentMoveGenerator, WithBombs) {
 }
 
 TEST (AgentMovePlayer, MoveAgent) {
-    Board board;
+    Board board(15, 15);
     PositionResolver position_resolver;
     boost::multi_array<Agent, 2> agents(boost::extents[2][3]);
     EventManager event_manager;
@@ -388,7 +388,7 @@ TEST (AgentMovePlayer, MoveAgent) {
 }
 
 TEST (AgentMovePlayer, PlaceBomb) {
-    Board board;
+    Board board(15, 15);
     PositionResolver position_resolver;
     boost::multi_array<Agent, 2> agents(boost::extents[2][3]);
     EventManager event_manager;
@@ -400,7 +400,7 @@ TEST (AgentMovePlayer, PlaceBomb) {
 }
 
 TEST (AgentMovePlayer, DetonateBomb) {
-    Board board;
+    Board board(15, 15);
     PositionResolver position_resolver;
     EventManager event_manager;
     boost::multi_array<Agent, 2> agents(boost::extents[2][3]);
@@ -422,7 +422,7 @@ TEST (GaiaSpawnerMoveGenerator, Default) {
 }
 
 TEST (GaiaPlacerMoveGenerator, Default) {
-    Board board;
+    Board board(15, 15);
     std::vector<size_t> moves;
     GaiaPlacerMoveGenerator()(moves, board);
     std::vector<size_t> expected_moves;
@@ -435,7 +435,7 @@ TEST (GaiaPlacerMoveGenerator, Default) {
 }
 
 TEST (GaiaPlacerMoveGenerator, NoEmptyTile) {
-    Board board(Tile::CreateWoodenBlockTile());
+    Board board(15, 15, Tile::CreateWoodenBlockTile());
     std::vector<size_t> moves;
     GaiaPlacerMoveGenerator()(moves, board);
     std::vector<size_t> expected_moves;
@@ -443,7 +443,7 @@ TEST (GaiaPlacerMoveGenerator, NoEmptyTile) {
 }
 
 TEST (GaiaMovePlayer, Default) {
-    Board board;
+    Board board(15, 15);
     EventManager event_manager;
     size_t spawner_move = static_cast<size_t>(GaiaSpawnerMove::SpawnBomb);
     size_t placer_move = Coordinates(1, 1).AsUint64();
@@ -455,7 +455,7 @@ TEST (GaiaMovePlayer, Default) {
 }
 
 TEST (GaiaMovePlayer, SpawnBomb) {
-    Board board;
+    Board board(15, 15);
     EventManager event_manager;
     size_t spawner_move = static_cast<size_t>(GaiaSpawnerMove::SpawnPowerup);
     size_t placer_move = Coordinates(1, 1).AsUint64();
@@ -469,7 +469,7 @@ TEST (GaiaMovePlayer, SpawnBomb) {
 TEST (EventManager, ExpireBomb) {
 
     EventManager event_manager;
-    Board board;
+    Board board(15, 15);
     board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 3);
     event_manager.AddEventFromTileAtPosition(Coordinates(1, 1), board);
     for(size_t i=0; i!=140; ++i) { event_manager.ClearEvents(board, i); }
@@ -480,7 +480,7 @@ TEST (EventManager, ExpireBomb) {
 
 TEST (PlayerStatusUpdater, DealDamage) {
 
-    Board board;
+    Board board(15, 15);
     boost::multi_array<Agent, 2> agents(boost::extents[2][3]);
     Agent& agent = agents[0][0];
     agent.SetPosition(Coordinates(1, 1));
@@ -492,7 +492,7 @@ TEST (PlayerStatusUpdater, DealDamage) {
 
 TEST (PlayerStatusUpdater, PickupBomb) {
 
-    Board board;
+    Board board(15, 15);
     boost::multi_array<Agent, 2> agents(boost::extents[2][3]);
     Agent& agent = agents[0][0];
     ASSERT_EQ(agent.GetNBombs(), 3);
@@ -507,7 +507,7 @@ TEST (Adjudicator, Instantiation) {
 }
 
 TEST (Adjudicator, Update) {
-    Board board;
+    Board board(15, 15);
     EventManager event_manager;
     FireAdder fire_adder;
     boost::multi_array<Agent, 2> agents(boost::extents[2][3]);
@@ -551,7 +551,7 @@ TEST (Adjudicator, Update) {
 }
 
 TEST (Adjudicator, UpdateWithPlacerMove) {
-    Board board;
+    Board board(15, 15);
     EventManager event_manager;
     FireAdder fire_adder;
     boost::multi_array<Agent, 2> agents(boost::extents[2][3]);
@@ -600,7 +600,7 @@ TEST (Adjudicator, UpdateWithPlacerMove) {
 }
 
 TEST (FireAdder, Default) {
-    Board board;
+    Board board(15, 15);
     FireAdder fire_adder;
     EventManager event_manager;
 
@@ -611,7 +611,7 @@ TEST (FireAdder, Default) {
 }
 
 TEST (FireAdder, WholeRow) {
-    Board board;
+    Board board(15, 15);
     FireAdder fire_adder;
     EventManager event_manager;
 
@@ -623,7 +623,7 @@ TEST (FireAdder, WholeRow) {
 }
 
 TEST (FireAdder, WholeRowAndColumn) {
-    Board board;
+    Board board(15, 15);
     FireAdder fire_adder;
     EventManager event_manager;
 
@@ -637,7 +637,7 @@ TEST (FireAdder, WholeRowAndColumn) {
 }
 
 TEST (FireAdder, WholeBoard) {
-    Board board;
+    Board board(15, 15);
     FireAdder fire_adder;
     EventManager event_manager;
 
@@ -650,7 +650,7 @@ TEST (FireAdder, WholeBoard) {
 }
 
 TEST (BombListCleaner, Default) {
-    Board board;
+    Board board(15, 15);
     board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 3);
     std::vector<Coordinates> bombs = {Coordinates(1,1)};
     BombListCleaner()(0, bombs, board);
@@ -658,7 +658,7 @@ TEST (BombListCleaner, Default) {
 }
 
 TEST (BombListCleaner, RemoveBomb) {
-    Board board;
+    Board board(15, 15);
     std::vector<Coordinates> bombs = {Coordinates(1,1)};
     BombListCleaner()(0, bombs, board);
     ASSERT_THAT(bombs, ElementsAre());

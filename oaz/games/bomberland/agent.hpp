@@ -42,6 +42,9 @@ class Agent {
       ++m_blast_radius;
     }
     std::size_t GetBlastRadius() const { return m_blast_radius; }
+    std::size_t GetInvulnerableUntil() const {
+      return m_invulnerable_until;
+    }
   private:
     bool IsInvulnerable(std::size_t tick) const {
       return m_invulnerable_until > tick;

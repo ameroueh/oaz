@@ -10,16 +10,17 @@ namespace oaz::games::bomberland {
 
 class Board {
   public:
+    Board(size_t n_rows, size_t n_columns): m_n_rows(n_rows), m_n_columns(n_columns) {}
     bool IsWithinBounds(Coordinates position) const {
       int first = position.first();
       int second = position.second();
       return 0 <= first && first < GetNRows() && 0 <= second && second < GetNColumns(); 
     }
     size_t GetNRows() const {
-      return N_ROWS;
+      return n_rows;
     }
     size_t GetNColumns() const {
-      return N_COLUMNS;
+      return n_columns;
     }
     Tile& GetTile(Coordinates coords) {
       return m_board[coords.first()][coords.second()];
@@ -27,16 +28,22 @@ class Board {
     const Tile& GetTile(Coordinates coords) const {
       return m_board[coords.first()][coords.second()];
     }
-    Board(): m_board(boost::extents[GetNRows()][GetNColumns()]) {
+    Board():
+      m_n_rows(15),
+      m_n_columns(15),
+      m_board(boost::extents[GetNRows()][GetNColumns()]) {
       std::fill_n(m_board.data(), m_board.num_elements(), Tile::CreateEmptyTile());
     }
-    Board(const Tile&& tile): m_board(boost::extents[GetNRows()][GetNColumns()]) {
+    Board(size_t n_rows, size_t n_columns, const Tile&& tile):
+      m_n_rows(n_rows),
+      m_n_columns(n_columns),
+      m_board(boost::extents[GetNRows()][GetNColumns()]) {
       std::fill_n(m_board.data(), m_board.num_elements(), tile);
     }
   private:
     boost::multi_array<Tile, 2> m_board;
-    static constexpr size_t N_ROWS = 15;
-    static constexpr size_t N_COLUMNS = 15;
+    size_t m_n_rows;
+    size_t m_n_columns;
 };
 } // namespace oaz::games::bomberland
 #endif // OAZ_GAMES_BOMBERLAND_BOARD_HPP_
