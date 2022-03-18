@@ -12,8 +12,13 @@ namespace oaz::games::bomberland {
 
 class BombDetonator {
   public:
-    BombDetonator(Coordinates position, Board& board, EventManager& event_manager, size_t tick):
-    m_position(position), m_board(board), m_event_manager(event_manager), m_tick(tick) {
+    BombDetonator(
+      Coordinates position,
+      Board& board,
+      EventManager& event_manager,
+      size_t tick,
+      size_t blast_duration_ticks):
+    m_position(position), m_board(board), m_event_manager(event_manager), m_tick(tick), m_blast_duration_ticks(blast_duration_ticks) {
       Detonate();
     }
   private:
@@ -35,14 +40,16 @@ class BombDetonator {
 	    m_board,
 	    detonation_orders,
 	    m_event_manager,
-	    m_tick
+	    m_tick,
+	    m_blast_duration_ticks
 	);
       }
     }
     Coordinates m_position;
     Board& m_board;
     EventManager& m_event_manager;
-    size_t m_tick;
+    std::size_t m_tick;
+    std::size_t m_blast_duration_ticks;
 };
 } // namespace oaz::games::bomberland
 #endif // OAZ_GAMES_BOMBERLAND_BOMB_DETONATOR_HPP_

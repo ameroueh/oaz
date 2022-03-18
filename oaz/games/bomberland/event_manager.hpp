@@ -22,9 +22,10 @@ class EventManager {
     EventManager();
     void AddEvent(Coordinates position, size_t time);
     void AddEventFromTileAtPosition(Coordinates position, Board& board);
-    void ClearEvents(Board& board, size_t tick);
+    void ClearEvents(Board& board, size_t tick, size_t blast_duration_ticks);
   private:
-    void ProcessEventAtCoordinates(Coordinates position, Board& board, size_t tick);       std::priority_queue<Event, std::vector<Event>, EventComparator> m_event_queue;
+    void ProcessEventAtCoordinates(Coordinates position, Board& board, size_t tick, size_t blast_duration_ticks);
+    std::priority_queue<Event, std::vector<Event>, EventComparator> m_event_queue;
 };
 } // namespace oaz::games::bomberland
 #endif // OAZ_GAMES_BOMBERLAND_EVENT_MANAGER_HPP_

@@ -24,14 +24,28 @@ enum class Player {
 class Adjudicator {
   public:
     Adjudicator():
+      m_game_duration_ticks(300),
+      m_fire_spawn_interval_ticks(2),
       m_current_player(Player::Player0Agent0),
+      m_invulnerability_ticks(5),
       m_player0_is_dead(false),
       m_player1_is_dead(false) {}
-
+    
+    Adjudicator(
+      size_t game_duration_ticks,
+      size_t fire_spawn_interval_ticks,
+      size_t invulnerability_ticks):
+      m_game_duration_ticks(game_duration_ticks),
+      m_fire_spawn_interval_ticks(fire_spawn_interval_ticks),
+      m_invulnerability_ticks(invulnerability_ticks),
+      m_current_player(Player::Player0Agent0),
+      m_player0_is_dead(false),
+      m_player1_is_dead(false) {} 
     void Update(
       boost::multi_array<Agent, 2>& agents,
       Board& board,
       size_t& tick,
+      std::size_t blast_duration_ticks,
       GaiaMovePlayer& gaia_move_player,
       EventManager& event_manager,
       FireAdder& fire_adder
@@ -45,7 +59,7 @@ class Adjudicator {
       size_t previous_player = static_cast<size_t>(m_current_player);
       m_current_player = UpdatePlayer(m_current_player, agents, gaia_move_player);
       if (previous_player >= static_cast<size_t>(m_current_player)) {
-	EndTurn(agents, board, event_manager, fire_adder, tick);
+	EndTurn(agents, board, event_manager, fire_adder, tick, blast_duration_ticks);
       }
     }
     bool GameIsFinished() const {
@@ -84,13 +98,21 @@ class Adjudicator {
 	Board& board,
 	EventManager& event_manager,
 	FireAdder& fire_adder,
-	size_t& tick) {
-      if (tick >= 300 && tick % 2 == 0) { fire_adder(board, event_manager, tick); }
-      PlayerStatusUpdater()(agents, board, tick);
-      event_manager.ClearEvents(board, tick);
+	size_t& tick,
+	std::size_t blast_duration_ticks) {
+      if (
+	tick >= m_game_duration_ticks
+	&& (tick - m_game_duration_ticks) % m_fire_spawn_interval_ticks == 0) { 
+	fire_adder(board, event_manager, tick, blast_duration_ticks);
+      }
+      PlayerStatusUpdater()(agents, board, tick, m_invulnerability_ticks);
+      event_manager.ClearEvents(board, tick, blast_duration_ticks);
       ++tick;
     }
 
+    size_t m_game_duration_ticks;
+    size_t m_invulnerability_ticks;
+    size_t m_fire_spawn_interval_ticks;
     Player m_current_player;
     bool m_player0_is_dead;
     bool m_player1_is_dead;

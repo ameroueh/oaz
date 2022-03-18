@@ -20,18 +20,23 @@ class AgentMovePlayer {
       Board& board,
       boost::multi_array<Agent, 2>& agents,
       PositionResolver& position_resolver,
-      EventManager& event_manager) {
+      EventManager& event_manager,
+      size_t bomb_duration_ticks,
+      size_t bomb_armed_ticks,
+      size_t blast_duration_ticks) {
     MoveWithOperand move_with_op = AgentMoveUnpacker()(packed_move);
     AgentMove move = move_with_op.first;
     Coordinates position = move_with_op.second;
     
     if (move == Pass) { return; }
+    
     if (move == DetonateBomb) {
       Tile& tile = board.GetTile(position);
-      if (!tile.HasPlacedBomb() || tile.GetOwner() != player) {
+      Agent& agent = agents[player][agent_id];
+      if (!tile.HasPlacedBomb() || tile.GetOwner() != agent.GetId() || !IsArmed(tile, tick, bomb_armed_ticks)) {
 	return;
       }
-      BombDetonator(position, board, event_manager, tick);
+      BombDetonator(position, board, event_manager, tick, blast_duration_ticks);
     }
     if (move == PlaceBomb) {
       Agent& agent = agents[player][agent_id];
@@ -39,7 +44,7 @@ class AgentMovePlayer {
       if (!agent.GetNBombs() > 0 || !tile.IsEmptyTile()) {
 	return;
       }
-      tile = Tile::CreateTileWithPlacedBomb(player, tick, agent.GetBlastRadius());
+      tile = Tile::CreateTileWithPlacedBomb(agent.GetId(), tick, agent.GetBlastRadius(), bomb_duration_ticks);
       event_manager.AddEventFromTileAtPosition(agent.GetPosition(), board);
       agent.RemoveBomb();
       return;
@@ -61,8 +66,12 @@ class AgentMovePlayer {
     }
     Coordinates claimed_position = agents[player][agent_id].GetPosition() + vector;
     if (!board.IsWithinBounds(claimed_position) || !board.GetTile(claimed_position).IsWalkable()) { return; }
-    position_resolver.ClaimPosition(player, agent_id, claimed_position, board); 
+    position_resolver.ClaimPosition(player, agent_id, claimed_position, board);
   }
+  private:
+    bool IsArmed(const Tile& tile, std::size_t tick, std::size_t bomb_armed_ticks) {
+      return tile.GetCreationTime() + bomb_armed_ticks <= tick;
+    }
 };
 } // namespace oaz::games::bomberland
 #endif // OAZ_GAMES_BOMBERLAND_AGENT_MOVE_PLAYER_HPP_

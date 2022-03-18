@@ -61,7 +61,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto -march=native -mtune=native")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address -Wfatal-errors")
 set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=${TensorFlow_ABI}")
 set(CMAKE_EXE_LINKER_FLAGS

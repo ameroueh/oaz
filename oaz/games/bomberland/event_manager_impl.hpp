@@ -15,18 +15,18 @@ void oaz::games::bomberland::EventManager::AddEventFromTileAtPosition(Coordinate
   AddEvent(position, time);
 }
 
-void oaz::games::bomberland::EventManager::ClearEvents(Board& board, size_t tick) {
+void oaz::games::bomberland::EventManager::ClearEvents(Board& board, size_t tick, size_t blast_duration_ticks) {
   if(m_event_queue.empty()) { return; }
   Event tcoords = m_event_queue.top();
   size_t time = tcoords.first;
   while(time == tick && !m_event_queue.empty()) {
 	  Coordinates position = tcoords.second;
-	  ProcessEventAtCoordinates(position, board, tick);
+	  ProcessEventAtCoordinates(position, board, tick, blast_duration_ticks);
 	  m_event_queue.pop();
   }
 }
 
-void oaz::games::bomberland::EventManager::ProcessEventAtCoordinates(Coordinates position, Board& board, size_t tick) {
+void oaz::games::bomberland::EventManager::ProcessEventAtCoordinates(Coordinates position, Board& board, size_t tick, size_t blast_duration_ticks) {
       Tile& tile = board.GetTile(position);
       if (!tile.IsWalkable() || tile.GetExpiryTime() != tick) {
         return;
@@ -34,7 +34,7 @@ void oaz::games::bomberland::EventManager::ProcessEventAtCoordinates(Coordinates
       if (tile.HasBlast()) {
         tile = Tile::CreateEmptyTile();
       } else if (tile.HasPlacedBomb()) {
-        BombDetonator(position, board, *this, tick); 
+        BombDetonator(position, board, *this, tick, blast_duration_ticks); 
       } else if (tile.HasSpawnedBomb()) {
         tile = Tile::CreateEmptyTile();
       } else if (tile.HasSpawnedPowerup()) {

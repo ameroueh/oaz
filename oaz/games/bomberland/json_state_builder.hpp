@@ -48,11 +48,13 @@ class JsonStateBuilder {
 	      entity["x"] = i;
 	      entity["y"] = j;
 	      entity["expires"] = tile.GetExpiryTime();
+	      entity["created"] = tile.GetCreationTime();
 	      entities.insert(entities.begin(), entity);
 	      break;
 	    case EntityType::Bomb:
 	      entity["type"] = "b";
 	      entity["expires"] = tile.GetExpiryTime();
+	      entity["created"] = tile.GetCreationTime();
 	      entity["x"] = i;
 	      entity["y"] = j;
 	      entity["blast_diameter"] = tile.GetBlastRadius();
@@ -62,6 +64,7 @@ class JsonStateBuilder {
 	    case EntityType::Blast:
 	      entity["type"] = "x";
 	      entity["expires"] = tile.GetExpiryTime();
+	      entity["created"] = tile.GetCreationTime();
 	      entity["x"] = i;
 	      entity["y"] = j;
 	      entities.insert(entities.begin(), entity);
@@ -69,23 +72,27 @@ class JsonStateBuilder {
 	    case EntityType::BlastPowerup:
 	      entity["type"] = "bp";
 	      entity["expires"] = tile.GetExpiryTime();
+	      entity["created"] = tile.GetCreationTime();
 	      entity["x"] = i;
 	      entity["y"] = j;
 	      entities.insert(entities.begin(), entity);
 	      break;
 	    case EntityType::Fire:
+	      entity["created"] = tile.GetCreationTime();
 	      entity["type"] = "x";
 	      entity["x"] = i;
 	      entity["y"] = j;
 	      entities.insert(entities.begin(), entity);
 	      break;
 	    case EntityType::MetalBlock:
+	      entity["created"] = tile.GetCreationTime();
 	      entity["type"] = "m";
 	      entity["x"] = i;
 	      entity["y"] = j;
 	      entities.insert(entities.begin(), entity);
 	      break;
 	    case EntityType::OreBlock:
+	      entity["created"] = tile.GetCreationTime();
 	      entity["type"] = "o";
 	      entity["hp"] = tile.GetHP();
 	      entity["x"] = i;
@@ -93,6 +100,7 @@ class JsonStateBuilder {
 	      entities.insert(entities.begin(), entity);
 	      break;
 	    case EntityType::WoodenBlock:
+	      entity["created"] = tile.GetCreationTime();
 	      entity["type"] = "w";
 	      entity["hp"] = tile.GetHP();
 	      entity["x"] = i;

@@ -6,13 +6,13 @@ namespace oaz::games::bomberland {
 class PlayerStatusUpdater {
   public:
     PlayerStatusUpdater() {}
-    void operator()(boost::multi_array<Agent, 2>& agents, Board& board, size_t tick) {
+    void operator()(boost::multi_array<Agent, 2>& agents, Board& board, size_t tick, size_t invulnerability_ticks) {
       for (size_t player=0; player!=1; ++player) {
         for (size_t agent_id=0; agent_id!=2; ++agent_id) {
         Agent& agent = agents[player][agent_id];
 	Tile& tile = board.GetTile(agent.GetPosition());
         if (tile.HasFire() || tile.HasBlast()) {
-          agent.DealDamage(tick);
+          agent.DealDamage(tick, invulnerability_ticks);
         } else if (tile.HasSpawnedBomb()) {
           agent.AddBomb();
 	  tile = Tile::CreateEmptyTile();

@@ -17,9 +17,9 @@ class FireAdder {
       m_vector0(Coordinates(1,0)),
       m_vector1(Coordinates(-1,0)) {}
       
-      void operator()(Board& board, EventManager& event_manager, size_t tick) {
-        AddFire(board, m_cursor0, m_vector0, event_manager, tick);
-	AddFire(board, m_cursor1, m_vector1, event_manager, tick);
+      void operator()(Board& board, EventManager& event_manager, size_t tick, std::size_t blast_duration_ticks) {
+        AddFire(board, m_cursor0, m_vector0, event_manager, tick, blast_duration_ticks);
+	AddFire(board, m_cursor1, m_vector1, event_manager, tick, blast_duration_ticks);
       }
   private:
       Coordinates m_cursor0;
@@ -32,13 +32,14 @@ class FireAdder {
 	Coordinates& cursor,
 	Coordinates& vector,
 	EventManager& event_manager,
-	size_t tick) {
+	size_t tick,
+	std::size_t blast_duration_ticks) {
         Tile& tile = board.GetTile(cursor);
 	if (tile.HasFire()) { return; }
 	if (tile.HasPlacedBomb()) {
-	  BombDetonator(cursor, board, event_manager, tick);
+	  BombDetonator(cursor, board, event_manager, tick, blast_duration_ticks);
 	}
-	tile = Tile::CreateTileWithFire();
+	tile = Tile::CreateTileWithFire(tick);
 	Coordinates new_cursor = cursor + vector;
 	if (!board.IsWithinBounds(new_cursor) || board.GetTile(new_cursor).HasFire()) {
           vector = GetNextVector(vector);

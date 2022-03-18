@@ -33,22 +33,22 @@ using namespace testing;
 TEST(Tile, Instantiation) { Tile tile; }
 
 TEST(Tile, CreateTileWithPlacedBomb) {
-    Tile tile = Tile::CreateTileWithPlacedBomb(1, 100, 3);
+    Tile tile = Tile::CreateTileWithPlacedBomb(1, 100, 3, 40);
     ASSERT_TRUE(tile.HasPlacedBomb());
     ASSERT_EQ(tile.GetExpiryTime(), 140);
     ASSERT_EQ(tile.GetOwner(), 1);
-    ASSERT_EQ(tile.GetBlastRadius(), 3);
     ASSERT_TRUE(tile.IsWalkable());
+    ASSERT_EQ(tile.GetBlastRadius(), 3);
 }
 
 TEST(Tile, CreateTileWithSpawnedBomb) {
-    Tile tile = Tile::CreateTileWithSpawnedBomb(100);
+    Tile tile = Tile::CreateTileWithSpawnedBomb(100, 40);
     ASSERT_TRUE(tile.HasSpawnedBomb());
     ASSERT_EQ(tile.GetExpiryTime(), 140);
     ASSERT_TRUE(tile.IsWalkable()); }
 
 TEST(Tile, CreateTileWithSpawnedPowerup) {
-    Tile tile = Tile::CreateTileWithSpawnedPowerup(100);
+    Tile tile = Tile::CreateTileWithSpawnedPowerup(100, 40);
     ASSERT_TRUE(tile.HasSpawnedPowerup());
     ASSERT_EQ(tile.GetExpiryTime(), 140);
     ASSERT_TRUE(tile.IsWalkable());
@@ -60,40 +60,45 @@ TEST(Tile, CreateEmptyTile) {
 }
 
 TEST(Tile, CreateWoodenBlockTile) {
-    Tile tile = Tile::CreateWoodenBlockTile();
+    Tile tile = Tile::CreateWoodenBlockTile(100);
     ASSERT_FALSE(tile.IsWalkable());
     ASSERT_EQ(tile.GetHP(), 1);
+    ASSERT_EQ(tile.GetCreationTime(), 100);
     ASSERT_FALSE(tile.IsInvulnerable());
 }
 
 TEST(Tile, CreateOreBlockTile) {
-    Tile tile = Tile::CreateOreBlockTile();
+    Tile tile = Tile::CreateOreBlockTile(100);
     ASSERT_FALSE(tile.IsWalkable());
     ASSERT_EQ(tile.GetHP(), 3);
+    ASSERT_EQ(tile.GetCreationTime(), 100);
     ASSERT_FALSE(tile.IsInvulnerable());
 }
 
 TEST(Tile, CreateMetalBlockTile) {
-    Tile tile = Tile::CreateMetalBlockTile();
+    Tile tile = Tile::CreateMetalBlockTile(100);
     ASSERT_FALSE(tile.IsWalkable());
+    ASSERT_EQ(tile.GetCreationTime(), 100);
     ASSERT_TRUE(tile.IsInvulnerable());
 }
 
 TEST(Tile, CreateTileWithBlast) {
-    Tile tile = Tile::CreateTileWithBlast(100);
+    Tile tile = Tile::CreateTileWithBlast(100, 10);
     ASSERT_EQ(tile.GetExpiryTime(), 110);
+    ASSERT_EQ(tile.GetCreationTime(), 100);
     ASSERT_TRUE(tile.IsWalkable());
     ASSERT_TRUE(tile.HasBlast());
 }
 
 TEST(Tile, CreateTileWithFire) {
-    Tile tile = Tile::CreateTileWithFire();
+    Tile tile = Tile::CreateTileWithFire(100);
+    ASSERT_EQ(tile.GetCreationTime(), 100);
     ASSERT_TRUE(tile.IsWalkable());
     ASSERT_TRUE(tile.HasFire());
 }
 
 TEST(Tile, DecreaseHealth) {
-    Tile tile = Tile::CreateOreBlockTile();
+    Tile tile = Tile::CreateOreBlockTile(100);
     ASSERT_EQ(tile.GetHP(), 3);
     tile.DecreaseHealth();
     ASSERT_EQ(tile.GetHP(), 2);
@@ -122,7 +127,7 @@ TEST(Board, GetTile) {
     Board board(15, 15);
     Tile& tile = board.GetTile(Coordinates(0, 0));
     ASSERT_TRUE(tile.IsEmptyTile());
-    tile = Tile::CreateOreBlockTile();
+    tile = Tile::CreateOreBlockTile(100);
     ASSERT_EQ(board.GetTile(Coordinates(0, 0)).GetHP(), 3);
 }
 
@@ -164,10 +169,10 @@ TEST (PositionResolver, ResetClaims) {
 
 TEST (BlastAdder, Default) {
     Board board(15, 15);
-    board.GetTile(Coordinates(1, 2)) = Tile::CreateWoodenBlockTile();
+    board.GetTile(Coordinates(1, 2)) = Tile::CreateWoodenBlockTile(100);
     std::queue<DetonationOrder> detonation_orders;
     EventManager event_manager;
-    BlastAdder(DetonationOrder(Coordinates(1, 1), 1), board, detonation_orders, event_manager, 100);
+    BlastAdder(DetonationOrder(Coordinates(1, 1), 1), board, detonation_orders, event_manager, 100, 10);
 
     ASSERT_TRUE(board.GetTile(Coordinates(1, 1)).HasBlast());
     ASSERT_TRUE(board.GetTile(Coordinates(0, 1)).HasBlast());
@@ -180,7 +185,7 @@ TEST (BlastAdder, BlastRadius2) {
     Board board(15, 15);
     std::queue<DetonationOrder> detonation_orders;
     EventManager event_manager;
-    BlastAdder(DetonationOrder(Coordinates(2, 2), 2), board, detonation_orders, event_manager, 100);
+    BlastAdder(DetonationOrder(Coordinates(2, 2), 2), board, detonation_orders, event_manager, 100, 10);
 
     ASSERT_TRUE(board.GetTile(Coordinates(2, 2)).HasBlast());
     ASSERT_TRUE(board.GetTile(Coordinates(2, 3)).HasBlast());
@@ -195,9 +200,9 @@ TEST (BlastAdder, BlastRadius2) {
 
 TEST (BombDetonator, Default) {
     Board board(15, 15);
-    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 1);
+    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 1, 40);
     EventManager event_manager;
-    BombDetonator(Coordinates(1, 1), board, event_manager, 100);
+    BombDetonator(Coordinates(1, 1), board, event_manager, 100, 10);
     ASSERT_TRUE(board.GetTile(Coordinates(1, 1)).HasBlast());
     ASSERT_TRUE(board.GetTile(Coordinates(0, 1)).HasBlast());
     ASSERT_TRUE(board.GetTile(Coordinates(2, 1)).HasBlast());
@@ -207,10 +212,10 @@ TEST (BombDetonator, Default) {
 
 TEST (BombDetonator, Cascade1) {
     Board board(15, 15);
-    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 1);
-    board.GetTile(Coordinates(0, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 1);
+    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 1, 40);
+    board.GetTile(Coordinates(0, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 1, 40);
     EventManager event_manager;
-    BombDetonator(Coordinates(1, 1), board, event_manager, 100);
+    BombDetonator(Coordinates(1, 1), board, event_manager, 100, 10);
     ASSERT_TRUE(board.GetTile(Coordinates(1, 1)).HasBlast());
     ASSERT_TRUE(board.GetTile(Coordinates(0, 1)).HasBlast());
     ASSERT_TRUE(board.GetTile(Coordinates(2, 1)).HasBlast());
@@ -225,7 +230,7 @@ TEST (Agent, Instantiation) {
 }
 
 TEST (Agent, Position) {
-    Agent agent(Coordinates(0, 1));
+    Agent agent(Coordinates(0, 1), 1);
     ASSERT_EQ(agent.GetPosition(), Coordinates(0, 1));
     agent.SetPosition(Coordinates(1,1));
     ASSERT_EQ(agent.GetPosition(), Coordinates(1, 1));
@@ -234,11 +239,11 @@ TEST (Agent, Position) {
 TEST (Agent, Health) {
     Agent agent;
     ASSERT_EQ(agent.GetHealth(), 3);
-    agent.DealDamage(100);
+    agent.DealDamage(100, 5);
     ASSERT_EQ(agent.GetHealth(), 2);
-    agent.DealDamage(150);
+    agent.DealDamage(150, 5);
     ASSERT_EQ(agent.GetHealth(), 1);
-    agent.DealDamage(200);
+    agent.DealDamage(200, 5);
     ASSERT_EQ(agent.GetHealth(), 0);
     ASSERT_TRUE(agent.IsDead());
 }
@@ -246,17 +251,17 @@ TEST (Agent, Health) {
 TEST (Agent, HealthWithInvulnerability) {
     Agent agent;
     ASSERT_EQ(agent.GetHealth(), 3);
-    agent.DealDamage(100);
+    agent.DealDamage(100, 5);
     ASSERT_EQ(agent.GetHealth(), 2);
-    agent.DealDamage(101);
+    agent.DealDamage(101, 5);
     ASSERT_EQ(agent.GetHealth(), 2);
-    agent.DealDamage(102);
+    agent.DealDamage(102, 5);
     ASSERT_EQ(agent.GetHealth(), 2);
-    agent.DealDamage(103);
+    agent.DealDamage(103, 5);
     ASSERT_EQ(agent.GetHealth(), 2);
-    agent.DealDamage(104);
+    agent.DealDamage(104, 5);
     ASSERT_EQ(agent.GetHealth(), 2);
-    agent.DealDamage(105);
+    agent.DealDamage(105, 5);
     ASSERT_EQ(agent.GetHealth(), 1);
 }
 
@@ -370,19 +375,19 @@ TEST (AgentMovePlayer, MoveAgent) {
     
     agents[0][0].SetPosition(Coordinates(0, 0));
     
-    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(Up, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager);
+    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(Up, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager, 40, 5, 10);
     position_resolver.AssignPositionsAndReset(agents, board);
     ASSERT_EQ(agents[0][0].GetPosition(), Coordinates(1, 0));
     
-    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(Right, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager);
+    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(Right, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager, 40, 5, 10);
     position_resolver.AssignPositionsAndReset(agents, board);
     ASSERT_EQ(agents[0][0].GetPosition(), Coordinates(1, 1));
     
-    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(Down, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager);
+    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(Down, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager, 40, 5, 10);
     position_resolver.AssignPositionsAndReset(agents, board);
     ASSERT_EQ(agents[0][0].GetPosition(), Coordinates(0, 1));
     
-    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(Left, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager);
+    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(Left, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager, 40, 5, 10);
     position_resolver.AssignPositionsAndReset(agents, board);
     ASSERT_EQ(agents[0][0].GetPosition(), Coordinates(0, 0));
 }
@@ -394,7 +399,7 @@ TEST (AgentMovePlayer, PlaceBomb) {
     EventManager event_manager;
     agents[0][0].SetPosition(Coordinates(0, 0));
     
-    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(PlaceBomb, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager);
+    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(PlaceBomb, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager, 40, 5, 10);
 
     ASSERT_TRUE(board.GetTile(Coordinates(0, 0)).HasPlacedBomb());
 }
@@ -406,8 +411,8 @@ TEST (AgentMovePlayer, DetonateBomb) {
     boost::multi_array<Agent, 2> agents(boost::extents[2][3]);
     agents[0][0].SetPosition(Coordinates(0, 0));
     
-    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(PlaceBomb, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager);
-    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(DetonateBomb, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager);
+    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(PlaceBomb, Coordinates(0, 0))), 0, board, agents, position_resolver, event_manager, 40, 5, 10);
+    AgentMovePlayer()(0, 0, AgentMovePacker()(MoveWithOperand(DetonateBomb, Coordinates(0, 0))), 10, board, agents, position_resolver, event_manager, 40, 5, 10);
 
     ASSERT_TRUE(board.GetTile(Coordinates(0, 0)).HasBlast());
     ASSERT_TRUE(board.GetTile(Coordinates(1, 0)).HasBlast());
@@ -435,7 +440,7 @@ TEST (GaiaPlacerMoveGenerator, Default) {
 }
 
 TEST (GaiaPlacerMoveGenerator, NoEmptyTile) {
-    Board board(15, 15, Tile::CreateWoodenBlockTile());
+    Board board(15, 15, Tile::CreateWoodenBlockTile(100));
     std::vector<size_t> moves;
     GaiaPlacerMoveGenerator()(moves, board);
     std::vector<size_t> expected_moves;
@@ -470,11 +475,11 @@ TEST (EventManager, ExpireBomb) {
 
     EventManager event_manager;
     Board board(15, 15);
-    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 3);
+    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 3, 40);
     event_manager.AddEventFromTileAtPosition(Coordinates(1, 1), board);
-    for(size_t i=0; i!=140; ++i) { event_manager.ClearEvents(board, i); }
+    for(size_t i=0; i!=140; ++i) { event_manager.ClearEvents(board, i, 10); }
     ASSERT_TRUE(board.GetTile(Coordinates(1, 1)).HasPlacedBomb());
-    event_manager.ClearEvents(board, 140);
+    event_manager.ClearEvents(board, 140, 10);
     ASSERT_TRUE(board.GetTile(Coordinates(1, 1)).HasBlast());
 }
 
@@ -485,8 +490,8 @@ TEST (PlayerStatusUpdater, DealDamage) {
     Agent& agent = agents[0][0];
     agent.SetPosition(Coordinates(1, 1));
     ASSERT_EQ(agent.GetHealth(), 3);
-    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithBlast(100);
-    PlayerStatusUpdater()(agents, board, 100);
+    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithBlast(100, 10);
+    PlayerStatusUpdater()(agents, board, 100, 10);
     ASSERT_EQ(agent.GetHealth(), 2);
 }
 
@@ -497,8 +502,8 @@ TEST (PlayerStatusUpdater, PickupBomb) {
     Agent& agent = agents[0][0];
     ASSERT_EQ(agent.GetNBombs(), 3);
     agent.SetPosition(Coordinates(1, 1));
-    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithSpawnedBomb(100);
-    PlayerStatusUpdater()(agents, board, 100);
+    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithSpawnedBomb(100, 40);
+    PlayerStatusUpdater()(agents, board, 100,  5);
     ASSERT_EQ(agent.GetNBombs(), 4);
 }
 
@@ -515,37 +520,38 @@ TEST (Adjudicator, Update) {
 
     GaiaMovePlayer gaia_move_player; 
     size_t tick = 0;
+    size_t blast_duration_ticks = 10;
 
     Adjudicator adjudicator;
 
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player0Agent0);
     ASSERT_EQ(tick, 0);
 
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player0Agent1);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player0Agent2);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player1Agent0);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player1Agent1);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player1Agent2);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::GaiaSpawner);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player0Agent0);
     ASSERT_EQ(tick, 1);
 }
@@ -560,41 +566,42 @@ TEST (Adjudicator, UpdateWithPlacerMove) {
     GaiaMovePlayer gaia_move_player; 
     gaia_move_player.PlaySpawnerMove(1);
     size_t tick = 0;
+    size_t blast_duration_ticks = 10;
 
     Adjudicator adjudicator;
 
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player0Agent0);
     ASSERT_EQ(tick, 0);
 
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player0Agent1);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player0Agent2);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player1Agent0);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player1Agent1);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player1Agent2);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::GaiaSpawner);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::GaiaPlacer);
     ASSERT_EQ(tick, 0);
     
-    adjudicator.Update(agents, board, tick, gaia_move_player, event_manager, fire_adder);
+    adjudicator.Update(agents, board, tick, blast_duration_ticks, gaia_move_player, event_manager, fire_adder);
     ASSERT_EQ(adjudicator.GetCurrentPlayer(), Player::Player0Agent0);
     ASSERT_EQ(tick, 1);
 }
@@ -604,7 +611,7 @@ TEST (FireAdder, Default) {
     FireAdder fire_adder;
     EventManager event_manager;
 
-    fire_adder(board, event_manager, 100);
+    fire_adder(board, event_manager, 100, 10);
     
     ASSERT_TRUE(board.GetTile(Coordinates(0, 0)).HasFire());
     ASSERT_TRUE(board.GetTile(Coordinates(14, 14)).HasFire());
@@ -615,7 +622,7 @@ TEST (FireAdder, WholeRow) {
     FireAdder fire_adder;
     EventManager event_manager;
 
-    for (size_t i=0; i!=15; ++i) { fire_adder(board, event_manager, 100); }
+    for (size_t i=0; i!=15; ++i) { fire_adder(board, event_manager, 100, 10); }
     for (size_t i=0; i!=15; ++i) {
       ASSERT_TRUE(board.GetTile(Coordinates(i, 0)).HasFire());
       ASSERT_TRUE(board.GetTile(Coordinates(14-i, 14)).HasFire());
@@ -627,7 +634,7 @@ TEST (FireAdder, WholeRowAndColumn) {
     FireAdder fire_adder;
     EventManager event_manager;
 
-    for (size_t i=0; i!=28; ++i) { fire_adder(board, event_manager, 100); }
+    for (size_t i=0; i!=28; ++i) { fire_adder(board, event_manager, 100, 10); }
     for (size_t i=0; i!=15; ++i) {
       ASSERT_TRUE(board.GetTile(Coordinates(i, 0)).HasFire());
       ASSERT_TRUE(board.GetTile(Coordinates(i, 14)).HasFire());
@@ -641,7 +648,7 @@ TEST (FireAdder, WholeBoard) {
     FireAdder fire_adder;
     EventManager event_manager;
 
-    for (size_t i=0; i!=113; ++i) { fire_adder(board, event_manager, 100); }
+    for (size_t i=0; i!=113; ++i) { fire_adder(board, event_manager, 100, 10); }
     for (size_t i=0; i!=15; ++i) { 
       for (size_t j=0; j!=15; ++j) {
 	      ASSERT_TRUE(board.GetTile(Coordinates(i, j)).HasFire());
@@ -651,7 +658,7 @@ TEST (FireAdder, WholeBoard) {
 
 TEST (BombListCleaner, Default) {
     Board board(15, 15);
-    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 3);
+    board.GetTile(Coordinates(1, 1)) = Tile::CreateTileWithPlacedBomb(0, 100, 3, 40);
     std::vector<Coordinates> bombs = {Coordinates(1,1)};
     BombListCleaner()(0, bombs, board);
     ASSERT_THAT(bombs, ElementsAre(Coordinates(1, 1)));
@@ -665,6 +672,6 @@ TEST (BombListCleaner, RemoveBomb) {
 }
 
 
-/* TEST (Bomberland, Instantiation) { */
-/*     Bomberland bomberland; */
-/* } */
+TEST (Bomberland, Instantiation) {
+    Bomberland bomberland;
+}

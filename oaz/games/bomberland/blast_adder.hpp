@@ -20,13 +20,15 @@ class BlastAdder {
       Board& board,
       std::queue<DetonationOrder>& detonation_orders,
       EventManager& event_manager,
-      std::size_t tick
+      std::size_t tick,
+      size_t blast_duration_ticks
     ):
       m_order(order),
       m_board(board),
       m_detonation_orders(detonation_orders),
       m_event_manager(event_manager),
-      m_tick(tick)
+      m_tick(tick),
+      m_blast_duration_ticks(blast_duration_ticks)
       {
 	AddBlast();
       }
@@ -53,11 +55,11 @@ class BlastAdder {
 	    position, tile.GetBlastRadius()
 	  )	  
 	);
-        tile = Tile::CreateTileWithBlast(m_tick);
+        tile = Tile::CreateTileWithBlast(m_tick, m_blast_duration_ticks);
 	m_event_manager.AddEventFromTileAtPosition(position, m_board);
 	return true;
       } else {
-        tile = Tile::CreateTileWithBlast(m_tick);
+        tile = Tile::CreateTileWithBlast(m_tick, m_blast_duration_ticks);
 	m_event_manager.AddEventFromTileAtPosition(position, m_board);
         return true;
       }
@@ -81,6 +83,7 @@ class BlastAdder {
     EventManager& m_event_manager;
     std::queue<DetonationOrder>& m_detonation_orders;
     std::size_t m_tick;
+    size_t m_blast_duration_ticks;
 };
 } // namespace oaz::games::bomberland
 #endif // OAZ_GAMES_BOMBERLAND_BLAST_ADDER_HPP_

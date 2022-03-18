@@ -18,41 +18,69 @@
 
 namespace oaz::games::bomberland {
 
+struct GameConfig {
+  GameConfig():
+	ammo_duration_ticks(40),
+	bomb_duration_ticks(40),
+	blast_duration_ticks(10),
+	bomb_armed_ticks(5),
+	fire_spawn_interval_ticks(2),
+	game_duration_ticks(300),
+	invulnerability_ticks(5)
+  {} 
+
+  GameConfig(
+    size_t ammo_duration_ticks,
+    size_t bomb_duration_ticks,
+    size_t blast_duration_ticks,
+    size_t bomb_armed_ticks,
+    size_t fire_spawn_interval_ticks,
+    size_t game_duration_ticks,
+    size_t invulnerability_ticks
+  ):
+    ammo_duration_ticks(ammo_duration_ticks),
+    bomb_duration_ticks(bomb_duration_ticks),
+    blast_duration_ticks(blast_duration_ticks),
+    bomb_armed_ticks(bomb_armed_ticks),
+    fire_spawn_interval_ticks(fire_spawn_interval_ticks),
+    game_duration_ticks(game_duration_ticks),
+    invulnerability_ticks(invulnerability_ticks)
+  {}
+    
+  size_t ammo_duration_ticks;
+  size_t bomb_duration_ticks;
+  size_t blast_duration_ticks;
+  size_t bomb_armed_ticks;
+  size_t fire_spawn_interval_ticks;
+  size_t game_duration_ticks;
+  size_t invulnerability_ticks;
+};
+
 class Bomberland : public oaz::games::Game {
   public:
     
     Bomberland():
       m_tick(0),
       m_agents(boost::extents[2][3]),
-      m_player_bombs(boost::extents[2])    
+      m_player_bombs(boost::extents[2])
       {
          DefaultAgentInitializer()(m_agents);	
       }
     
-    Bomberland(
-      size_t n_rows,
-      size_t n_columns,
-      size_t tick,
-      size_t n_agents,
-      size_t units_per_agent,
-      size_t ammo_duration_ticks,
-      size_t blast_duration_ticks,
-      size_t bomb_duration_ticks,
-      size_t bomb_armed_ticks,
-      size_t fire_spawn_interval_ticks,
-      size_t invulnerability_ticks
-      ):
-      m_tick(tick),
-      m_board(n_rows, n_columns),
+    Bomberland(const GameConfig& game_config):
+      m_tick(0),
       m_agents(boost::extents[2][3]),
       m_player_bombs(boost::extents[2]),
-      m_ammo_duration(ammo_duration),
-      m_blast_duration(blast_duration),
-      
+      m_adjudicator(
+	game_config.game_duration_ticks,
+	game_config.fire_spawn_interval_ticks,
+	game_config.invulnerability_ticks),
+      m_gaia_move_player(game_config.ammo_duration_ticks),
+      m_game_config(game_config)
       {
          DefaultAgentInitializer()(m_agents);	
       }
-
+    
     float GetScore() const {
       return m_adjudicator.GetScore();
     }
@@ -103,22 +131,22 @@ class Bomberland : public oaz::games::Game {
     void PlayMove(size_t move) {
       switch (m_adjudicator.GetCurrentPlayer()) {
 	      case Player::Player0Agent0:
-		AgentMovePlayer()(0, 0, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
+		AgentMovePlayer()(0, 0, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager, m_game_config.bomb_duration_ticks, m_game_config.bomb_armed_ticks, m_game_config.blast_duration_ticks);
 		break;
 	      case Player::Player0Agent1:
-		AgentMovePlayer()(0, 1, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
+		AgentMovePlayer()(0, 1, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager, m_game_config.bomb_duration_ticks, m_game_config.bomb_armed_ticks, m_game_config.blast_duration_ticks);
 		break;
 	      case Player::Player0Agent2:
-		AgentMovePlayer()(0, 2, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
+		AgentMovePlayer()(0, 2, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager, m_game_config.bomb_duration_ticks, m_game_config.bomb_armed_ticks, m_game_config.blast_duration_ticks);
 		break;
 	      case Player::Player1Agent0:
-		AgentMovePlayer()(1, 0, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
+		AgentMovePlayer()(1, 0, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager, m_game_config.bomb_duration_ticks, m_game_config.bomb_armed_ticks, m_game_config.blast_duration_ticks);
 		break;
 	      case Player::Player1Agent1:
-		AgentMovePlayer()(1, 1, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
+		AgentMovePlayer()(1, 1, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager, m_game_config.bomb_duration_ticks, m_game_config.bomb_armed_ticks, m_game_config.blast_duration_ticks);
 		break;
 	      case Player::Player1Agent2:
-		AgentMovePlayer()(1, 2, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager);
+		AgentMovePlayer()(1, 2, move, m_tick, m_board, m_agents, m_position_resolver, m_event_manager, m_game_config.bomb_duration_ticks, m_game_config.bomb_armed_ticks, m_game_config.blast_duration_ticks);
 		break;
 	      case Player::GaiaSpawner:
 		m_gaia_move_player.PlaySpawnerMove(move);
@@ -127,7 +155,7 @@ class Bomberland : public oaz::games::Game {
 		m_gaia_move_player.PlayPlacerMove(move, m_board, m_event_manager, m_tick);
 		break;
       }
-      m_adjudicator.Update(m_agents, m_board, m_tick, m_gaia_move_player, m_event_manager, m_fire_adder);
+      m_adjudicator.Update(m_agents, m_board, m_tick, m_game_config.blast_duration_ticks, m_gaia_move_player, m_event_manager, m_fire_adder);
     }
 
     /* START DUMMY IMPLEMENTATIONS */
@@ -169,6 +197,9 @@ class Bomberland : public oaz::games::Game {
     EventManager m_event_manager;
     FireAdder m_fire_adder;
     mutable boost::multi_array<std::vector<Coordinates>, 1> m_player_bombs;
+
+    // Configs
+    GameConfig m_game_config;
 };
 }  // namespace oaz::games::bomberland
 

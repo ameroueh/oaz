@@ -66,10 +66,6 @@ class Tile {
       return GetValue(EXPIRY_OFFSET, EXPIRY_SIZE);
     }
 
-    std::size_t GetUnitId() const {
-      return GetValue(UNIT_ID_OFFSET, UNIT_ID_SIZE);
-    }
-
     std::size_t GetTileType() const {
       return GetValue(TILE_TYPE_OFFSET, TILE_TYPE_SIZE);
     }
@@ -80,6 +76,10 @@ class Tile {
 
     std::size_t GetBlastRadius() const {
       return GetValue(BLAST_RADIUS_OFFSET, BLAST_RADIUS_SIZE);
+    }
+
+    size_t GetCreationTime() const {
+      return GetValue(CREATION_TIME_OFFSET, CREATION_TIME_SIZE);
     }
 
     bool HasPlacedBomb() const {
@@ -103,6 +103,10 @@ class Tile {
       return GetTileType() == 5;
     }
 
+    void SetCreationTime(size_t tick) {
+      SetValue(tick, CREATION_TIME_OFFSET, CREATION_TIME_SIZE);
+    }
+
     void DecreaseHealth() {
       std::size_t health = GetValue(HP_OFFSET, HP_SIZE);
       health = health > 0 ? health - 1 : 0;
@@ -122,65 +126,77 @@ class Tile {
     }
 
     static Tile CreateEmptyTile() { return Tile(); }
-    static Tile CreateTileWithPlacedBomb(std::size_t owner, std::size_t tick, std::size_t blast_radius) {
+    static Tile CreateTileWithPlacedBomb(
+      std::size_t owner_id,
+      std::size_t tick,
+      std::size_t blast_radius, 
+      std::size_t bomb_duration_ticks) {
       Tile tile;
       tile.SetType(1);
-      tile.SetExpiryTime(tick + 40);
-      tile.SetOwner(owner);
+      tile.SetExpiryTime(tick + bomb_duration_ticks);
+      tile.SetOwner(owner_id);
       tile.SetBlastRadius(blast_radius);
+      tile.SetCreationTime(tick);
       return tile;
     }
-	static Tile CreateTileWithSpawnedBomb(std::size_t tick) {
+	static Tile CreateTileWithSpawnedBomb(std::size_t tick, std::size_t ammo_duration_ticks) {
 	  Tile tile;
 	  tile.SetType(2);
-	  tile.SetExpiryTime(tick + 40);
+	  tile.SetExpiryTime(tick + ammo_duration_ticks);
+	  tile.SetCreationTime(tick);
 	  return tile;
 	}
-	static Tile CreateTileWithSpawnedPowerup(std::size_t tick) {
+	static Tile CreateTileWithSpawnedPowerup(std::size_t tick, std::size_t ammo_duration_ticks) {
 	  Tile tile;
 	  tile.SetType(3);
-	  tile.SetExpiryTime(tick + 40);
+	  tile.SetExpiryTime(tick + ammo_duration_ticks);
+	  tile.SetCreationTime(tick);
 	  return tile;
 	}
-	static Tile CreateTileWithBlast(std::size_t tick) {
+	static Tile CreateTileWithBlast(std::size_t tick, size_t blast_duration_ticks) {
 	  Tile tile;
 	  tile.SetType(4);
-	  tile.SetExpiryTime(tick + 10);
+	  tile.SetExpiryTime(tick + blast_duration_ticks);
+	  tile.SetCreationTime(tick);
 	  return tile;
 	}
-	static Tile CreateTileWithFire() {
+	static Tile CreateTileWithFire(std::size_t tick) {
 	  Tile tile;
 	  tile.SetType(5);
+	  tile.SetCreationTime(tick);
 	  return tile;
 	}
-	static Tile CreateWoodenBlockTile() {
+	static Tile CreateWoodenBlockTile(std::size_t tick) {
 	  Tile tile;
 	  tile.SetType(0);
 	  tile.SetNotWalkable();
 	  tile.SetHP(1);
+	  tile.SetCreationTime(tick);
 	  return tile;
 	}
-	static Tile CreateOreBlockTile() {
+	static Tile CreateOreBlockTile(std::size_t tick) {
 	  Tile tile;
 	  tile.SetNotWalkable();
 	  tile.SetType(1);
 	  tile.SetHP(3);
+	  tile.SetCreationTime(tick);
 	  return tile;
 	}
-	static Tile CreateMetalBlockTile() {
+	static Tile CreateMetalBlockTile(std::size_t tick) {
 	  Tile tile;
 	  tile.SetNotWalkable();
 	  tile.SetType(2);
+	  tile.SetCreationTime(tick);
 	  tile.SetInvulnerable();
 	  return tile;
 	}
   private:
     std::size_t GetValue(std::size_t offset, std::size_t bit_size) const {
-      return (m_tile >> offset) & ((1 << bit_size) - 1);
+      return (m_tile >> offset) & ((1ULL << bit_size) - 1ULL);
     }
 
     void SetValue(std::size_t value, std::size_t offset, std::size_t bit_size) {
-      uint32_t mask = ~(((1 << bit_size) - 1) << offset);
+      uint64_t mask = ~(((1ULL << bit_size) - 1ULL) << offset);
       m_tile &= mask;
       m_tile |= (value << offset);
     }
@@ -221,31 +237,31 @@ class Tile {
 
     static constexpr std::size_t WALKABLE_OFFSET = 0;
     static constexpr std::size_t WALKABLE_SIZE = 1;
-
-    // Walkable tile attributes
-    static constexpr std::size_t TILE_TYPE_OFFSET = 1;
+    static constexpr std::size_t CREATION_TIME_SIZE = 16; 
+    static constexpr std::size_t CREATION_TIME_OFFSET = 1;
+    static constexpr std::size_t TILE_TYPE_OFFSET = 17;
     static constexpr std::size_t TILE_TYPE_SIZE = 3;
+
     // If walkable: 0 = EMPTY, 1 = PLACED_BOMB, 2 = SPAWNED_BOMB, 3 = POWERUP, 4 = BLAST, 5 = FIRE
     // If not walkable: 0 = WOODEN_BLOCK, 1 = ORE_BLOCK, 2 = METAL_BLOCK
-    static constexpr std::size_t EXPIRY_OFFSET = 4;
+    
+    // Walkable tile attributes
+    static constexpr std::size_t EXPIRY_OFFSET = 20;
     static constexpr std::size_t EXPIRY_SIZE = 9;
-    static constexpr std::size_t UNIT_ID_OFFSET = 13;
-    static constexpr std::size_t UNIT_ID_SIZE = 9;
-    static constexpr std::size_t OWNER_OFFSET = 22;
-    static constexpr std::size_t OWNER_SIZE = 1;
-    static constexpr std::size_t BLAST_RADIUS_OFFSET = 23;
+    static constexpr std::size_t OWNER_OFFSET = 29;
+    static constexpr std::size_t OWNER_SIZE = 4;
+    static constexpr std::size_t BLAST_RADIUS_OFFSET = 33;
     static constexpr std::size_t BLAST_RADIUS_SIZE = 4;
-    static constexpr std::size_t N_CLAIMANTS_OFFSET = 27;
+    static constexpr std::size_t N_CLAIMANTS_OFFSET = 37;
     static constexpr std::size_t N_CLAIMANTS_SIZE = 3; 
 
-
     // Non-walkable tile attributes
-    static constexpr std::size_t INVULNERABLE_OFFSET = 4;
+    static constexpr std::size_t INVULNERABLE_OFFSET = 20;
     static constexpr std::size_t INVULNERABLE_SIZE = 1;
-    static constexpr std::size_t HP_OFFSET = 5;
+    static constexpr std::size_t HP_OFFSET = 21;
     static constexpr std::size_t HP_SIZE = 2;
 
-    uint32_t m_tile;
+    uint64_t m_tile;
 };
 } // namespace oaz::games::bomberland
 #endif // OAZ_GAMES_BOMBERLAND_TILE_HPP_

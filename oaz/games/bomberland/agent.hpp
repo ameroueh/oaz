@@ -9,13 +9,16 @@ class Agent {
       m_invulnerable_until(0),
       m_n_bombs(3),
       m_health(3),
-      m_blast_radius(3) {}
-    explicit Agent(Coordinates position):
+      m_blast_radius(3),
+      m_id(0) {}
+
+    explicit Agent(Coordinates position, std::size_t id):
       m_position(position),
       m_invulnerable_until(0),
       m_n_bombs(3),
       m_health(3),
-      m_blast_radius(3) {}
+      m_blast_radius(3),
+      m_id(id) {}
 
     Coordinates GetPosition() const {
       return m_position;
@@ -25,10 +28,10 @@ class Agent {
     }
     bool IsDead() const { return m_health == 0; }
     std::size_t GetHealth() const { return m_health; }
-    void DealDamage(size_t tick) {
-      if (!IsInvulnerable(tick)) {
+    void DealDamage(size_t tick, size_t invulnerability_ticks) {
+      if (!IsInvulnerable(tick, invulnerability_ticks)) {
         m_health = m_health > 0 ? m_health - 1 : 0;
-	m_invulnerable_until = tick + INVULNERABILITY_TIME;
+	m_invulnerable_until = tick + invulnerability_ticks;
       }
     } 
     std::size_t GetNBombs() const { return m_n_bombs; }
@@ -45,17 +48,19 @@ class Agent {
     std::size_t GetInvulnerableUntil() const {
       return m_invulnerable_until;
     }
+
+    std::size_t GetId() const { return m_id; }
   private:
-    bool IsInvulnerable(std::size_t tick) const {
+    bool IsInvulnerable(std::size_t tick, std::size_t invulnerability_ticks) const {
       return m_invulnerable_until > tick;
     }
-    static constexpr size_t INVULNERABILITY_TIME = 5;
     
     Coordinates m_position;
     std::size_t m_invulnerable_until;
     std::size_t m_n_bombs;
     std::size_t m_health;
     std::size_t m_blast_radius;
+    std::size_t m_id;
 };
 } // namespace oaz::games::bomberland
 #endif // OAZ_GAMES_BOMBERLAND_AGENT_HPP_

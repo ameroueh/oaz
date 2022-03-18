@@ -12,8 +12,8 @@ class DefaultAgentInitializer {
   public:
     DefaultAgentInitializer() {}
     void operator()(boost::multi_array<Agent, 2>& agents) {
-      for (int i=0; i!=3; ++i) { agents[0][i] = Agent(Coordinates(0, i)); }
-      for (int i=0; i!=3; ++i) { agents[1][i] = Agent(Coordinates(14-i, 14)); }
+      for (int i=0; i!=3; ++i) { agents[0][i] = Agent(Coordinates(0, i), 2 + i); }
+      for (int i=0; i!=3; ++i) { agents[1][i] = Agent(Coordinates(14-i, 14), 5 + i); }
     }
 };
 } // namespace oaz::games::bomberland
